@@ -17,7 +17,6 @@
 
 #include <inttypes.h>
 
-#include "graphics/matrix4.h"
 #include "callback/calldata.h"
 
 #include "ols.h"
@@ -36,8 +35,6 @@ static bool ols_init_data(void)
 
 	assert(data != NULL);
 
-	pthread_mutex_init_value(&ols->data.displays_mutex);
-	pthread_mutex_init_value(&ols->data.draw_callbacks_mutex);
 
 	if (pthread_mutex_init_recursive(&data->sources_mutex) != 0)
 		goto fail;
@@ -104,9 +101,6 @@ static void ols_free_data(void)
 	da_free(data->tick_callbacks);
 	ols_data_release(data->private_data);
 
-	for (size_t i = 0; i < data->protocols.num; i++)
-		bfree(data->protocols.array[i]);
-	da_free(data->protocols);
 	da_free(data->sources_to_tick);
 }
 
@@ -117,12 +111,8 @@ static const char *ols_signals[] = {
 	"void source_update(ptr source)",
 	"void source_save(ptr source)",
 	"void source_load(ptr source)",
-	"void source_activate(ptr source)",
-	"void source_deactivate(ptr source)",
-
 	"void source_rename(ptr source, string new_name, string prev_name)",
 	"void channel_change(int channel, in out ptr source, ptr prev_source)",
-
 	"void hotkey_layout_change()",
 	"void hotkey_register(ptr hotkey)",
 	"void hotkey_unregister(ptr hotkey)",
@@ -483,29 +473,6 @@ bool ols_enum_source_types(size_t idx, const char **id)
 }
 
 
-const char *ols_get_latest_input_type_id(const char *unversioned_id)
-{
-	struct ols_source_info *latest = NULL;
-	int version = -1;
-
-	if (!unversioned_id)
-		return NULL;
-
-	for (size_t i = 0; i < ols->source_types.num; i++) {
-		struct ols_source_info *info = &ols->source_types.array[i];
-		if (strcmp(info->unversioned_id, unversioned_id) == 0 &&
-		    (int)info->version > version) {
-			latest = info;
-			version = info->version;
-		}
-	}
-
-	assert(!!latest);
-	if (!latest)
-		return NULL;
-
-	return latest->id;
-}
 
 bool ols_enum_filter_types(size_t idx, const char **id)
 {
@@ -525,47 +492,6 @@ bool ols_enum_output_types(size_t idx, const char **id)
 
 
 
-ols_source_t *ols_get_output_source(uint32_t channel)
-{
-	return ols_view_get_source(&ols->data.main_view, channel);
-}
-
-void ols_set_output_source(uint32_t channel, ols_source_t *source)
-{
-	assert(channel < MAX_CHANNELS);
-
-	if (channel >= MAX_CHANNELS)
-		return;
-
-	struct ols_source *prev_source;
-	struct ols_view *view = &ols->data.main_view;
-	struct calldata params = {0};
-
-	pthread_mutex_lock(&view->channels_mutex);
-
-	source = ols_source_get_ref(source);
-
-	prev_source = view->channels[channel];
-
-	calldata_set_int(&params, "channel", channel);
-	calldata_set_ptr(&params, "prev_source", prev_source);
-	calldata_set_ptr(&params, "source", source);
-	signal_handler_signal(ols->signals, "channel_change", &params);
-	calldata_get_ptr(&params, "source", &source);
-	calldata_free(&params);
-
-	view->channels[channel] = source;
-
-	pthread_mutex_unlock(&view->channels_mutex);
-
-	if (source)
-		ols_source_activate(source, MAIN_VIEW);
-
-	if (prev_source) {
-		ols_source_deactivate(prev_source, MAIN_VIEW);
-		ols_source_release(prev_source);
-	}
-}
 
 void ols_enum_sources(bool (*enum_proc)(void *, ols_source_t *), void *param)
 {
@@ -579,10 +505,6 @@ void ols_enum_sources(bool (*enum_proc)(void *, ols_source_t *), void *param)
 		if (s) {
 			if (s->info.type == OLS_SOURCE_TYPE_INPUT &&
 			    !enum_proc(param, s)) {
-				ols_source_release(s);
-				break;
-			} else if (strcmp(s->info.id, group_info.id) == 0 &&
-				   !enum_proc(param, s)) {
 				ols_source_release(s);
 				break;
 			}
@@ -609,11 +531,8 @@ static inline void ols_enum(void *pstart, pthread_mutex_t *mutex, void *proc,
 	pthread_mutex_lock(mutex);
 
 	context = *start;
-	while (context) {
-		if (!enum_proc(param, context))
-			break;
-
-		context = context->next;
+	if (context) {
+		enum_proc(param, context);
 	}
 
 	pthread_mutex_unlock(mutex);
@@ -654,36 +573,7 @@ void ols_enum_outputs(bool (*enum_proc)(void *, ols_output_t *), void *param)
 
 
 
-static inline void *get_context_by_name(void *vfirst, const char *name,
-					pthread_mutex_t *mutex,
-					void *(*addref)(void *))
-{
-	struct ols_context_data **first = vfirst;
-	struct ols_context_data *context;
 
-	pthread_mutex_lock(mutex);
-
-	/* If context list head has a hash table, look the name up in there */
-	if (*first && (*first)->hh.tbl) {
-		HASH_FIND_STR(*first, name, context);
-	} else {
-		context = *first;
-		while (context) {
-			if (!context->private &&
-			    strcmp(context->name, name) == 0) {
-				break;
-			}
-
-			context = context->next;
-		}
-	}
-
-	if (context)
-		addref(context);
-
-	pthread_mutex_unlock(mutex);
-	return context;
-}
 
 static void *get_context_by_uuid(void *ptable, const char *uuid,
 				 pthread_mutex_t *mutex,
@@ -712,41 +602,18 @@ static inline void *ols_output_addref_safe_(void *ref)
 	return ols_output_get_ref(ref);
 }
 
-static inline void *ols_encoder_addref_safe_(void *ref)
-{
-	return ols_encoder_get_ref(ref);
-}
-
-static inline void *ols_service_addref_safe_(void *ref)
-{
-	return ols_service_get_ref(ref);
-}
 
 static inline void *ols_id_(void *data)
 {
 	return data;
 }
 
-ols_source_t *ols_get_source_by_name(const char *name)
-{
-	return get_context_by_name(&ols->data.public_sources, name,
-				   &ols->data.sources_mutex,
-				   ols_source_addref_safe_);
-}
 
 ols_source_t *ols_get_source_by_uuid(const char *uuid)
 {
 	return get_context_by_uuid(&ols->data.sources, uuid,
 				   &ols->data.sources_mutex,
 				   ols_source_addref_safe_);
-}
-
-
-ols_output_t *ols_get_output_by_name(const char *name)
-{
-	return get_context_by_name(&ols->data.first_output, name,
-				   &ols->data.outputs_mutex,
-				   ols_output_addref_safe_);
 }
 
 
@@ -765,7 +632,6 @@ proc_handler_t *ols_get_proc_handler(void)
 static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 					  bool is_private)
 {
-	ols_data_array_t *filters = ols_data_get_array(source_data, "filters");
 	ols_source_t *source;
 	const char *name = ols_data_get_string(source_data, "name");
 	const char *uuid = ols_data_get_string(source_data, "uuid");
@@ -774,7 +640,7 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 	ols_data_t *settings = ols_data_get_obj(source_data, "settings");
 	ols_data_t *hotkeys = ols_data_get_obj(source_data, "hotkeys");
 
-	int64_t sync;
+
 	uint32_t prev_ver;
 	uint32_t flags;
 
@@ -786,23 +652,14 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 	source = ols_source_create_set_last_ver(v_id, name, uuid, settings,
 						hotkeys, prev_ver, is_private);
 
-	if (source->owns_info_id) {
-		bfree((void *)source->info.unversioned_id);
-		source->info.unversioned_id = bstrdup(id);
-	}
 
 	ols_data_release(hotkeys);
 
-	sync = ols_data_get_int(source_data, "sync");
-	ols_source_set_sync_offset(source, sync);
 
 	ols_data_set_default_int(source_data, "flags", source->default_flags);
 	flags = (uint32_t)ols_data_get_int(source_data, "flags");
 	ols_source_set_flags(source, flags);
 
-	ols_data_set_default_bool(source_data, "enabled", true);
-	ols_source_set_enabled(source,
-			       ols_data_get_bool(source_data, "enabled"));
 
 
 	ols_data_release(source->private_settings);
@@ -811,25 +668,6 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 	if (!source->private_settings)
 		source->private_settings = ols_data_create();
 
-	if (filters) {
-		size_t count = ols_data_array_count(filters);
-
-		for (size_t i = 0; i < count; i++) {
-			ols_data_t *filter_data =
-				ols_data_array_item(filters, i);
-
-			ols_source_t *filter =
-				ols_load_source_type(filter_data, true);
-			if (filter) {
-				ols_source_filter_add(source, filter);
-				ols_source_release(filter);
-			}
-
-			ols_data_release(filter_data);
-		}
-
-		ols_data_array_release(filters);
-	}
 
 	ols_data_release(settings);
 
@@ -875,7 +713,6 @@ void ols_load_sources(ols_data_array_t *array, ols_load_source_cb cb,
 		ols_source_t *source = sources.array[i];
 		ols_data_t *source_data = ols_data_array_item(array, i);
 		if (source) {
-			ols_source_load2(source);
 			if (cb)
 				cb(private_data, source);
 		}
@@ -892,21 +729,15 @@ void ols_load_sources(ols_data_array_t *array, ols_load_source_cb cb,
 
 ols_data_t *ols_save_source(ols_source_t *source)
 {
-	ols_data_array_t *filters = ols_data_array_create();
 	ols_data_t *source_data = ols_data_create();
 	ols_data_t *settings = ols_source_get_settings(source);
 	ols_data_t *hotkey_data = source->context.hotkey_data;
 	ols_data_t *hotkeys;
 	
-	int64_t sync = ols_source_get_sync_offset(source);
 	uint32_t flags = ols_source_get_flags(source);
 	const char *name = ols_source_get_name(source);
 	const char *uuid = ols_source_get_uuid(source);
-	const char *id = source->info.unversioned_id;
 	const char *v_id = source->info.id;
-	bool enabled = ols_source_enabled(source);
-
-	DARRAY(ols_source_t *) filters_copy;
 
 	ols_source_save(source);
 	hotkeys = ols_hotkeys_save_source(source);
@@ -921,12 +752,9 @@ ols_data_t *ols_save_source(ols_source_t *source)
 
 	ols_data_set_string(source_data, "name", name);
 	ols_data_set_string(source_data, "uuid", uuid);
-	ols_data_set_string(source_data, "id", id);
 	ols_data_set_string(source_data, "versioned_id", v_id);
 	ols_data_set_obj(source_data, "settings", settings);
-	ols_data_set_int(source_data, "sync", sync);
 	ols_data_set_int(source_data, "flags", flags);
-	ols_data_set_bool(source_data, "enabled", enabled);
 	ols_data_set_obj(source_data, "hotkeys", hotkey_data);
 
 
@@ -934,34 +762,8 @@ ols_data_t *ols_save_source(ols_source_t *source)
 			 source->private_settings);
 
 
-	pthread_mutex_lock(&source->filter_mutex);
-
-
-	for (size_t i = 0; i < source->filters.num; i++) {
-		ols_source_t *filter =
-			ols_source_get_ref(source->filters.array[i]);
-		if (filter)
-			da_push_back(filters_copy, &filter);
-	}
-
-	pthread_mutex_unlock(&source->filter_mutex);
-
-	if (filters_copy.num) {
-		for (size_t i = filters_copy.num; i > 0; i--) {
-			ols_source_t *filter = filters_copy.array[i - 1];
-			ols_data_t *filter_data = ols_save_source(filter);
-			ols_data_array_push_back(filters, filter_data);
-			ols_data_release(filter_data);
-			ols_source_release(filter);
-		}
-
-		ols_data_set_array(source_data, "filters", filters);
-	}
-
-	da_free(filters_copy);
-
 	ols_data_release(settings);
-	ols_data_array_release(filters);
+
 
 	return source_data;
 }
@@ -1109,10 +911,6 @@ void ols_context_data_free(struct ols_context_data *context)
 	bfree(context->name);
 	bfree((void *)context->uuid);
 
-	for (size_t i = 0; i < context->rename_cache.num; i++)
-		bfree(context->rename_cache.array[i]);
-	da_free(context->rename_cache);
-
 	memset(context, 0, sizeof(*context));
 }
 
@@ -1124,25 +922,6 @@ void ols_context_init_control(struct ols_context_data *context, void *object,
 	context->destroy = destroy;
 }
 
-void ols_context_data_insert(struct ols_context_data *context,
-			     pthread_mutex_t *mutex, void *pfirst)
-{
-	struct ols_context_data **first = pfirst;
-
-	assert(context);
-	assert(mutex);
-	assert(first);
-
-	context->mutex = mutex;
-
-	pthread_mutex_lock(mutex);
-	context->prev_next = first;
-	context->next = *first;
-	*first = context;
-	if (context->next)
-		context->next->prev_next = &context->next;
-	pthread_mutex_unlock(mutex);
-}
 
 static inline char *ols_context_deduplicate_name(void *phash, const char *name)
 {
@@ -1164,37 +943,6 @@ static inline char *ols_context_deduplicate_name(void *phash, const char *name)
 	return new_name.array;
 }
 
-void ols_context_data_insert_name(struct ols_context_data *context,
-				  pthread_mutex_t *mutex, void *pfirst)
-{
-	struct ols_context_data **first = pfirst;
-	char *new_name;
-
-	assert(context);
-	assert(mutex);
-	assert(first);
-
-	context->mutex = mutex;
-
-	pthread_mutex_lock(mutex);
-
-	/* Ensure name is not a duplicate. */
-	new_name = ols_context_deduplicate_name(*first, context->name);
-	if (new_name) {
-		blog(LOG_WARNING,
-		     "Attempted to insert context with duplicate name \"%s\"!"
-		     " Name has been changed to \"%s\"",
-		     context->name, new_name);
-		/* Since this happens before the context creation finishes,
-		 * do not bother to add it to the rename cache. */
-		bfree(context->name);
-		context->name = new_name;
-	}
-
-	HASH_ADD_STR(*first, name, context);
-
-	pthread_mutex_unlock(mutex);
-}
 
 void ols_context_data_insert_uuid(struct ols_context_data *context,
 				  pthread_mutex_t *mutex, void *pfirst_uuid)
@@ -1229,17 +977,7 @@ void ols_context_data_insert_uuid(struct ols_context_data *context,
 	pthread_mutex_unlock(mutex);
 }
 
-void ols_context_data_remove(struct ols_context_data *context)
-{
-	if (context && context->prev_next) {
-		pthread_mutex_lock(context->mutex);
-		*context->prev_next = context->next;
-		if (context->next)
-			context->next->prev_next = context->prev_next;
-		context->prev_next = NULL;
-		pthread_mutex_unlock(context->mutex);
-	}
-}
+
 
 void ols_context_data_remove_name(struct ols_context_data *context, void *phead)
 {
@@ -1302,7 +1040,6 @@ void ols_context_data_setname_ht(struct ols_context_data *context,
 
 	HASH_ADD_STR(*head, name, context);
 
-	pthread_mutex_unlock(&context->rename_cache_mutex);
 	pthread_mutex_unlock(context->mutex);
 }
 
@@ -1360,28 +1097,6 @@ bool ols_obj_is_private(void *obj)
 		return false;
 
 	return context->private;
-}
-
-
-
-void ols_add_tick_callback(void (*tick)(void *param, float seconds),
-			   void *param)
-{
-	struct tick_callback data = {tick, param};
-
-	pthread_mutex_lock(&ols->data.draw_callbacks_mutex);
-	da_insert(ols->data.tick_callbacks, 0, &data);
-	pthread_mutex_unlock(&ols->data.draw_callbacks_mutex);
-}
-
-void ols_remove_tick_callback(void (*tick)(void *param, float seconds),
-			      void *param)
-{
-	struct tick_callback data = {tick, param};
-
-	pthread_mutex_lock(&ols->data.draw_callbacks_mutex);
-	da_erase_item(ols->data.tick_callbacks, &data);
-	pthread_mutex_unlock(&ols->data.draw_callbacks_mutex);
 }
 
 

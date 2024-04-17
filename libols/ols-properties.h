@@ -397,10 +397,6 @@ EXPORT ols_properties_t *ols_property_group_content(ols_property_t *p);
 EXPORT enum ols_button_type ols_property_button_type(ols_property_t *p);
 EXPORT const char *ols_property_button_url(ols_property_t *p);
 
-#ifndef SWIG
-OLS_DEPRECATED
-EXPORT enum ols_text_type ols_proprety_text_type(ols_property_t *p);
-#endif
 
 #ifdef __cplusplus
 }

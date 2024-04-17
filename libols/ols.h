@@ -47,9 +47,7 @@ typedef struct ols_module ols_module_t;
 typedef struct ols_weak_object ols_weak_object_t;
 typedef struct ols_weak_source ols_weak_source_t;
 typedef struct ols_weak_output ols_weak_output_t;
-typedef struct ols_weak_service ols_weak_service_t;
 
-#include "ols-missing-files.h"
 #include "ols-source.h"
 #include "ols-output.h"
 #include "ols-hotkey.h"
@@ -336,17 +334,7 @@ EXPORT char *ols_module_get_config_path(ols_module_t *module, const char *file);
 /** Enumerates all source types (inputs, filters, transitions, etc).  */
 EXPORT bool ols_enum_source_types(size_t idx, const char **id);
 
-/**
- * Enumerates all available inputs source types.
- *
- *   Inputs are general source inputs (such as capture sources, device sources,
- * etc).
- */
-EXPORT bool ols_enum_input_types(size_t idx, const char **id);
-EXPORT bool ols_enum_input_types2(size_t idx, const char **id,
-				  const char **unversioned_id);
 
-EXPORT const char *ols_get_latest_input_type_id(const char *unversioned_id);
 
 /**
  * Enumerates all available filter source types.
@@ -362,19 +350,7 @@ EXPORT bool ols_enum_output_types(size_t idx, const char **id);
 
 
 
-/** Enumerates all available service types. */
-EXPORT bool ols_enum_service_types(size_t idx, const char **id);
 
-
-
-/** Sets the primary output source for a channel. */
-EXPORT void ols_set_output_source(uint32_t channel, ols_source_t *source);
-
-/**
- * Gets the primary output source for a channel and increments the reference
- * counter for that source.  Use ols_source_release to release.
- */
-EXPORT ols_source_t *ols_get_output_source(uint32_t channel);
 
 /**
  * Enumerates all input sources
@@ -398,13 +374,6 @@ EXPORT void ols_enum_outputs(bool (*enum_proc)(void *, ols_output_t *),
 			     void *param);
 
 
-/**
- * Gets a source by its name.
- *
- *   Increments the source reference counter, use ols_source_release to
- * release it when complete.
- */
-EXPORT ols_source_t *ols_get_source_by_name(const char *name);
 
 /**
  * Gets a source by its UUID.
@@ -415,8 +384,6 @@ EXPORT ols_source_t *ols_get_source_by_name(const char *name);
 EXPORT ols_source_t *ols_get_source_by_uuid(const char *uuid);
 
 
-/** Gets an output by its name. */
-EXPORT ols_output_t *ols_get_output_by_name(const char *name);
 
 
 /** Returns the primary ols signal handler */
@@ -470,10 +437,8 @@ EXPORT bool ols_obj_invalid(void *obj);
 EXPORT void *ols_obj_get_data(void *obj);
 EXPORT bool ols_obj_is_private(void *obj);
 
-EXPORT void ols_add_tick_callback(void (*tick)(void *param, float seconds),
-				  void *param);
-EXPORT void ols_remove_tick_callback(void (*tick)(void *param, float seconds),
-				     void *param);
+
+
 
 EXPORT void ols_apply_private_data(ols_data_t *settings);
 EXPORT void ols_set_private_data(ols_data_t *settings);
@@ -602,7 +567,6 @@ EXPORT enum ols_source_type ols_source_get_type(const ols_source_t *source);
 
 /** Gets the source identifier */
 EXPORT const char *ols_source_get_id(const ols_source_t *source);
-EXPORT const char *ols_source_get_unversioned_id(const ols_source_t *source);
 
 /** Returns the signal handler for a source */
 EXPORT signal_handler_t *
@@ -631,8 +595,6 @@ EXPORT void ols_source_set_flags(ols_source_t *source, uint32_t flags);
 EXPORT uint32_t ols_source_get_flags(const ols_source_t *source);
 
 
-EXPORT void ols_source_copy_single_filter(ols_source_t *dst,
-					  ols_source_t *filter);
 
 /* ------------------------------------------------------------------------- */
 /* Outputs */
@@ -667,6 +629,11 @@ EXPORT bool ols_weak_output_references_output(ols_weak_output_t *weak,
 					      ols_output_t *output);
 
 EXPORT const char *ols_output_get_name(const ols_output_t *output);
+
+/** Pass a string of the last output error, for UI use */
+EXPORT void ols_output_set_last_error(ols_output_t *output,
+				      const char *message);
+EXPORT const char *ols_output_get_last_error(ols_output_t *output);
 
 /**
  * On reconnection, start where it left of on reconnection.  Note however that

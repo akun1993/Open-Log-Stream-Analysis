@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -84,7 +84,7 @@ EXPORT int os_dtostr(double value, char *dst, size_t size);
 EXPORT void *os_dlopen(const char *path);
 EXPORT void *os_dlsym(void *module, const char *func);
 EXPORT void os_dlclose(void *module);
-EXPORT bool os_is_obs_plugin(const char *path);
+EXPORT bool os_is_ols_plugin(const char *path);
 
 struct os_cpu_usage_info;
 typedef struct os_cpu_usage_info os_cpu_usage_info_t;
@@ -173,8 +173,6 @@ EXPORT int os_copyfile(const char *file_in, const char *file_out);
 EXPORT int os_safe_replace(const char *target_path, const char *from_path,
 			   const char *backup_path);
 
-EXPORT char *os_generate_formatted_filename(const char *extension, bool space,
-					    const char *format);
 
 struct os_inhibit_info;
 typedef struct os_inhibit_info os_inhibit_t;

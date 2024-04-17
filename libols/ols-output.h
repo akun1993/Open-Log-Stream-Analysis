@@ -53,8 +53,6 @@ struct ols_output_info {
 	void *type_data;
 	void (*free_type_data)(void *type_data);
 
-	/* required if OLS_OUTPUT_SERVICE */
-	const char *protocols;
 };
 
 EXPORT void ols_register_output_s(const struct ols_output_info *info,

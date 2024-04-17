@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -54,7 +54,7 @@ static void def_log_handler(int log_level, const char *format, va_list args,
 	UNUSED_PARAMETER(param);
 }
 
-OBS_NORETURN static void def_crash_handler(const char *format, va_list args,
+OLS_NORETURN static void def_crash_handler(const char *format, va_list args,
 					   void *param)
 {
 	vfprintf(stderr, format, args);
@@ -90,7 +90,7 @@ void base_set_crash_handler(void (*handler)(const char *, va_list, void *),
 	crash_handler = handler;
 }
 
-OBS_NORETURN void bcrash(const char *format, ...)
+OLS_NORETURN void bcrash(const char *format, ...)
 {
 	va_list args;
 

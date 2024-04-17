@@ -138,17 +138,8 @@ ols_hotkeys_set_translations_s(struct ols_hotkeys_translations *translations,
 			       size_t size);
 #endif
 
-#define ols_hotkeys_set_translations(translations) \
-	ols_hotkeys_set_translations_s(            \
-		translations, sizeof(struct ols_hotkeys_translations))
 
-EXPORT void
-ols_hotkeys_set_audio_hotkeys_translations(const char *mute, const char *unmute,
-					   const char *push_to_mute,
-					   const char *push_to_talk);
 
-EXPORT void ols_hotkeys_set_sceneitem_hotkeys_translations(const char *show,
-							   const char *hide);
 
 /* registering hotkeys (giving hotkeys a name and a function) */
 
@@ -160,11 +151,6 @@ EXPORT ols_hotkey_id ols_hotkey_register_frontend(const char *name,
 						  ols_hotkey_func func,
 						  void *data);
 
-EXPORT ols_hotkey_id ols_hotkey_register_encoder(ols_encoder_t *encoder,
-						 const char *name,
-						 const char *description,
-						 ols_hotkey_func func,
-						 void *data);
 
 EXPORT ols_hotkey_id ols_hotkey_register_output(ols_output_t *output,
 						const char *name,
@@ -172,11 +158,7 @@ EXPORT ols_hotkey_id ols_hotkey_register_output(ols_output_t *output,
 						ols_hotkey_func func,
 						void *data);
 
-EXPORT ols_hotkey_id ols_hotkey_register_service(ols_service_t *service,
-						 const char *name,
-						 const char *description,
-						 ols_hotkey_func func,
-						 void *data);
+
 
 EXPORT ols_hotkey_id ols_hotkey_register_source(ols_source_t *source,
 						const char *name,
@@ -192,11 +174,6 @@ EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_frontend(
 	const char *description1, ols_hotkey_active_func func0,
 	ols_hotkey_active_func func1, void *data0, void *data1);
 
-EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_encoder(
-	ols_encoder_t *encoder, const char *name0, const char *description0,
-	const char *name1, const char *description1,
-	ols_hotkey_active_func func0, ols_hotkey_active_func func1, void *data0,
-	void *data1);
 
 EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_output(
 	ols_output_t *output, const char *name0, const char *description0,
@@ -204,11 +181,6 @@ EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_output(
 	ols_hotkey_active_func func0, ols_hotkey_active_func func1, void *data0,
 	void *data1);
 
-EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_service(
-	ols_service_t *service, const char *name0, const char *description0,
-	const char *name1, const char *description1,
-	ols_hotkey_active_func func0, ols_hotkey_active_func func1, void *data0,
-	void *data1);
 
 EXPORT ols_hotkey_pair_id ols_hotkey_pair_register_source(
 	ols_source_t *source, const char *name0, const char *description0,
@@ -228,13 +200,10 @@ EXPORT void ols_hotkey_load_bindings(ols_hotkey_id id,
 
 EXPORT void ols_hotkey_load(ols_hotkey_id id, ols_data_array_t *data);
 
-EXPORT void ols_hotkeys_load_encoder(ols_encoder_t *encoder,
-				     ols_data_t *hotkeys);
+
 
 EXPORT void ols_hotkeys_load_output(ols_output_t *output, ols_data_t *hotkeys);
 
-EXPORT void ols_hotkeys_load_service(ols_service_t *service,
-				     ols_data_t *hotkeys);
 
 EXPORT void ols_hotkeys_load_source(ols_source_t *source, ols_data_t *hotkeys);
 
@@ -247,11 +216,9 @@ EXPORT void ols_hotkey_pair_save(ols_hotkey_pair_id id,
 				 ols_data_array_t **p_data0,
 				 ols_data_array_t **p_data1);
 
-EXPORT ols_data_t *ols_hotkeys_save_encoder(ols_encoder_t *encoder);
 
 EXPORT ols_data_t *ols_hotkeys_save_output(ols_output_t *output);
 
-EXPORT ols_data_t *ols_hotkeys_save_service(ols_service_t *service);
 
 EXPORT ols_data_t *ols_hotkeys_save_source(ols_source_t *source);
 
@@ -276,7 +243,7 @@ EXPORT void ols_hotkey_inject_event(ols_key_combination_t hotkey, bool pressed);
 
 EXPORT void ols_hotkey_enable_background_press(bool enable);
 
-OLS_DEPRECATED EXPORT void ols_hotkey_enable_strict_modifiers(bool enable);
+EXPORT void ols_hotkey_enable_strict_modifiers(bool enable);
 
 /* hotkey callback routing (trigger callbacks through e.g. a UI thread) */
 

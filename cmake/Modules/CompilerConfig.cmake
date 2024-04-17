@@ -34,7 +34,7 @@ if(OS_WINDOWS AND MSVC)
   endif()
 
   # Check for Win SDK version 10.0.20348 or above
-  obs_status(STATUS "Windows API version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+  ols_status(STATUS "Windows API version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
   string(REPLACE "." ";" WINAPI_VER "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
 
   list(GET WINAPI_VER 0 WINAPI_VER_MAJOR)
@@ -55,7 +55,7 @@ if(OS_WINDOWS AND MSVC)
   endif()
 
   if(NOT WINAPI_COMPATIBLE)
-    obs_status(FATAL_ERROR "OBS requires Windows 10 SDK version 10.0.20348.0 and above to compile.\n"
+    ols_status(FATAL_ERROR "OLS requires Windows 10 SDK version 10.0.20348.0 and above to compile.\n"
                "Please download the most recent Windows 10 SDK in order to compile.")
   endif()
 
@@ -105,7 +105,7 @@ else()
     warning is set to not turn into an error.
 
     - https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105562 for 12.1.0
-    - https://github.com/obsproject/obs-studio/issues/8850 for 13.1.1
+    - https://github.com/olsproject/ols-studio/issues/8850 for 13.1.1
   ]]
   add_compile_options(
     -Werror
@@ -133,7 +133,7 @@ else()
     add_compile_options(-Wno-error=type-limits)
   endif()
 
-  if(OBS_CODESIGN_LINKER)
+  if(OLS_CODESIGN_LINKER)
     add_link_options("LINKER:$<$<PLATFORM_ID:Darwin>:-adhoc_codesign>")
   endif()
 

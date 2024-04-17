@@ -16,7 +16,7 @@
 ******************************************************************************/
 
 #include <inttypes.h>
-
+#include <limits.h>
 #include "ols-internal.h"
 
 /* Since ids are just sequential size_t integers, we don't really need a
@@ -210,22 +210,7 @@ ols_hotkey_id ols_hotkey_register_frontend(const char *name,
 	return id;
 }
 
-ols_hotkey_id ols_hotkey_register_encoder(ols_encoder_t *encoder,
-					  const char *name,
-					  const char *description,
-					  ols_hotkey_func func, void *data)
-{
-	if (!encoder || !lock())
-		return OLS_INVALID_HOTKEY_ID;
 
-	ols_hotkey_id id = ols_hotkey_register_internal(
-		OLS_HOTKEY_REGISTERER_ENCODER,
-		ols_encoder_get_weak_encoder(encoder), &encoder->context, name,
-		description, func, data);
-
-	unlock();
-	return id;
-}
 
 ols_hotkey_id ols_hotkey_register_output(ols_output_t *output, const char *name,
 					 const char *description,
@@ -243,22 +228,6 @@ ols_hotkey_id ols_hotkey_register_output(ols_output_t *output, const char *name,
 	return id;
 }
 
-ols_hotkey_id ols_hotkey_register_service(ols_service_t *service,
-					  const char *name,
-					  const char *description,
-					  ols_hotkey_func func, void *data)
-{
-	if (!service || !lock())
-		return OLS_INVALID_HOTKEY_ID;
-
-	ols_hotkey_id id = ols_hotkey_register_internal(
-		OLS_HOTKEY_REGISTERER_SERVICE,
-		ols_service_get_weak_service(service), &service->context, name,
-		description, func, data);
-
-	unlock();
-	return id;
-}
 
 ols_hotkey_id ols_hotkey_register_source(ols_source_t *source, const char *name,
 					 const char *description,
@@ -388,25 +357,7 @@ ols_hotkey_pair_id ols_hotkey_pair_register_frontend(
 					     func0, func1, data0, data1);
 }
 
-static inline void *weak_encoder_ref(void *ref)
-{
-	return ols_encoder_get_weak_encoder(ref);
-}
 
-ols_hotkey_pair_id ols_hotkey_pair_register_encoder(
-	ols_encoder_t *encoder, const char *name0, const char *description0,
-	const char *name1, const char *description1,
-	ols_hotkey_active_func func0, ols_hotkey_active_func func1, void *data0,
-	void *data1)
-{
-	if (!encoder)
-		return OLS_INVALID_HOTKEY_PAIR_ID;
-	return register_hotkey_pair_internal(OLS_HOTKEY_REGISTERER_ENCODER,
-					     encoder, weak_encoder_ref,
-					     &encoder->context, name0,
-					     description0, name1, description1,
-					     func0, func1, data0, data1);
-}
 
 static inline void *weak_output_ref(void *ref)
 {
@@ -428,25 +379,6 @@ ols_hotkey_pair_id ols_hotkey_pair_register_output(
 					     func0, func1, data0, data1);
 }
 
-static inline void *weak_service_ref(void *ref)
-{
-	return ols_service_get_weak_service(ref);
-}
-
-ols_hotkey_pair_id ols_hotkey_pair_register_service(
-	ols_service_t *service, const char *name0, const char *description0,
-	const char *name1, const char *description1,
-	ols_hotkey_active_func func0, ols_hotkey_active_func func1, void *data0,
-	void *data1)
-{
-	if (!service)
-		return OLS_INVALID_HOTKEY_PAIR_ID;
-	return register_hotkey_pair_internal(OLS_HOTKEY_REGISTERER_SERVICE,
-					     service, weak_service_ref,
-					     &service->context, name0,
-					     description0, name1, description1,
-					     func0, func1, data0, data1);
-}
 
 static inline void *weak_source_ref(void *ref)
 {
@@ -600,16 +532,6 @@ static inline bool enum_load_bindings(void *data, ols_hotkey_t *hotkey)
 	return true;
 }
 
-void ols_hotkeys_load_encoder(ols_encoder_t *encoder, ols_data_t *hotkeys)
-{
-	if (!encoder || !hotkeys)
-		return;
-	if (!lock())
-		return;
-
-	enum_context_hotkeys(&encoder->context, enum_load_bindings, hotkeys);
-	unlock();
-}
 
 void ols_hotkeys_load_output(ols_output_t *output, ols_data_t *hotkeys)
 {
@@ -622,16 +544,7 @@ void ols_hotkeys_load_output(ols_output_t *output, ols_data_t *hotkeys)
 	unlock();
 }
 
-void ols_hotkeys_load_service(ols_service_t *service, ols_data_t *hotkeys)
-{
-	if (!service || !hotkeys)
-		return;
-	if (!lock())
-		return;
 
-	enum_context_hotkeys(&service->context, enum_load_bindings, hotkeys);
-	unlock();
-}
 
 void ols_hotkeys_load_source(ols_source_t *source, ols_data_t *hotkeys)
 {
@@ -782,18 +695,6 @@ static inline ols_data_t *save_context_hotkeys(struct ols_context_data *context)
 	return result;
 }
 
-ols_data_t *ols_hotkeys_save_encoder(ols_encoder_t *encoder)
-{
-	ols_data_t *result = NULL;
-
-	if (!lock())
-		return result;
-
-	result = save_context_hotkeys(&encoder->context);
-	unlock();
-
-	return result;
-}
 
 ols_data_t *ols_hotkeys_save_output(ols_output_t *output)
 {
@@ -808,18 +709,7 @@ ols_data_t *ols_hotkeys_save_output(ols_output_t *output)
 	return result;
 }
 
-ols_data_t *ols_hotkeys_save_service(ols_service_t *service)
-{
-	ols_data_t *result = NULL;
 
-	if (!lock())
-		return result;
-
-	result = save_context_hotkeys(&service->context);
-	unlock();
-
-	return result;
-}
 
 ols_data_t *ols_hotkeys_save_source(ols_source_t *source)
 {
@@ -887,10 +777,6 @@ static void release_registerer(ols_hotkey_t *hotkey)
 
 	case OLS_HOTKEY_REGISTERER_OUTPUT:
 		ols_weak_output_release(hotkey->registerer);
-		break;
-
-	case OLS_HOTKEY_REGISTERER_SERVICE:
-		ols_weak_service_release(hotkey->registerer);
 		break;
 
 	case OLS_HOTKEY_REGISTERER_SOURCE:
@@ -1017,12 +903,6 @@ void ols_hotkeys_free(void)
 
 	da_free(ols->hotkeys.bindings);
 
-	for (size_t i = 0; i < OLS_KEY_LAST_VALUE; i++) {
-		if (ols->hotkeys.translations[i]) {
-			bfree(ols->hotkeys.translations[i]);
-			ols->hotkeys.translations[i] = NULL;
-		}
-	}
 }
 
 void ols_enum_hotkeys(ols_hotkey_enum_func func, void *data)
@@ -1299,153 +1179,8 @@ void ols_hotkey_enable_callback_rerouting(bool enable)
 	unlock();
 }
 
-static void ols_set_key_translation(ols_key_t key, const char *translation)
-{
-	bfree(ols->hotkeys.translations[key]);
-	ols->hotkeys.translations[key] = NULL;
 
-	if (translation)
-		ols->hotkeys.translations[key] = bstrdup(translation);
-}
 
-void ols_hotkeys_set_translations_s(
-	struct ols_hotkeys_translations *translations, size_t size)
-{
-#define ADD_TRANSLATION(key_name, var_name) \
-	if (t.var_name)                     \
-		ols_set_key_translation(key_name, t.var_name);
-
-	struct ols_hotkeys_translations t = {0};
-	struct dstr numpad = {0};
-	struct dstr mouse = {0};
-	struct dstr button = {0};
-
-	if (!translations) {
-		return;
-	}
-
-	memcpy(&t, translations, (size < sizeof(t)) ? size : sizeof(t));
-
-	ADD_TRANSLATION(OLS_KEY_INSERT, insert);
-	ADD_TRANSLATION(OLS_KEY_DELETE, del);
-	ADD_TRANSLATION(OLS_KEY_HOME, home);
-	ADD_TRANSLATION(OLS_KEY_END, end);
-	ADD_TRANSLATION(OLS_KEY_PAGEUP, page_up);
-	ADD_TRANSLATION(OLS_KEY_PAGEDOWN, page_down);
-	ADD_TRANSLATION(OLS_KEY_NUMLOCK, num_lock);
-	ADD_TRANSLATION(OLS_KEY_SCROLLLOCK, scroll_lock);
-	ADD_TRANSLATION(OLS_KEY_CAPSLOCK, caps_lock);
-	ADD_TRANSLATION(OLS_KEY_BACKSPACE, backspace);
-	ADD_TRANSLATION(OLS_KEY_TAB, tab);
-	ADD_TRANSLATION(OLS_KEY_PRINT, print);
-	ADD_TRANSLATION(OLS_KEY_PAUSE, pause);
-	ADD_TRANSLATION(OLS_KEY_SHIFT, shift);
-	ADD_TRANSLATION(OLS_KEY_ALT, alt);
-	ADD_TRANSLATION(OLS_KEY_CONTROL, control);
-	ADD_TRANSLATION(OLS_KEY_META, meta);
-	ADD_TRANSLATION(OLS_KEY_MENU, menu);
-	ADD_TRANSLATION(OLS_KEY_SPACE, space);
-	ADD_TRANSLATION(OLS_KEY_ESCAPE, escape);
-#ifdef __APPLE__
-	const char *numpad_str = t.apple_keypad_num;
-	ADD_TRANSLATION(OLS_KEY_NUMSLASH, apple_keypad_divide);
-	ADD_TRANSLATION(OLS_KEY_NUMASTERISK, apple_keypad_multiply);
-	ADD_TRANSLATION(OLS_KEY_NUMMINUS, apple_keypad_minus);
-	ADD_TRANSLATION(OLS_KEY_NUMPLUS, apple_keypad_plus);
-	ADD_TRANSLATION(OLS_KEY_NUMPERIOD, apple_keypad_decimal);
-	ADD_TRANSLATION(OLS_KEY_NUMEQUAL, apple_keypad_equal);
-#else
-	const char *numpad_str = t.numpad_num;
-	ADD_TRANSLATION(OLS_KEY_NUMSLASH, numpad_divide);
-	ADD_TRANSLATION(OLS_KEY_NUMASTERISK, numpad_multiply);
-	ADD_TRANSLATION(OLS_KEY_NUMMINUS, numpad_minus);
-	ADD_TRANSLATION(OLS_KEY_NUMPLUS, numpad_plus);
-	ADD_TRANSLATION(OLS_KEY_NUMPERIOD, numpad_decimal);
-#endif
-
-	if (numpad_str) {
-		dstr_copy(&numpad, numpad_str);
-		dstr_depad(&numpad);
-
-		if (dstr_find(&numpad, "%1") == NULL) {
-			dstr_cat(&numpad, " %1");
-		}
-
-#define ADD_NUMPAD_NUM(idx)                \
-	dstr_copy_dstr(&button, &numpad);  \
-	dstr_replace(&button, "%1", #idx); \
-	ols_set_key_translation(OLS_KEY_NUM##idx, button.array)
-
-		ADD_NUMPAD_NUM(0);
-		ADD_NUMPAD_NUM(1);
-		ADD_NUMPAD_NUM(2);
-		ADD_NUMPAD_NUM(3);
-		ADD_NUMPAD_NUM(4);
-		ADD_NUMPAD_NUM(5);
-		ADD_NUMPAD_NUM(6);
-		ADD_NUMPAD_NUM(7);
-		ADD_NUMPAD_NUM(8);
-		ADD_NUMPAD_NUM(9);
-	}
-
-	if (t.mouse_num) {
-		dstr_copy(&mouse, t.mouse_num);
-		dstr_depad(&mouse);
-
-		if (dstr_find(&mouse, "%1") == NULL) {
-			dstr_cat(&mouse, " %1");
-		}
-
-#define ADD_MOUSE_NUM(idx)                 \
-	dstr_copy_dstr(&button, &mouse);   \
-	dstr_replace(&button, "%1", #idx); \
-	ols_set_key_translation(OLS_KEY_MOUSE##idx, button.array)
-
-		ADD_MOUSE_NUM(1);
-		ADD_MOUSE_NUM(2);
-		ADD_MOUSE_NUM(3);
-		ADD_MOUSE_NUM(4);
-		ADD_MOUSE_NUM(5);
-		ADD_MOUSE_NUM(6);
-		ADD_MOUSE_NUM(7);
-		ADD_MOUSE_NUM(8);
-		ADD_MOUSE_NUM(9);
-		ADD_MOUSE_NUM(10);
-		ADD_MOUSE_NUM(11);
-		ADD_MOUSE_NUM(12);
-		ADD_MOUSE_NUM(13);
-		ADD_MOUSE_NUM(14);
-		ADD_MOUSE_NUM(15);
-		ADD_MOUSE_NUM(16);
-		ADD_MOUSE_NUM(17);
-		ADD_MOUSE_NUM(18);
-		ADD_MOUSE_NUM(19);
-		ADD_MOUSE_NUM(20);
-		ADD_MOUSE_NUM(21);
-		ADD_MOUSE_NUM(22);
-		ADD_MOUSE_NUM(23);
-		ADD_MOUSE_NUM(24);
-		ADD_MOUSE_NUM(25);
-		ADD_MOUSE_NUM(26);
-		ADD_MOUSE_NUM(27);
-		ADD_MOUSE_NUM(28);
-		ADD_MOUSE_NUM(29);
-	}
-
-	dstr_free(&numpad);
-	dstr_free(&mouse);
-	dstr_free(&button);
-}
-
-const char *ols_get_hotkey_translation(ols_key_t key, const char *def)
-{
-	if (key == OLS_KEY_NONE) {
-		return NULL;
-	}
-
-	return ols->hotkeys.translations[key] ? ols->hotkeys.translations[key]
-					      : def;
-}
 
 void ols_hotkey_update_atomic(ols_hotkey_atomic_update_func func, void *data)
 {
@@ -1457,28 +1192,4 @@ void ols_hotkey_update_atomic(ols_hotkey_atomic_update_func func, void *data)
 	unlock();
 }
 
-void ols_hotkeys_set_audio_hotkeys_translations(const char *mute,
-						const char *unmute,
-						const char *push_to_mute,
-						const char *push_to_talk)
-{
-#define SET_T(n)               \
-	bfree(ols->hotkeys.n); \
-	ols->hotkeys.n = bstrdup(n)
-	SET_T(mute);
-	SET_T(unmute);
-	SET_T(push_to_mute);
-	SET_T(push_to_talk);
-#undef SET_T
-}
 
-void ols_hotkeys_set_sceneitem_hotkeys_translations(const char *show,
-						    const char *hide)
-{
-#define SET_T(n)                           \
-	bfree(ols->hotkeys.sceneitem_##n); \
-	ols->hotkeys.sceneitem_##n = bstrdup(n)
-	SET_T(show);
-	SET_T(hide);
-#undef SET_T
-}

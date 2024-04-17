@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -29,7 +29,7 @@
 #define ALIGNMENT 32
 
 /*
- * Attention, intrepid adventurers, exploring the depths of the libobs code!
+ * Attention, intrepid adventurers, exploring the depths of the libols code!
  *
  * There used to be a TODO comment here saying that we should use memalign on
  * non-Windows platforms. However, since *nix/POSIX systems do not provide an
@@ -104,7 +104,7 @@ void *bmalloc(size_t size)
 		blog(LOG_ERROR,
 		     "bmalloc: Allocating 0 bytes is broken behavior, please "
 		     "fix your code! This will crash in future versions of "
-		     "OBS.");
+		     "OLS.");
 		size = 1;
 	}
 
@@ -129,7 +129,7 @@ void *brealloc(void *ptr, size_t size)
 		blog(LOG_ERROR,
 		     "brealloc: Allocating 0 bytes is broken behavior, please "
 		     "fix your code! This will crash in future versions of "
-		     "OBS.");
+		     "OLS.");
 		size = 1;
 	}
 
@@ -171,7 +171,7 @@ void *bmemdup(const void *ptr, size_t size)
 	return out;
 }
 
-OBS_DEPRECATED void base_set_allocator(struct base_allocator *defs)
+OLS_DEPRECATED void base_set_allocator(struct base_allocator *defs)
 {
 	UNUSED_PARAMETER(defs);
 }

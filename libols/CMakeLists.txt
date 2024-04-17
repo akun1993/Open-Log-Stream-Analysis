@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22...3.25)
 
 legacy_check()
 
-include(cmake/obs-version.cmake)
+include(cmake/ols-version.cmake)
 
 find_package(Threads REQUIRED)
 
@@ -18,7 +18,7 @@ endif()
 
 find_package(jansson REQUIRED)
 
-if(NOT TARGET OBS::uthash)
+if(NOT TARGET OLS::uthash)
   add_subdirectory("${CMAKE_SOURCE_DIR}/deps/uthash" "${CMAKE_BINARY_DIR}/deps/uthash")
 endif()
 
@@ -28,53 +28,26 @@ add_library(OLS::libols ALIAS libols)
 target_sources(
   libols
   PRIVATE # cmake-format: sortable
-          $<$<BOOL:${ENABLE_HEVC}>:obs-hevc.c>
-          $<$<BOOL:${ENABLE_HEVC}>:obs-hevc.h>
-          obs-audio-controls.c
-          obs-audio-controls.h
-          obs-audio.c
-          obs-av1.c
-          obs-av1.h
-          obs-avc.c
-          obs-avc.h
-          obs-data.c
-          obs-data.h
-          obs-defs.h
-          obs-display.c
-          obs-encoder.c
-          obs-encoder.h
-          obs-ffmpeg-compat.h
-          obs-hotkey-name-map.c
-          obs-hotkey.c
-          obs-hotkey.h
-          obs-hotkeys.h
-          obs-interaction.h
-          obs-internal.h
-          obs-missing-files.c
-          obs-missing-files.h
-          obs-module.c
-          obs-module.h
-          obs-nal.c
-          obs-nal.h
-          obs-output-delay.c
-          obs-output.c
-          obs-output.h
-          obs-properties.c
-          obs-properties.h
-          obs-scene.c
-          obs-scene.h
-          obs-service.c
-          obs-service.h
-          obs-source-deinterlace.c
-          obs-source-transition.c
-          obs-source.c
-          obs-source.h
-          obs-video-gpu-encode.c
-          obs-video.c
-          obs-view.c
-          obs.c
-          obs.h
-          obs.hpp)
+          ols-data.c
+          ols-data.h
+          ols-defs.h
+          ols-hotkey-name-map.c
+          ols-hotkey.c
+          ols-hotkey.h
+          ols-hotkeys.h
+          ols-interaction.h
+          ols-internal.h
+          ols-module.c
+          ols-module.h
+          ols-output.c
+          ols-output.h
+          ols-properties.c
+          ols-properties.h
+          ols-source.c
+          ols-source.h
+          ols.c
+          ols.h
+          ols.hpp)
 
 target_sources(
   libols
@@ -97,7 +70,6 @@ target_sources(
           util/config-file.h
           util/crc32.c
           util/crc32.h
-          util/curl/curl-helper.h
           util/darray.h
           util/deque.h
           util/dstr.c
@@ -129,24 +101,6 @@ target_sources(
 target_sources(
   libols
   PRIVATE # cmake-format: sortable
-          util/simde/check.h
-          util/simde/debug-trap.h
-          util/simde/hedley.h
-          util/simde/simde-align.h
-          util/simde/simde-arch.h
-          util/simde/simde-common.h
-          util/simde/simde-constify.h
-          util/simde/simde-detect-clang.h
-          util/simde/simde-diagnostic.h
-          util/simde/simde-features.h
-          util/simde/simde-math.h
-          util/simde/x86/mmx.h
-          util/simde/x86/sse.h
-          util/simde/x86/sse2.h)
-
-target_sources(
-  libols
-  PRIVATE # cmake-format: sortable
           callback/calldata.c
           callback/calldata.h
           callback/decl.c
@@ -166,9 +120,9 @@ target_compile_definitions(
          $<BUILD_INTERFACE:$<$<BOOL:${ENABLE_FFMPEG_MUX_DEBUG}>:SHOW_SUBPROCESSES>>)
 
 target_link_libraries(
-  libobs
+  libols
   PRIVATE OLS::uthash
-          OLS::libobs-version
+          OLS::libols-version
           jansson::jansson
           ZLIB::ZLIB
   PUBLIC Threads::Threads)
@@ -183,12 +137,12 @@ elseif(OS_FREEBSD OR OS_OPENBSD)
   include(cmake/os-freebsd.cmake)
 endif()
 
-configure_file(obsconfig.h.in "${CMAKE_BINARY_DIR}/config/obsconfig.h" @ONLY)
+configure_file(olsconfig.h.in "${CMAKE_BINARY_DIR}/config/olsconfig.h" @ONLY)
 
-target_include_directories(libobs PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
+target_include_directories(libols PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
                                          "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
 
-target_compile_definitions(libobs PUBLIC HAVE_OBSCONFIG_H)
+target_compile_definitions(libols PUBLIC HAVE_OLSCONFIG_H)
 
 set(public_headers
     # cmake-format: sortable
@@ -196,23 +150,19 @@ set(public_headers
     callback/decl.h
     callback/proc.h
     callback/signal.h
-    obs-config.h
-    obs-data.h
-    obs-defs.h
-    obs-encoder.h
-    obs-hotkey.h
-    obs-hotkeys.h
-    obs-interaction.h
-    obs-missing-files.h
-    obs-module.h
-    obs-nal.h
-    obs-nix-platform.h
-    obs-output.h
-    obs-properties.h
-    obs-service.h
-    obs-source.h
-    obs.h
-    obs.hpp
+    ols-config.h
+    ols-data.h
+    ols-defs.h
+    ols-hotkey.h
+    ols-hotkeys.h
+    ols-interaction.h
+    ols-module.h
+    ols-nix-platform.h
+    ols-output.h
+    ols-properties.h
+    ols-source.h
+    ols.h
+    ols.hpp
     util/apple/cfstring-utils.h
     util/array-serializer.h
     util/base.h
@@ -235,21 +185,6 @@ set(public_headers
     util/profiler.h
     util/profiler.hpp
     util/serializer.h
-    util/simde/check.h
-    util/simde/debug-trap.h
-    util/simde/hedley.h
-    util/simde/simde-align.h
-    util/simde/simde-arch.h
-    util/simde/simde-common.h
-    util/simde/simde-constify.h
-    util/simde/simde-detect-clang.h
-    util/simde/simde-diagnostic.h
-    util/simde/simde-features.h
-    util/simde/simde-math.h
-    util/simde/x86/mmx.h
-    util/simde/x86/sse.h
-    util/simde/x86/sse2.h
-    util/sse-intrin.h
     util/task.h
     util/text-lookup.h
     util/threading-posix.h
@@ -268,15 +203,14 @@ set(public_headers
     util/windows/window-helpers.h
     util/windows/WinHandle.hpp)
 
-
 # cmake-format: off
-set_property(TARGET libobs APPEND PROPERTY OBS_PUBLIC_HEADERS ${public_headers})
+set_property(TARGET libols APPEND PROPERTY OLS_PUBLIC_HEADERS ${public_headers})
 
-set_target_properties_obs(
-  libobs
+set_target_properties_ols(
+  libols
   PROPERTIES FOLDER core
              VERSION 0
-             SOVERSION "${OBS_VERSION_MAJOR}")
+             SOVERSION "${OLS_VERSION_MAJOR}")
 # cmake-format: on
 
-target_export(libobs)
+target_export(libols)

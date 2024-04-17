@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -24,25 +24,25 @@
 #define UNUSED_PARAMETER(param) (void)param
 
 #ifdef _MSC_VER
-#define _OBS_DEPRECATED __declspec(deprecated)
-#define OBS_NORETURN __declspec(noreturn)
+#define _OLS_DEPRECATED __declspec(deprecated)
+#define OLS_NORETURN __declspec(noreturn)
 #define FORCE_INLINE __forceinline
 #else
-#define _OBS_DEPRECATED __attribute__((deprecated))
-#define OBS_NORETURN __attribute__((noreturn))
+#define _OLS_DEPRECATED __attribute__((deprecated))
+#define OLS_NORETURN __attribute__((noreturn))
 #define FORCE_INLINE inline __attribute__((always_inline))
 #endif
 
 #if defined(SWIG_TYPE_TABLE)
-#define OBS_DEPRECATED
+#define OLS_DEPRECATED
 #else
-#define OBS_DEPRECATED _OBS_DEPRECATED
+#define OLS_DEPRECATED _OLS_DEPRECATED
 #endif
 
-#if defined(IS_LIBOBS)
-#define OBS_EXTERNAL_DEPRECATED
+#if defined(IS_LIBOLS)
+#define OLS_EXTERNAL_DEPRECATED
 #else
-#define OBS_EXTERNAL_DEPRECATED OBS_DEPRECATED
+#define OLS_EXTERNAL_DEPRECATED OLS_DEPRECATED
 #endif
 
 #ifdef _MSC_VER

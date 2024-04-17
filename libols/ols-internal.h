@@ -16,7 +16,7 @@
 ******************************************************************************/
 
 #pragma once
-
+#include <stdbool.h> 
 #include "util/c99defs.h"
 #include "util/darray.h"
 #include "util/deque.h"
@@ -308,6 +308,14 @@ struct ols_context_data {
 	struct ols_weak_object *control;
 	ols_destroy_cb destroy;
 
+	DARRAY(ols_hotkey_id) hotkeys;
+	DARRAY(ols_hotkey_pair_id) hotkey_pairs;
+	ols_data_t *hotkey_data;
+
+	pthread_mutex_t *mutex;
+
+	UT_hash_handle hh;
+	UT_hash_handle hh_uuid;
 	bool private;
 };
 
@@ -488,14 +496,9 @@ struct ols_weak_output {
 struct ols_output {
 	struct ols_context_data context;
 	struct ols_output_info info;
-
 	/* indicates ownership of the info.id buffer */
 	bool owns_info_id;
-
-
 	volatile bool data_active;
-
-
 	int stop_code;
 
 	int reconnect_retry_sec;
@@ -529,7 +532,6 @@ static inline void do_output_signal(struct ols_output *output,
 	calldata_free(&params);
 }
 
-extern void process_delay(void *data, struct encoder_packet *packet);
 extern void ols_output_cleanup_delay(ols_output_t *output);
 extern bool ols_output_delay_start(ols_output_t *output);
 extern void ols_output_delay_stop(ols_output_t *output);

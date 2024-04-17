@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "obsconfig.h"
+#include "olsconfig.h"
 
 #if !defined(__APPLE__)
 #define _GNU_SOURCE
@@ -149,9 +149,9 @@ bool has_qt5_dependency(const char *path)
 }
 #endif
 
-void get_plugin_info(const char *path, bool *is_obs_plugin, bool *can_load)
+void get_plugin_info(const char *path, bool *is_ols_plugin, bool *can_load)
 {
-	*is_obs_plugin = true;
+	*is_ols_plugin = true;
 	*can_load = true;
 #if !defined(__APPLE__)
 	*can_load = !has_qt5_dependency(path);
@@ -159,7 +159,7 @@ void get_plugin_info(const char *path, bool *is_obs_plugin, bool *can_load)
 	UNUSED_PARAMETER(path);
 }
 
-bool os_is_obs_plugin(const char *path)
+bool os_is_ols_plugin(const char *path)
 {
 	UNUSED_PARAMETER(path);
 

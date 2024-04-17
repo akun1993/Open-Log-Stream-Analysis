@@ -1,4 +1,4 @@
-# OBS CMake macOS build dependencies module
+# OLS CMake macOS build dependencies module
 
 include_guard(GLOBAL)
 
@@ -13,9 +13,9 @@ function(_check_dependencies_macos)
 
   set(dependencies_dir "${CMAKE_CURRENT_SOURCE_DIR}/.deps")
   set(prebuilt_filename "macos-deps-VERSION-ARCH-REVISION.tar.xz")
-  set(prebuilt_destination "obs-deps-VERSION-ARCH")
+  set(prebuilt_destination "ols-deps-VERSION-ARCH")
   set(qt6_filename "macos-deps-qt6-VERSION-ARCH-REVISION.tar.xz")
-  set(qt6_destination "obs-deps-qt6-VERSION-ARCH")
+  set(qt6_destination "ols-deps-qt6-VERSION-ARCH")
   set(cef_filename "cef_binary_VERSION_macos_ARCH_REVISION.tar.xz")
   set(cef_destination "cef_binary_VERSION_macos_ARCH")
   set(dependencies_list prebuilt qt6 cef)

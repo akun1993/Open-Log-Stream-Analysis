@@ -770,12 +770,6 @@ void ols_register_source_s(const struct ols_source_info *info, size_t size)
 		goto error;
 	}
 
-	if (get_source_info2(info->id, info->version)) {
-		source_warn("Source '%s' already exists!  "
-			    "Duplicate library?",
-			    info->id);
-		goto error;
-	}
 
 	if (size > sizeof(data)) {
 		source_warn("Tried to register ols_source_info with size "
@@ -789,7 +783,6 @@ void ols_register_source_s(const struct ols_source_info *info, size_t size)
 	memcpy(&data, info, size);
 
 	/* version-related stuff */
-	data.unversioned_id = data.id;
 	if (data.version) {
 		struct dstr versioned_id = {0};
 		dstr_printf(&versioned_id, "%s_v%d", data.id,
@@ -838,27 +831,3 @@ error:
 }
 
 
-
-void ols_register_service_s(const struct ols_service_info *info, size_t size)
-{
-	if (find_service(info->id)) {
-		service_warn("Service id '%s' already exists!  "
-			     "Duplicate library?",
-			     info->id);
-		goto error;
-	}
-
-#define CHECK_REQUIRED_VAL_(info, val, func) \
-	CHECK_REQUIRED_VAL(struct ols_service_info, info, val, func)
-	CHECK_REQUIRED_VAL_(info, get_name, ols_register_service);
-	CHECK_REQUIRED_VAL_(info, create, ols_register_service);
-	CHECK_REQUIRED_VAL_(info, destroy, ols_register_service);
-	CHECK_REQUIRED_VAL_(info, get_protocol, ols_register_service);
-#undef CHECK_REQUIRED_VAL_
-
-	REGISTER_OLS_DEF(size, ols_service_info, ols->service_types, info);
-	return;
-
-error:
-	HANDLE_ERROR(size, ols_service_info, info);
-}

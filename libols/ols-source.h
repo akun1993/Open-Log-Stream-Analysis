@@ -35,6 +35,19 @@ enum ols_source_type {
 	OLS_SOURCE_TYPE_FILTER,
 };
 
+enum ols_icon_type {
+	OLS_ICON_TYPE_UNKNOWN,
+	OLS_ICON_TYPE_TEXT,
+	OLS_ICON_TYPE_CUSTOM,
+};
+/**
+ * Source should not be fully duplicated
+ *
+ * When this is used, specifies that the source should not be fully duplicated,
+ * and should prefer to duplicate via holding references rather than full
+ * duplication.
+ */
+#define OLS_SOURCE_DO_NOT_DUPLICATE (1 << 0)
 
 /**
  * Source definition structure
@@ -52,6 +65,9 @@ struct ols_source_info {
 	 * OLS_SOURCE_TYPE_INPUT for input sources,
 	 */
 	enum ols_source_type type;
+
+		/** Source output flags */
+	uint32_t output_flags;
 
 	/**
 	 * Get the translated name of the source type
@@ -73,7 +89,7 @@ struct ols_source_info {
 	/**
 	 * Destroys the private data for the source
 	 *
-	 * Async sources must not call obs_source_output_video after returning
+	 * Async sources must not call ols_source_output_video after returning
 	 * from destroy
 	 */
 	void (*destroy)(void *data);
@@ -88,7 +104,7 @@ struct ols_source_info {
 	 * @param[out]  settings  Data to assign default settings to
 	 * @deprecated            Use get_defaults2 if type_data is needed
 	 */
-	void (*get_defaults)(obs_data_t *settings);
+	void (*get_defaults)(ols_data_t *settings);
 
 	/**
 	 * Gets the property information of this source
@@ -98,6 +114,14 @@ struct ols_source_info {
 	 */
 	ols_properties_t *(*get_properties)(void *data);
 
+
+	/**
+	 * Updates the settings for this source
+	 *
+	 * @param data      Source data
+	 * @param settings  New settings for this source
+	 */
+	void (*update)(void *data, ols_data_t *settings);
 
 	/** Called when the source has been activated in the main view */
 	void (*activate)(void *data);
@@ -139,11 +163,15 @@ struct ols_source_info {
 	 * Private data associated with this entry
 	 */
 	void *type_data;
-
+	/** Icon type for the source */
+	enum ols_icon_type icon_type;
 	/**
 	 * If defined, called to free private data on shutdown
 	 */
 	void (*free_type_data)(void *type_data);
+
+
+	uint32_t version; /* increment if needed to specify a new version */
 };
 
 EXPORT void ols_register_source_s(const struct ols_source_info *info,

@@ -34,10 +34,6 @@ static inline bool data_valid(const struct ols_source *source, const char *f)
 	return ols_source_valid(source, f) && source->context.data;
 }
 
-static inline bool deinterlacing_enabled(const struct ols_source *source)
-{
-	return source->deinterlace_mode != OLS_DEINTERLACE_MODE_DISABLE;
-}
 
 static inline bool destroying(const struct ols_source *source)
 {
@@ -55,18 +51,7 @@ struct ols_source_info *get_source_info(const char *id)
 	return NULL;
 }
 
-struct ols_source_info *get_source_info2(const char *unversioned_id,
-					 uint32_t ver)
-{
-	for (size_t i = 0; i < ols->source_types.num; i++) {
-		struct ols_source_info *info = &ols->source_types.array[i];
-		if (strcmp(info->unversioned_id, unversioned_id) == 0 &&
-		    info->version == ver)
-			return info;
-	}
 
-	return NULL;
-}
 
 static const char *source_signals[] = {
 	"void destroy(ptr source)",
@@ -113,48 +98,10 @@ extern char *find_libols_data_file(const char *file);
 /* internal initialization */
 static bool ols_source_init(struct ols_source *source)
 {
-	source->user_volume = 1.0f;
-	source->volume = 1.0f;
-	source->sync_offset = 0;
-	source->balance = 0.5f;
-
-	pthread_mutex_init_value(&source->filter_mutex);
-	pthread_mutex_init_value(&source->async_mutex);
-	pthread_mutex_init_value(&source->caption_cb_mutex);
-
-
-	if (pthread_mutex_init_recursive(&source->filter_mutex) != 0)
-		return false;
-	if (pthread_mutex_init(&source->audio_buf_mutex, NULL) != 0)
-		return false;
-	if (pthread_mutex_init(&source->audio_actions_mutex, NULL) != 0)
-		return false;
-	if (pthread_mutex_init(&source->audio_cb_mutex, NULL) != 0)
-		return false;
-	if (pthread_mutex_init(&source->audio_mutex, NULL) != 0)
-		return false;
-	if (pthread_mutex_init_recursive(&source->async_mutex) != 0)
-		return false;
-	if (pthread_mutex_init(&source->caption_cb_mutex, NULL) != 0)
-		return false;
-	if (pthread_mutex_init(&source->media_actions_mutex, NULL) != 0)
-		return false;
-
-	if (is_audio_source(source) || is_composite_source(source))
-		allocate_audio_output_buffer(source);
-	if (source->info.audio_mix)
-		allocate_audio_mix_buffer(source);
-
-	if (source->info.type == OLS_SOURCE_TYPE_TRANSITION) {
-		if (!ols_transition_init(source))
-			return false;
-	}
 
 	ols_context_init_control(&source->context, source,
 				 (ols_destroy_cb)ols_source_destroy);
 
-	source->deinterlace_top_first = true;
-	source->audio_mixers = 0xFF;
 
 	source->private_settings = ols_data_create();
 	return true;
@@ -162,18 +109,7 @@ static bool ols_source_init(struct ols_source *source)
 
 static void ols_source_init_finalize(struct ols_source *source)
 {
-	if (is_audio_source(source)) {
-		pthread_mutex_lock(&ols->data.audio_sources_mutex);
 
-		source->next_audio_source = ols->data.first_audio_source;
-		source->prev_next_audio_source = &ols->data.first_audio_source;
-		if (ols->data.first_audio_source)
-			ols->data.first_audio_source->prev_next_audio_source =
-				&source->next_audio_source;
-		ols->data.first_audio_source = source;
-
-		pthread_mutex_unlock(&ols->data.audio_sources_mutex);
-	}
 
 	if (!source->context.private) {
 		ols_context_data_insert_name(&source->context,
@@ -198,7 +134,6 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
 
 		source->info.id = bstrdup(id);
 		source->owns_info_id = true;
-		source->info.unversioned_id = bstrdup(source->info.id);
 	} else {
 		source->info = *info;
 
@@ -210,9 +145,6 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
 		private = true;
 	}
 
-	source->mute_unmute_key = OLS_INVALID_HOTKEY_PAIR_ID;
-	source->push_to_mute_key = OLS_INVALID_HOTKEY_ID;
-	source->push_to_talk_key = OLS_INVALID_HOTKEY_ID;
 	source->last_ols_ver = last_ols_ver;
 
 	if (!ols_source_init_context(source, settings, name, uuid, hotkey_data,
@@ -223,17 +155,12 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
 		if (info->get_defaults) {
 			info->get_defaults(source->context.settings);
 		}
-		if (info->get_defaults2) {
-			info->get_defaults2(info->type_data,
-					    source->context.settings);
-		}
+
 	}
 
 	if (!ols_source_init(source))
 		goto fail;
 
-	if (!private)
-		ols_source_init_audio_hotkeys(source);
 
 	/* allow the source to be created even if creation fails so that the
 	 * user's data doesn't become lost */
@@ -287,97 +214,7 @@ ols_source_t *ols_source_create_set_last_ver(const char *id, const char *name,
 					  is_private, last_ols_ver);
 }
 
-static char *get_new_filter_name(ols_source_t *dst, const char *name)
-{
-	struct dstr new_name = {0};
-	int inc = 0;
 
-	dstr_copy(&new_name, name);
-
-	for (;;) {
-		ols_source_t *existing_filter =
-			ols_source_get_filter_by_name(dst, new_name.array);
-		if (!existing_filter)
-			break;
-
-		ols_source_release(existing_filter);
-
-		dstr_printf(&new_name, "%s %d", name, ++inc + 1);
-	}
-
-	return new_name.array;
-}
-
-static void duplicate_filters(ols_source_t *dst, ols_source_t *src,
-			      bool private)
-{
-	DARRAY(ols_source_t *) filters;
-
-	da_init(filters);
-
-	pthread_mutex_lock(&src->filter_mutex);
-	da_reserve(filters, src->filters.num);
-	for (size_t i = 0; i < src->filters.num; i++) {
-		ols_source_t *s = ols_source_get_ref(src->filters.array[i]);
-		if (s)
-			da_push_back(filters, &s);
-	}
-	pthread_mutex_unlock(&src->filter_mutex);
-
-	for (size_t i = filters.num; i > 0; i--) {
-		ols_source_t *src_filter = filters.array[i - 1];
-		char *new_name =
-			get_new_filter_name(dst, src_filter->context.name);
-		bool enabled = ols_source_enabled(src_filter);
-
-		ols_source_t *dst_filter =
-			ols_source_duplicate(src_filter, new_name, private);
-		ols_source_set_enabled(dst_filter, enabled);
-
-		bfree(new_name);
-		ols_source_filter_add(dst, dst_filter);
-		ols_source_release(dst_filter);
-		ols_source_release(src_filter);
-	}
-
-	da_free(filters);
-}
-
-void ols_source_copy_filters(ols_source_t *dst, ols_source_t *src)
-{
-	if (!ols_source_valid(dst, "ols_source_copy_filters"))
-		return;
-	if (!ols_source_valid(src, "ols_source_copy_filters"))
-		return;
-
-	duplicate_filters(dst, src, dst->context.private);
-}
-
-static void duplicate_filter(ols_source_t *dst, ols_source_t *filter)
-{
-	if (!filter_compatible(dst, filter))
-		return;
-
-	char *new_name = get_new_filter_name(dst, filter->context.name);
-	bool enabled = ols_source_enabled(filter);
-
-	ols_source_t *dst_filter = ols_source_duplicate(filter, new_name, true);
-	ols_source_set_enabled(dst_filter, enabled);
-
-	bfree(new_name);
-	ols_source_filter_add(dst, dst_filter);
-	ols_source_release(dst_filter);
-}
-
-void ols_source_copy_single_filter(ols_source_t *dst, ols_source_t *filter)
-{
-	if (!ols_source_valid(dst, "ols_source_copy_single_filter"))
-		return;
-	if (!ols_source_valid(filter, "ols_source_copy_single_filter"))
-		return;
-
-	duplicate_filter(dst, filter);
-}
 
 ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name,
 				   bool create_private)
@@ -406,8 +243,6 @@ ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name,
 
 	ols_data_apply(new_source->private_settings, source->private_settings);
 
-	if (source->info.type != OLS_SOURCE_TYPE_FILTER)
-		duplicate_filters(new_source, source, create_private);
 
 	ols_data_release(settings);
 	return new_source;
@@ -463,7 +298,6 @@ static void ols_source_destroy_defer(struct ols_source *source)
 
 	if (source->owns_info_id) {
 		bfree((void *)source->info.id);
-		bfree((void *)source->info.unversioned_id);
 	}
 
 	bfree(source);
@@ -576,9 +410,7 @@ bool ols_source_removed(const ols_source_t *source)
 static inline ols_data_t *get_defaults(const struct ols_source_info *info)
 {
 	ols_data_t *settings = ols_data_create();
-	if (info->get_defaults2)
-		info->get_defaults2(info->type_data, settings);
-	else if (info->get_defaults)
+	if (info->get_defaults)
 		info->get_defaults(settings);
 	return settings;
 }
@@ -598,14 +430,12 @@ ols_data_t *ols_get_source_defaults(const char *id)
 ols_properties_t *ols_get_source_properties(const char *id)
 {
 	const struct ols_source_info *info = get_source_info(id);
-	if (info && (info->get_properties || info->get_properties2)) {
+	if (info && info->get_properties) {
 		ols_data_t *defaults = get_defaults(info);
 		ols_properties_t *props;
 
-		if (info->get_properties2)
-			props = info->get_properties2(NULL, info->type_data);
-		else
-			props = info->get_properties(NULL);
+
+		props = info->get_properties(NULL);
 
 		ols_properties_apply_settings(props, defaults);
 		ols_data_release(defaults);
@@ -618,13 +448,13 @@ ols_properties_t *ols_get_source_properties(const char *id)
 bool ols_is_source_configurable(const char *id)
 {
 	const struct ols_source_info *info = get_source_info(id);
-	return info && (info->get_properties || info->get_properties2);
+	return info && (info->get_properties);
 }
 
 bool ols_source_configurable(const ols_source_t *source)
 {
 	return data_valid(source, "ols_source_configurable") &&
-	       (source->info.get_properties || source->info.get_properties2);
+	       (source->info.get_properties );
 }
 
 ols_properties_t *ols_source_properties(const ols_source_t *source)
@@ -632,14 +462,7 @@ ols_properties_t *ols_source_properties(const ols_source_t *source)
 	if (!data_valid(source, "ols_source_properties"))
 		return NULL;
 
-	if (source->info.get_properties2) {
-		ols_properties_t *props;
-		props = source->info.get_properties2(source->context.data,
-						     source->info.type_data);
-		ols_properties_apply_settings(props, source->context.settings);
-		return props;
-
-	} else if (source->info.get_properties) {
+	if (source->info.get_properties) {
 		ols_properties_t *props;
 		props = source->info.get_properties(source->context.data);
 		ols_properties_apply_settings(props, source->context.settings);
@@ -649,30 +472,8 @@ ols_properties_t *ols_source_properties(const ols_source_t *source)
 	return NULL;
 }
 
-uint32_t ols_source_get_output_flags(const ols_source_t *source)
-{
-	return ols_source_valid(source, "ols_source_get_output_flags")
-		       ? source->info.output_flags
-		       : 0;
-}
 
-uint32_t ols_get_source_output_flags(const char *id)
-{
-	const struct ols_source_info *info = get_source_info(id);
-	return info ? info->output_flags : 0;
-}
 
-static void ols_source_deferred_update(ols_source_t *source)
-{
-	if (source->context.data && source->info.update) {
-		long count = os_atomic_load_long(&source->defer_update_count);
-		source->info.update(source->context.data,
-				    source->context.settings);
-		os_atomic_compare_swap_long(&source->defer_update_count, count,
-					    0);
-		ols_source_dosignal(source, "source_update", "update");
-	}
-}
 
 void ols_source_update(ols_source_t *source, ols_data_t *settings)
 {
@@ -757,38 +558,6 @@ static void hide_tree(ols_source_t *parent, ols_source_t *child, void *param)
 	UNUSED_PARAMETER(param);
 }
 
-void ols_source_activate(ols_source_t *source, enum view_type type)
-{
-	if (!ols_source_valid(source, "ols_source_activate"))
-		return;
-
-	os_atomic_inc_long(&source->show_refs);
-	ols_source_enum_active_tree(source, show_tree, NULL);
-
-	if (type == MAIN_VIEW) {
-		os_atomic_inc_long(&source->activate_refs);
-		ols_source_enum_active_tree(source, activate_tree, NULL);
-	}
-}
-
-void ols_source_deactivate(ols_source_t *source, enum view_type type)
-{
-	if (!ols_source_valid(source, "ols_source_deactivate"))
-		return;
-
-	if (os_atomic_load_long(&source->show_refs) > 0) {
-		os_atomic_dec_long(&source->show_refs);
-		ols_source_enum_active_tree(source, hide_tree, NULL);
-	}
-
-	if (type == MAIN_VIEW) {
-		if (os_atomic_load_long(&source->activate_refs) > 0) {
-			os_atomic_dec_long(&source->activate_refs);
-			ols_source_enum_active_tree(source, deactivate_tree,
-						    NULL);
-		}
-	}
-}
 
 
 static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2)
@@ -865,12 +634,6 @@ const char *ols_source_get_id(const ols_source_t *source)
 							     : NULL;
 }
 
-const char *ols_source_get_unversioned_id(const ols_source_t *source)
-{
-	return ols_source_valid(source, "ols_source_get_unversioned_id")
-		       ? source->info.unversioned_id
-		       : NULL;
-}
 
 
 signal_handler_t *ols_source_get_signal_handler(const ols_source_t *source)

@@ -1,4 +1,4 @@
-# OBS CMake common helper functions module
+# OLS CMake common helper functions module
 
 # cmake-format: off
 # cmake-lint: disable=C0103
@@ -21,62 +21,62 @@ function(message_configuration)
     "                / _ \\| '_ \\/ __|_____/ __| __| | | |/ _` | |/ _ \\ \n"
     "               | (_) | |_) \\__ \\_____\\__ \\ |_| |_| | (_| | | (_) |\n"
     "                \\___/|_.__/|___/     |___/\\__|\\__,_|\\__,_|_|\\___/ \n"
-    "\nOBS:  Application Version: ${OBS_VERSION} - Build Number: ${OBS_BUILD_NUMBER}\n"
+    "\nOLS:  Application Version: ${OLS_VERSION} - Build Number: ${OLS_BUILD_NUMBER}\n"
     "==================================================================================\n\n")
 
-  get_property(OBS_FEATURES_ENABLED GLOBAL PROPERTY OBS_FEATURES_ENABLED)
+  get_property(OLS_FEATURES_ENABLED GLOBAL PROPERTY OLS_FEATURES_ENABLED)
   list(
-    SORT OBS_FEATURES_ENABLED
+    SORT OLS_FEATURES_ENABLED
     COMPARE NATURAL
     CASE SENSITIVE
     ORDER ASCENDING)
 
-  if(OBS_FEATURES_ENABLED)
+  if(OLS_FEATURES_ENABLED)
     message(NOTICE "------------------------       Enabled Features           ------------------------")
-    foreach(feature IN LISTS OBS_FEATURES_ENABLED)
+    foreach(feature IN LISTS OLS_FEATURES_ENABLED)
       message(NOTICE " - ${feature}")
     endforeach()
   endif()
 
-  get_property(OBS_FEATURES_DISABLED GLOBAL PROPERTY OBS_FEATURES_DISABLED)
+  get_property(OLS_FEATURES_DISABLED GLOBAL PROPERTY OLS_FEATURES_DISABLED)
   list(
-    SORT OBS_FEATURES_DISABLED
+    SORT OLS_FEATURES_DISABLED
     COMPARE NATURAL
     CASE SENSITIVE
     ORDER ASCENDING)
 
-  if(OBS_FEATURES_DISABLED)
+  if(OLS_FEATURES_DISABLED)
     message(NOTICE "------------------------       Disabled Features          ------------------------")
-    foreach(feature IN LISTS OBS_FEATURES_DISABLED)
+    foreach(feature IN LISTS OLS_FEATURES_DISABLED)
       message(NOTICE " - ${feature}")
     endforeach()
   endif()
 
   if(ENABLE_PLUGINS)
-    get_property(OBS_MODULES_ENABLED GLOBAL PROPERTY OBS_MODULES_ENABLED)
+    get_property(OLS_MODULES_ENABLED GLOBAL PROPERTY OLS_MODULES_ENABLED)
     list(
-      SORT OBS_MODULES_ENABLED
+      SORT OLS_MODULES_ENABLED
       COMPARE NATURAL
       CASE SENSITIVE
       ORDER ASCENDING)
 
-    if(OBS_MODULES_ENABLED)
+    if(OLS_MODULES_ENABLED)
       message(NOTICE "------------------------        Enabled Modules           ------------------------")
-      foreach(feature IN LISTS OBS_MODULES_ENABLED)
+      foreach(feature IN LISTS OLS_MODULES_ENABLED)
         message(NOTICE " - ${feature}")
       endforeach()
     endif()
 
-    get_property(OBS_MODULES_DISABLED GLOBAL PROPERTY OBS_MODULES_DISABLED)
+    get_property(OLS_MODULES_DISABLED GLOBAL PROPERTY OLS_MODULES_DISABLED)
     list(
-      SORT OBS_MODULES_DISABLED
+      SORT OLS_MODULES_DISABLED
       COMPARE NATURAL
       CASE SENSITIVE
       ORDER ASCENDING)
 
-    if(OBS_MODULES_DISABLED)
+    if(OLS_MODULES_DISABLED)
       message(NOTICE "------------------------        Disabled Modules          ------------------------")
-      foreach(feature IN LISTS OBS_MODULES_DISABLED)
+      foreach(feature IN LISTS OLS_MODULES_DISABLED)
         message(NOTICE " - ${feature}")
       endforeach()
     endif()
@@ -86,7 +86,7 @@ endfunction()
 
 # target_enable_feature: Adds feature to list of enabled application features and sets optional compile definitions
 function(target_enable_feature target feature_description)
-  set_property(GLOBAL APPEND PROPERTY OBS_FEATURES_ENABLED "${feature_description}")
+  set_property(GLOBAL APPEND PROPERTY OLS_FEATURES_ENABLED "${feature_description}")
 
   if(ARGN)
     target_compile_definitions(${target} PRIVATE ${ARGN})
@@ -95,7 +95,7 @@ endfunction()
 
 # target_disable_feature: Adds feature to list of disabled application features and sets optional compile definitions
 function(target_disable_feature target feature_description)
-  set_property(GLOBAL APPEND PROPERTY OBS_FEATURES_DISABLED "${feature_description}")
+  set_property(GLOBAL APPEND PROPERTY OLS_FEATURES_DISABLED "${feature_description}")
 
   if(ARGN)
     target_compile_definitions(${target} PRIVATE ${ARGN})
@@ -104,7 +104,7 @@ endfunction()
 
 # target_disable: Adds target to list of disabled modules
 function(target_disable target)
-  set_property(GLOBAL APPEND PROPERTY OBS_MODULES_DISABLED ${target})
+  set_property(GLOBAL APPEND PROPERTY OLS_MODULES_DISABLED ${target})
 endfunction()
 
 # find_qt: Macro to find best possible Qt version for use with the project:
@@ -304,9 +304,6 @@ function(find_qt_plugins)
   list(APPEND qt_plugins_Gui platforminputcontexts virtualkeyboard)
   list(APPEND qt_plugins_Network bearer)
   list(APPEND qt_plugins_Sql sqldrivers)
-  list(APPEND qt_plugins_Multimedia mediaservice audio)
-  list(APPEND qt_plugins_3dRender sceneparsers geometryloaders)
-  list(APPEND qt_plugins_3dQuickRender renderplugins)
   list(APPEND qt_plugins_Positioning position)
   list(APPEND qt_plugins_Location geoservices)
   list(APPEND qt_plugins_TextToSpeech texttospeech)
@@ -360,20 +357,20 @@ function(target_export target)
     set(package_destination "Frameworks/${target}.framework/Resources/cmake")
     set(include_destination "Frameworks/${target}.framework/Headers")
   else()
-    set(package_destination "${OBS_CMAKE_DESTINATION}/${target}")
-    set(include_destination "${OBS_INCLUDE_DESTINATION}")
+    set(package_destination "${OLS_CMAKE_DESTINATION}/${target}")
+    set(include_destination "${OLS_INCLUDE_DESTINATION}")
   endif()
 
   install(
     TARGETS ${target}
     EXPORT ${target}Targets
-    RUNTIME DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+    RUNTIME DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
             COMPONENT Development
             ${exclude_variant}
-    LIBRARY DESTINATION "${OBS_LIBRARY_DESTINATION}"
+    LIBRARY DESTINATION "${OLS_LIBRARY_DESTINATION}"
             COMPONENT Development
             ${exclude_variant}
-    ARCHIVE DESTINATION "${OBS_LIBRARY_DESTINATION}"
+    ARCHIVE DESTINATION "${OLS_LIBRARY_DESTINATION}"
             COMPONENT Development
             ${exclude_variant}
     FRAMEWORK DESTINATION Frameworks
@@ -386,10 +383,10 @@ function(target_export target)
       COMPONENT Development
       ${exclude_variant})
 
-  get_target_property(obs_public_headers ${target} OBS_PUBLIC_HEADERS)
+  get_target_property(ols_public_headers ${target} OLS_PUBLIC_HEADERS)
 
-  if(obs_public_headers)
-    foreach(header IN LISTS obs_public_headers)
+  if(ols_public_headers)
+    foreach(header IN LISTS ols_public_headers)
       cmake_path(GET header PARENT_PATH header_dir)
       if(header_dir)
         if(NOT ${header_dir} IN_LIST header_dirs)
@@ -418,9 +415,9 @@ function(target_export target)
     endif()
   endif()
 
-  if(target STREQUAL libobs AND NOT EXISTS "${include_destination}/obsconfig.h")
+  if(target STREQUAL libols AND NOT EXISTS "${include_destination}/olsconfig.h")
     install(
-      FILES "${CMAKE_BINARY_DIR}/config/obsconfig.h"
+      FILES "${CMAKE_BINARY_DIR}/config/olsconfig.h"
       DESTINATION "${include_destination}"
       COMPONENT Development
       ${exclude_variant})
@@ -451,20 +448,20 @@ function(target_export target)
   message(DEBUG "Generating CMake package version configuration file ${target}ConfigVersion.cmake...")
   write_basic_package_version_file(
     "${target}ConfigVersion.cmake"
-    VERSION ${OBS_VERSION_CANONICAL}
+    VERSION ${OLS_VERSION_CANONICAL}
     COMPATIBILITY SameMajorVersion)
 
   export(
     EXPORT ${target}Targets
     FILE "${TARGETS_EXPORT_NAME}.cmake"
-    NAMESPACE OBS::)
+    NAMESPACE OLS::)
 
   export(PACKAGE ${target})
 
   install(
     EXPORT ${TARGETS_EXPORT_NAME}
     FILE ${TARGETS_EXPORT_NAME}.cmake
-    NAMESPACE OBS::
+    NAMESPACE OLS::
     DESTINATION "${package_destination}"
     COMPONENT Development
     ${exclude_variant})
@@ -513,13 +510,13 @@ endfunction()
 
 # legacy_check: Check if new CMake framework was not enabled and load legacy rules instead
 macro(legacy_check)
-  if(OBS_CMAKE_VERSION VERSION_LESS 3.0.0)
+  if(OLS_CMAKE_VERSION VERSION_LESS 3.0.0)
     message(FATAL_ERROR "CMake version changed between CMakeLists.txt.")
   endif()
 endmacro()
 
-# add_obs_plugin: Add plugin subdirectory if host platform is in specified list of supported platforms
-function(add_obs_plugin target)
+# add_ols_plugin: Add plugin subdirectory if host platform is in specified list of supported platforms
+function(add_ols_plugin target)
   set(options WITH_MESSAGE)
   set(oneValueArgs "")
   set(multiValueArgs PLATFORMS)

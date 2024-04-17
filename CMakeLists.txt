@@ -19,9 +19,9 @@ if(CMAKE_HOST_SYSTEM_NAME MATCHES "(Darwin)" OR OLS_CMAKE_VERSION VERSION_GREATE
 
   add_subdirectory(libols)
 
-  add_subdirectory(plugins)
+#  add_subdirectory(plugins)
 
-  add_subdirectory(UI)
+#  add_subdirectory(UI)
 
   message_configuration()
   return()
@@ -32,7 +32,7 @@ include(VersionConfig)
 
 # Prohibit in-source builds
 if("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-  message(FATAL_ERROR "OBS: You cannot build in a source directory (or any directory with CMakeLists.txt file). "
+  message(FATAL_ERROR "OLS: You cannot build in a source directory (or any directory with CMakeLists.txt file). "
                       "Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
@@ -41,7 +41,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Use target folders for MSVC/Xcode/etc.
 include(DeprecationHelpers)
-include(ObsHelpers)
+include(OlsHelpers)
 # Set default compiler flags
 include(CompilerConfig)
 
@@ -74,7 +74,7 @@ elseif(OS_POSIX)
   endif()
 endif()
 
-setup_obs_project()
+setup_ols_project()
 mark_as_advanced(BUILD_TESTS USE_LIBCXX)
 
 if(INSTALLER_RUN)
@@ -84,11 +84,11 @@ endif()
 
 # OLS sources and plugins
 add_subdirectory(deps)
-add_subdirectory(libobs)
-add_subdirectory(plugins)
+add_subdirectory(libols)
+#add_subdirectory(plugins)
 
 # OLS main app
-add_subdirectory(UI)
+#add_subdirectory(UI)
 
 # Tests
 if(ENABLE_UNIT_TESTS)

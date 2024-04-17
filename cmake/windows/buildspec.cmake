@@ -1,4 +1,4 @@
-# OBS CMake Windows build dependencies module
+# OLS CMake Windows build dependencies module
 
 include_guard(GLOBAL)
 
@@ -8,9 +8,9 @@ include(buildspec_common)
 function(_check_dependencies_windows)
   set(dependencies_dir "${CMAKE_CURRENT_SOURCE_DIR}/.deps")
   set(prebuilt_filename "windows-deps-VERSION-ARCH-REVISION.zip")
-  set(prebuilt_destination "obs-deps-VERSION-ARCH")
+  set(prebuilt_destination "ols-deps-VERSION-ARCH")
   set(qt6_filename "windows-deps-qt6-VERSION-ARCH-REVISION.zip")
-  set(qt6_destination "obs-deps-qt6-VERSION-ARCH")
+  set(qt6_destination "ols-deps-qt6-VERSION-ARCH")
   set(cef_filename "cef_binary_VERSION_windows_ARCH_REVISION.zip")
   set(cef_destination "cef_binary_VERSION_windows_ARCH")
 

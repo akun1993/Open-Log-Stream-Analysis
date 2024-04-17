@@ -52,7 +52,7 @@ using OLSObjectAutoRelease =
 	OLSRefAutoRelease<ols_object_t *, ols_object_release>;
 using OLSSourceAutoRelease =
 	OLSRefAutoRelease<ols_source_t *, ols_source_release>;
-using OLSSceneAutoRelease = OLSRefAutoRelease<ols_scene_t *, ols_scene_release>;
+
 using OLSDataAutoRelease = OLSRefAutoRelease<ols_data_t *, ols_data_release>;
 using OLSDataArrayAutoRelease =
 	OLSRefAutoRelease<ols_data_array_t *, ols_data_array_release>;
@@ -146,8 +146,6 @@ public:
 	friend OLSWeakObject OLSGetWeakRef(ols_object_t *object);
 	friend OLSWeakSource OLSGetWeakRef(ols_source_t *source);
 	friend OLSWeakOutput OLSGetWeakRef(ols_output_t *output);
-	friend OLSWeakEncoder OLSGetWeakRef(ols_encoder_t *encoder);
-	friend OLSWeakService OLSGetWeakRef(ols_service_t *service);
 };
 
 template<typename T, T getref(T), void release(T)>
@@ -192,8 +190,6 @@ public:
 	friend OLSObject OLSGetStrongRef(ols_weak_object_t *weak);
 	friend OLSSource OLSGetStrongRef(ols_weak_source_t *weak);
 	friend OLSOutput OLSGetStrongRef(ols_weak_output_t *weak);
-	friend OLSEncoder OLSGetStrongRef(ols_weak_encoder_t *weak);
-	friend OLSService OLSGetStrongRef(ols_weak_service_t *weak);
 };
 
 inline OLSObject OLSGetStrongRef(ols_weak_object_t *weak)
@@ -227,30 +223,6 @@ inline OLSWeakOutput OLSGetWeakRef(ols_output_t *output)
 {
 	return {ols_output_get_weak_output(output),
 		OLSWeakOutput::TakeOwnership()};
-}
-
-inline OLSEncoder OLSGetStrongRef(ols_weak_encoder_t *weak)
-{
-	return {ols_weak_encoder_get_encoder(weak),
-		OLSEncoder::TakeOwnership()};
-}
-
-inline OLSWeakEncoder OLSGetWeakRef(ols_encoder_t *encoder)
-{
-	return {ols_encoder_get_weak_encoder(encoder),
-		OLSWeakEncoder::TakeOwnership()};
-}
-
-inline OLSService OLSGetStrongRef(ols_weak_service_t *weak)
-{
-	return {ols_weak_service_get_service(weak),
-		OLSService::TakeOwnership()};
-}
-
-inline OLSWeakService OLSGetWeakRef(ols_service_t *service)
-{
-	return {ols_service_get_weak_service(service),
-		OLSWeakService::TakeOwnership()};
 }
 
 /* objects that are not meant to be instanced */
@@ -288,10 +260,7 @@ public:
 	inline bool operator!=(T p) const { return obj != p; }
 };
 
-using OLSDisplay = OLSPtr<ols_display_t *, ols_display_destroy>;
-using OLSView = OLSPtr<ols_view_t *, ols_view_destroy>;
-using OLSFader = OLSPtr<ols_fader_t *, ols_fader_destroy>;
-using OLSVolMeter = OLSPtr<ols_volmeter_t *, ols_volmeter_destroy>;
+
 
 /* signal handler connection */
 class OLSSignal {

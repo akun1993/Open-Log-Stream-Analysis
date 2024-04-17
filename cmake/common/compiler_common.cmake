@@ -1,4 +1,4 @@
-# OBS CMake common compiler options module
+# OLS CMake common compiler options module
 
 include_guard(GLOBAL)
 
@@ -18,7 +18,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 
 # clang options for C, C++, ObjC, and ObjC++
-set(_obs_clang_common_options
+set(_ols_clang_common_options
     -fno-strict-aliasing
     -Wno-trigraphs
     -Wno-missing-field-initializers
@@ -60,11 +60,11 @@ set(_obs_clang_common_options
     -Wno-error=shorten-64-to-32)
 
 # clang options for C
-set(_obs_clang_c_options ${_obs_clang_common_options} -Wno-shadow -Wno-float-conversion)
+set(_ols_clang_c_options ${_ols_clang_common_options} -Wno-shadow -Wno-float-conversion)
 
 # clang options for C++
-set(_obs_clang_cxx_options
-    ${_obs_clang_common_options}
+set(_ols_clang_cxx_options
+    ${_ols_clang_common_options}
     -Wno-non-virtual-dtor
     -Wno-overloaded-virtual
     -Wno-exit-time-destructors
@@ -75,7 +75,7 @@ set(_obs_clang_cxx_options
     -Wrange-loop-analysis)
 
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
-  list(APPEND _obs_clang_cxx_options -fno-char8_t)
+  list(APPEND _ols_clang_cxx_options -fno-char8_t)
 endif()
 
 if(NOT DEFINED CMAKE_COMPILE_WARNING_AS_ERROR)

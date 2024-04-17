@@ -1,4 +1,4 @@
-# OBS CMake Windows helper functions module
+# OLS CMake Windows helper functions module
 
 # cmake-format: off
 # cmake-lint: disable=C0103
@@ -10,8 +10,8 @@ include_guard(GLOBAL)
 
 include(helpers_common)
 
-# set_target_properties_obs: Set target properties for use in obs-studio
-function(set_target_properties_obs target)
+# set_target_properties_ols: Set target properties for use in log-analysis
+function(set_target_properties_ols target)
   set(options "")
   set(oneValueArgs "")
   set(multiValueArgs PROPERTIES)
@@ -27,137 +27,60 @@ function(set_target_properties_obs target)
   get_target_property(target_type ${target} TYPE)
 
   if(target_type STREQUAL EXECUTABLE)
-    if(target STREQUAL obs-browser-helper)
-      set(OBS_EXECUTABLE_DESTINATION "${OBS_PLUGIN_DESTINATION}")
-    elseif(target STREQUAL inject-helper OR target STREQUAL get-graphics-offsets)
-      set(OBS_EXECUTABLE_DESTINATION "${OBS_DATA_DESTINATION}/obs-plugins/win-capture")
-
-      # cmake-format: off
-      _target_install_obs(${target} DESTINATION ${OBS_EXECUTABLE_DESTINATION} 32BIT)
-      # cmake-format: on
-    endif()
-
     # cmake-format: off
-    _target_install_obs(${target} DESTINATION ${OBS_EXECUTABLE_DESTINATION})
+    _target_install_ols(${target} DESTINATION ${OLS_EXECUTABLE_DESTINATION})
     # cmake-format: on
 
-    if(target STREQUAL obs-studio)
-      get_property(obs_executables GLOBAL PROPERTY _OBS_EXECUTABLES)
-      get_property(obs_modules GLOBAL PROPERTY OBS_MODULES_ENABLED)
-      add_dependencies(${target} ${obs_executables} ${obs_modules})
+    if(target STREQUAL log-analysis)
+      get_property(ols_executables GLOBAL PROPERTY _OLS_EXECUTABLES)
+      get_property(ols_modules GLOBAL PROPERTY OLS_MODULES_ENABLED)
+      add_dependencies(${target} ${ols_executables} ${ols_modules})
       _bundle_dependencies(${target})
       target_add_resource(${target} "${CMAKE_CURRENT_SOURCE_DIR}/../AUTHORS"
-                          "${OBS_DATA_DESTINATION}/obs-studio/authors")
-    elseif(target STREQUAL obs-browser-helper)
-      set_property(GLOBAL APPEND PROPERTY _OBS_EXECUTABLES ${target})
-      return()
+                          "${OLS_DATA_DESTINATION}/log-analysis/authors")
     else()
-      set_property(GLOBAL APPEND PROPERTY _OBS_EXECUTABLES ${target})
+      set_property(GLOBAL APPEND PROPERTY _OLS_EXECUTABLES ${target})
     endif()
   elseif(target_type STREQUAL SHARED_LIBRARY)
-    set_target_properties(${target} PROPERTIES VERSION ${OBS_VERSION_MAJOR} SOVERSION ${OBS_VERSION_CANONICAL})
+    set_target_properties(${target} PROPERTIES VERSION ${OLS_VERSION_MAJOR} SOVERSION ${OLS_VERSION_CANONICAL})
 
     # cmake-format: off
-    _target_install_obs(
+    _target_install_ols(
       ${target}
-        DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
-        LIBRARY_DESTINATION "${OBS_LIBRARY_DESTINATION}"
-        HEADER_DESTINATION "${OBS_INCLUDE_DESTINATION}")
+        DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
+        LIBRARY_DESTINATION "${OLS_LIBRARY_DESTINATION}"
+        HEADER_DESTINATION "${OLS_INCLUDE_DESTINATION}")
     # cmake-format: on
   elseif(target_type STREQUAL MODULE_LIBRARY)
-    set_target_properties(${target} PROPERTIES VERSION 0 SOVERSION ${OBS_VERSION_CANONICAL})
+    set_target_properties(${target} PROPERTIES VERSION 0 SOVERSION ${OLS_VERSION_CANONICAL})
 
-    if(target STREQUAL libobs-d3d11
-       OR target STREQUAL libobs-opengl
-       OR target STREQUAL libobs-winrt)
-      set(target_destination "${OBS_EXECUTABLE_DESTINATION}")
-    elseif(target STREQUAL "obspython" OR target STREQUAL "obslua")
-      set(target_destination "${OBS_SCRIPT_PLUGIN_DESTINATION}")
-    elseif(target STREQUAL graphics-hook)
-      set(target_destination "${OBS_DATA_DESTINATION}/obs-plugins/win-capture")
-      target_add_resource(graphics-hook "${CMAKE_CURRENT_SOURCE_DIR}/obs-vulkan64.json" "${target_destination}")
-      target_add_resource(graphics-hook "${CMAKE_CURRENT_SOURCE_DIR}/obs-vulkan32.json" "${target_destination}")
-
-      # cmake-format: off
-      _target_install_obs(${target} DESTINATION ${target_destination} 32BIT)
-      # cmake-format: on
-    elseif(target STREQUAL obs-virtualcam-module)
-      set(target_destination "${OBS_DATA_DESTINATION}/obs-plugins/win-dshow")
-
-      # cmake-format: off
-      _target_install_obs(${target} DESTINATION ${target_destination} 32BIT)
-      # cmake-format: on
+    if(target STREQUAL "olspython" OR target STREQUAL "olslua")
+      set(target_destination "${OLS_SCRIPT_PLUGIN_DESTINATION}")
     else()
-      set(target_destination "${OBS_PLUGIN_DESTINATION}")
+      set(target_destination "${OLS_PLUGIN_DESTINATION}")
     endif()
 
     # cmake-format: off
-    _target_install_obs(${target} DESTINATION ${target_destination})
+    _target_install_ols(${target} DESTINATION ${target_destination})
     # cmake-format: on
 
-    if(${target} STREQUAL obspython)
+    if(${target} STREQUAL olspython)
       add_custom_command(
         TARGET ${target}
         POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E echo "Add obspython import module"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_SCRIPT_PLUGIN_DESTINATION}/"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE_DIR:obspython>/obspython.py"
-                "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_SCRIPT_PLUGIN_DESTINATION}/"
+        COMMAND "${CMAKE_COMMAND}" -E echo "Add olspython import module"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_SCRIPT_PLUGIN_DESTINATION}/"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE_DIR:olspython>/olspython.py"
+                "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_SCRIPT_PLUGIN_DESTINATION}/"
         COMMENT "")
 
       install(
-        FILES "$<TARGET_FILE_DIR:obspython>/obspython.py"
-        DESTINATION "${OBS_SCRIPT_PLUGIN_DESTINATION}"
+        FILES "$<TARGET_FILE_DIR:olspython>/olspython.py"
+        DESTINATION "${OLS_SCRIPT_PLUGIN_DESTINATION}"
         COMPONENT Runtime)
-    elseif(${target} STREQUAL obs-browser)
-      message(DEBUG "Add Chromium Embedded Framework to project for obs-browser plugin...")
-      if(TARGET CEF::Library)
-        get_target_property(imported_location CEF::Library IMPORTED_LOCATION_RELEASE)
-
-        if(imported_location)
-          cmake_path(GET imported_location PARENT_PATH cef_location)
-          cmake_path(GET cef_location PARENT_PATH cef_root_location)
-          add_custom_command(
-            TARGET ${target}
-            POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E echo "Add Chromium Embedded Framework to library directory"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
-            COMMAND
-              "${CMAKE_COMMAND}" -E copy_if_different "${imported_location}" "${cef_location}/chrome_elf.dll"
-              "${cef_location}/libEGL.dll" "${cef_location}/libGLESv2.dll" "${cef_location}/snapshot_blob.bin"
-              "${cef_location}/v8_context_snapshot.bin" "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
-            COMMAND
-              "${CMAKE_COMMAND}" -E copy_if_different "${cef_root_location}/Resources/chrome_100_percent.pak"
-              "${cef_root_location}/Resources/chrome_200_percent.pak" "${cef_root_location}/Resources/icudtl.dat"
-              "${cef_root_location}/Resources/resources.pak" "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${cef_root_location}/Resources/locales"
-                    "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/locales"
-            COMMENT "")
-
-          install(
-            FILES "${imported_location}"
-                  "${cef_location}/chrome_elf.dll"
-                  "${cef_location}/libEGL.dll"
-                  "${cef_location}/libGLESv2.dll"
-                  "${cef_location}/snapshot_blob.bin"
-                  "${cef_location}/v8_context_snapshot.bin"
-                  "${cef_root_location}/Resources/chrome_100_percent.pak"
-                  "${cef_root_location}/Resources/chrome_200_percent.pak"
-                  "${cef_root_location}/Resources/icudtl.dat"
-                  "${cef_root_location}/Resources/resources.pak"
-            DESTINATION "${target_destination}"
-            COMPONENT Runtime)
-
-          install(
-            DIRECTORY "${cef_root_location}/Resources/locales"
-            DESTINATION "${target_destination}"
-            USE_SOURCE_PERMISSIONS
-            COMPONENT Runtime)
-        endif()
-      endif()
     endif()
 
-    set_property(GLOBAL APPEND PROPERTY OBS_MODULES_ENABLED ${target})
+    set_property(GLOBAL APPEND PROPERTY OLS_MODULES_ENABLED ${target})
   endif()
 
   target_link_options(${target} PRIVATE "/PDBALTPATH:$<TARGET_PDB_FILE_NAME:${target}>")
@@ -171,7 +94,7 @@ function(set_target_properties_obs target)
     PREFIX "UI Files"
     FILES ${target_ui_files})
 
-  if(${target} STREQUAL libobs)
+  if(${target} STREQUAL libols)
     set(target_source_files ${target_sources})
     set(target_header_files ${target_sources})
     list(FILTER target_source_files INCLUDE REGEX ".+\\.(m|c[cp]?p?|swift)")
@@ -188,8 +111,8 @@ function(set_target_properties_obs target)
   endif()
 endfunction()
 
-# _target_install_obs: Helper function to install build artifacts to rundir and install location
-function(_target_install_obs target)
+# _target_install_ols: Helper function to install build artifacts to rundir and install location
+function(_target_install_ols target)
   set(options "32BIT")
   set(oneValueArgs "DESTINATION" "LIBRARY_DESTINATION" "HEADER_DESTINATION")
   set(multiValueArgs "")
@@ -203,9 +126,9 @@ function(_target_install_obs target)
       set(suffix dll)
     endif()
 
-    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${OBS_SOURCE_DIR}" OUTPUT_VARIABLE project_path)
+    cmake_path(RELATIVE_PATH CMAKE_CURRENT_SOURCE_DIR BASE_DIRECTORY "${OLS_SOURCE_DIR}" OUTPUT_VARIABLE project_path)
 
-    set(32bit_project_path "${OBS_SOURCE_DIR}/build_x86/${project_path}")
+    set(32bit_project_path "${OLS_SOURCE_DIR}/build_x86/${project_path}")
     set(target_file "${32bit_project_path}/$<CONFIG>/${target}32.${suffix}")
     set(target_pdb_file "${32bit_project_path}/$<CONFIG>/${target}32.pdb")
     set(comment "Copy ${target} (32-bit) to destination")
@@ -253,10 +176,10 @@ function(_target_install_obs target)
     TARGET ${target}
     POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E echo "${comment}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
-    COMMAND "${CMAKE_COMMAND}" -E copy ${target_file} "${OBS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
+    COMMAND "${CMAKE_COMMAND}" -E copy ${target_file} "${OLS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
     COMMAND "${CMAKE_COMMAND}" -E $<IF:$<CONFIG:Debug,RelWithDebInfo,Release>,copy,true> ${target_pdb_file}
-            "${OBS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
+            "${OLS_OUTPUT_DIR}/$<CONFIG>/${_TIO_DESTINATION}"
     COMMENT ""
     VERBATIM)
 
@@ -279,7 +202,7 @@ function(target_export target)
     install(
       FILES "$<TARGET_PDB_FILE:${target}>"
       CONFIGURATIONS RelWithDebInfo Debug Release
-      DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+      DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
       COMPONENT Development
       OPTIONAL)
   endif()
@@ -298,13 +221,13 @@ function(target_install_resources target)
       source_group("Resources/${relative_path}" FILES "${data_file}")
     endforeach()
 
-    get_property(obs_module_list GLOBAL PROPERTY OBS_MODULES_ENABLED)
-    if(target IN_LIST obs_module_list)
-      set(target_destination "${OBS_DATA_DESTINATION}/obs-plugins/${target}")
-    elseif(target STREQUAL obs-studio)
-      set(target_destination "${OBS_DATA_DESTINATION}/obs-studio")
+    get_property(ols_module_list GLOBAL PROPERTY OLS_MODULES_ENABLED)
+    if(target IN_LIST ols_module_list)
+      set(target_destination "${OLS_DATA_DESTINATION}/ols-plugins/${target}")
+    elseif(target STREQUAL log-analysis)
+      set(target_destination "${OLS_DATA_DESTINATION}/log-analysis")
     else()
-      set(target_destination "${OBS_DATA_DESTINATION}/${target}")
+      set(target_destination "${OLS_DATA_DESTINATION}/${target}")
     endif()
 
     install(
@@ -317,9 +240,9 @@ function(target_install_resources target)
       TARGET ${target}
       POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E echo "Copy ${target} resources to data directory"
-      COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
       COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/data"
-              "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
+              "${OLS_OUTPUT_DIR}/$<CONFIG>/${target_destination}"
       COMMENT ""
       VERBATIM)
   endif()
@@ -327,15 +250,15 @@ endfunction()
 
 # Helper function to add a specific resource to a bundle
 function(target_add_resource target resource)
-  get_property(obs_module_list GLOBAL PROPERTY OBS_MODULES_ENABLED)
+  get_property(ols_module_list GLOBAL PROPERTY OLS_MODULES_ENABLED)
   if(ARGN)
     set(target_destination "${ARGN}")
-  elseif(${target} IN_LIST obs_module_list)
-    set(target_destination "${OBS_DATA_DESTINATION}/obs-plugins/${target}")
-  elseif(target STREQUAL obs-studio)
-    set(target_destination "${OBS_DATA_DESTINATION}/obs-studio")
+  elseif(${target} IN_LIST ols_module_list)
+    set(target_destination "${OLS_DATA_DESTINATION}/ols-plugins/${target}")
+  elseif(target STREQUAL log-analysis)
+    set(target_destination "${OLS_DATA_DESTINATION}/log-analysis")
   else()
-    set(target_destination "${OBS_DATA_DESTINATION}/${target}")
+    set(target_destination "${OLS_DATA_DESTINATION}/${target}")
   endif()
 
   message(DEBUG "Add resource '${resource}' to target ${target} at destination '${target_destination}'...")
@@ -349,8 +272,8 @@ function(target_add_resource target resource)
     TARGET ${target}
     POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E echo "Copy ${target} resource ${resource} to library directory"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/"
-    COMMAND "${CMAKE_COMMAND}" -E copy "${resource}" "${OBS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/"
+    COMMAND "${CMAKE_COMMAND}" -E copy "${resource}" "${OLS_OUTPUT_DIR}/$<CONFIG>/${target_destination}/"
     COMMENT ""
     VERBATIM)
 
@@ -363,11 +286,11 @@ function(_bundle_dependencies target)
   set(found_dependencies)
   find_dependencies(TARGET ${target} FOUND_VAR found_dependencies)
 
-  get_property(obs_module_list GLOBAL PROPERTY OBS_MODULES_ENABLED)
-  list(LENGTH obs_module_list num_modules)
+  get_property(ols_module_list GLOBAL PROPERTY OLS_MODULES_ENABLED)
+  list(LENGTH ols_module_list num_modules)
   if(num_modules GREATER 0)
-    add_dependencies(${target} ${obs_module_list})
-    foreach(module IN LISTS obs_module_list)
+    add_dependencies(${target} ${ols_module_list})
+    foreach(module IN LISTS ols_module_list)
       find_dependencies(TARGET ${module} FOUND_VAR found_dependencies)
     endforeach()
   endif()
@@ -380,10 +303,6 @@ function(_bundle_dependencies target)
   set(plugins_list)
 
   foreach(library IN LISTS found_dependencies)
-    # CEF needs to be placed in obs-plugins directory on Windows, which is handled already
-    if(${library} STREQUAL CEF::Library)
-      continue()
-    endif()
 
     get_target_property(library_type ${library} TYPE)
     get_target_property(is_imported ${library} IMPORTED)
@@ -415,44 +334,44 @@ function(_bundle_dependencies target)
   add_custom_command(
     TARGET ${target}
     POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E echo "Copy dependencies to binary directory (${OBS_EXECUTABLE_DESTINATION})..."
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+    COMMAND "${CMAKE_COMMAND}" -E echo "Copy dependencies to binary directory (${OLS_EXECUTABLE_DESTINATION})..."
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}"
     COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:Debug>,copy_if_different,true>"
-            "$<$<CONFIG:Debug>:${library_paths_DEBUG}>" "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+            "$<$<CONFIG:Debug>:${library_paths_DEBUG}>" "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}"
     COMMAND
       "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:RelWithDebInfo>,copy_if_different,true>"
       "$<$<CONFIG:RelWithDebInfo>:${library_paths_RELWITHDEBINFO}>"
-      "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+      "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}"
     COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:Release>,copy_if_different,true>"
-            "$<$<CONFIG:Release>:${library_paths_RELEASE}>" "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+            "$<$<CONFIG:Release>:${library_paths_RELEASE}>" "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}"
     COMMAND
       "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:MinSizeRel>,copy_if_different,true>"
-      "$<$<CONFIG:MinSizeRel>:${library_paths_MINSIZEREL}>" "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+      "$<$<CONFIG:MinSizeRel>:${library_paths_MINSIZEREL}>" "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}"
     COMMENT "."
     VERBATIM COMMAND_EXPAND_LISTS)
 
   install(
     FILES ${library_paths_DEBUG}
     CONFIGURATIONS Debug
-    DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+    DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
     COMPONENT Runtime)
 
   install(
     FILES ${library_paths_RELWITHDEBINFO}
     CONFIGURATIONS RelWithDebInfo
-    DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+    DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
     COMPONENT Runtime)
 
   install(
     FILES ${library_paths_RELEASE}
     CONFIGURATIONS Release
-    DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+    DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
     COMPONENT Runtime)
 
   install(
     FILES ${library_paths_MINSIZEREL}
     CONFIGURATIONS MinSizeRel
-    DESTINATION "${OBS_EXECUTABLE_DESTINATION}"
+    DESTINATION "${OLS_EXECUTABLE_DESTINATION}"
     COMPONENT Runtime)
 
   list(REMOVE_DUPLICATES plugins_list)
@@ -479,25 +398,25 @@ function(_bundle_dependencies target)
       TARGET ${target}
       POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E echo
-              "Copy Qt plugins ${stem} to binary directory (${OBS_EXECUTABLE_DESTINATION}/${stem})"
-      COMMAND "${CMAKE_COMMAND}" -E make_directory "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}/${stem}"
+              "Copy Qt plugins ${stem} to binary directory (${OLS_EXECUTABLE_DESTINATION}/${stem})"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}/${stem}"
       COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:Debug>,copy_if_different,true>" "${plugin_list_debug}"
-              "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}/${stem}"
+              "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}/${stem}"
       COMMAND "${CMAKE_COMMAND}" -E "$<IF:$<CONFIG:Debug>,true,copy_if_different>" "${plugin_list}"
-              "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}/${stem}"
+              "${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_EXECUTABLE_DESTINATION}/${stem}"
       COMMENT ""
       VERBATIM COMMAND_EXPAND_LISTS)
 
     install(
       FILES ${plugin_list_debug}
       CONFIGURATIONS Debug
-      DESTINATION "${OBS_EXECUTABLE_DESTINATION}/${stem}"
+      DESTINATION "${OLS_EXECUTABLE_DESTINATION}/${stem}"
       COMPONENT Runtime)
 
     install(
       FILES ${plugin_list}
       CONFIGURATIONS RelWithDebInfo Release MinSizeRel
-      DESTINATION "${OBS_EXECUTABLE_DESTINATION}/${stem}"
+      DESTINATION "${OLS_EXECUTABLE_DESTINATION}/${stem}"
       COMPONENT Runtime)
   endforeach()
 endfunction()

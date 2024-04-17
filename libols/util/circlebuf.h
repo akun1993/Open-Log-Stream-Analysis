@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -29,7 +29,7 @@ extern "C" {
 
 /* Dynamic circular buffer */
 
-OBS_DEPRECATED struct circlebuf {
+OLS_DEPRECATED struct circlebuf {
 	void *data;
 	size_t size;
 
@@ -38,18 +38,18 @@ OBS_DEPRECATED struct circlebuf {
 	size_t capacity;
 };
 
-OBS_DEPRECATED static inline void circlebuf_init(struct circlebuf *cb)
+OLS_DEPRECATED static inline void circlebuf_init(struct circlebuf *cb)
 {
 	memset(cb, 0, sizeof(struct circlebuf));
 }
 
-OBS_DEPRECATED static inline void circlebuf_free(struct circlebuf *cb)
+OLS_DEPRECATED static inline void circlebuf_free(struct circlebuf *cb)
 {
 	bfree(cb->data);
 	memset(cb, 0, sizeof(struct circlebuf));
 }
 
-OBS_DEPRECATED static inline void circlebuf_reorder_data(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_reorder_data(struct circlebuf *cb,
 							 size_t new_capacity)
 {
 	size_t difference;
@@ -64,7 +64,7 @@ OBS_DEPRECATED static inline void circlebuf_reorder_data(struct circlebuf *cb,
 	cb->start_pos += difference;
 }
 
-OBS_DEPRECATED static inline void
+OLS_DEPRECATED static inline void
 circlebuf_ensure_capacity(struct circlebuf *cb)
 {
 	size_t new_capacity;
@@ -80,7 +80,7 @@ circlebuf_ensure_capacity(struct circlebuf *cb)
 	cb->capacity = new_capacity;
 }
 
-OBS_DEPRECATED static inline void circlebuf_reserve(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_reserve(struct circlebuf *cb,
 						    size_t capacity)
 {
 	if (capacity <= cb->capacity)
@@ -91,7 +91,7 @@ OBS_DEPRECATED static inline void circlebuf_reserve(struct circlebuf *cb,
 	cb->capacity = capacity;
 }
 
-OBS_DEPRECATED static inline void circlebuf_upsize(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_upsize(struct circlebuf *cb,
 						   size_t size)
 {
 	size_t add_size = size - cb->size;
@@ -120,7 +120,7 @@ OBS_DEPRECATED static inline void circlebuf_upsize(struct circlebuf *cb,
 }
 
 /** Overwrites data at a specific point in the buffer (relative).  */
-OBS_DEPRECATED static inline void circlebuf_place(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_place(struct circlebuf *cb,
 						  size_t position,
 						  const void *data, size_t size)
 {
@@ -146,7 +146,7 @@ OBS_DEPRECATED static inline void circlebuf_place(struct circlebuf *cb,
 	}
 }
 
-OBS_DEPRECATED static inline void
+OLS_DEPRECATED static inline void
 circlebuf_push_back(struct circlebuf *cb, const void *data, size_t size)
 {
 	size_t new_end_pos = cb->end_pos + size;
@@ -171,7 +171,7 @@ circlebuf_push_back(struct circlebuf *cb, const void *data, size_t size)
 	cb->end_pos = new_end_pos;
 }
 
-OBS_DEPRECATED static inline void
+OLS_DEPRECATED static inline void
 circlebuf_push_front(struct circlebuf *cb, const void *data, size_t size)
 {
 	cb->size += size;
@@ -197,7 +197,7 @@ circlebuf_push_front(struct circlebuf *cb, const void *data, size_t size)
 	}
 }
 
-OBS_DEPRECATED static inline void circlebuf_push_back_zero(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_push_back_zero(struct circlebuf *cb,
 							   size_t size)
 {
 	size_t new_end_pos = cb->end_pos + size;
@@ -221,7 +221,7 @@ OBS_DEPRECATED static inline void circlebuf_push_back_zero(struct circlebuf *cb,
 	cb->end_pos = new_end_pos;
 }
 
-OBS_DEPRECATED static inline void
+OLS_DEPRECATED static inline void
 circlebuf_push_front_zero(struct circlebuf *cb, size_t size)
 {
 	cb->size += size;
@@ -246,7 +246,7 @@ circlebuf_push_front_zero(struct circlebuf *cb, size_t size)
 	}
 }
 
-OBS_DEPRECATED static inline void circlebuf_peek_front(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_peek_front(struct circlebuf *cb,
 						       void *data, size_t size)
 {
 	assert(size <= cb->size);
@@ -265,7 +265,7 @@ OBS_DEPRECATED static inline void circlebuf_peek_front(struct circlebuf *cb,
 	}
 }
 
-OBS_DEPRECATED static inline void circlebuf_peek_back(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_peek_back(struct circlebuf *cb,
 						      void *data, size_t size)
 {
 	assert(size <= cb->size);
@@ -288,7 +288,7 @@ OBS_DEPRECATED static inline void circlebuf_peek_back(struct circlebuf *cb,
 	}
 }
 
-OBS_DEPRECATED static inline void circlebuf_pop_front(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_pop_front(struct circlebuf *cb,
 						      void *data, size_t size)
 {
 	circlebuf_peek_front(cb, data, size);
@@ -304,7 +304,7 @@ OBS_DEPRECATED static inline void circlebuf_pop_front(struct circlebuf *cb,
 		cb->start_pos -= cb->capacity;
 }
 
-OBS_DEPRECATED static inline void circlebuf_pop_back(struct circlebuf *cb,
+OLS_DEPRECATED static inline void circlebuf_pop_back(struct circlebuf *cb,
 						     void *data, size_t size)
 {
 	circlebuf_peek_back(cb, data, size);
@@ -321,7 +321,7 @@ OBS_DEPRECATED static inline void circlebuf_pop_back(struct circlebuf *cb,
 		cb->end_pos -= size;
 }
 
-OBS_DEPRECATED static inline void *circlebuf_data(struct circlebuf *cb,
+OLS_DEPRECATED static inline void *circlebuf_data(struct circlebuf *cb,
 						  size_t idx)
 {
 	uint8_t *ptr = (uint8_t *)cb->data;

@@ -27,19 +27,10 @@
 #define RECONNECT_RETRY_MAX_MSEC (15 * 60 * 1000)
 #define RECONNECT_RETRY_BASE_EXP 1.5f
 
-static inline bool active(const struct ols_output *output)
-{
-	return os_atomic_load_bool(&output->active);
-}
 
 static inline bool reconnecting(const struct ols_output *output)
 {
 	return os_atomic_load_bool(&output->reconnecting);
-}
-
-static inline bool stopping(const struct ols_output *output)
-{
-	return os_event_try(output->stopping_event) == EAGAIN;
 }
 
 
@@ -116,7 +107,7 @@ ols_output_t *ols_output_create(const char *id, const char *name,
 	output->reconnect_retry_sec = 2;
 	output->reconnect_retry_max = 20;
 	output->reconnect_retry_exp =
-		RECONNECT_RETRY_BASE_EXP + (rand_float(0) * 0.05f);
+		RECONNECT_RETRY_BASE_EXP + (rand() * 0.05f);
 	output->valid = true;
 
 	ols_context_init_control(&output->context, output,
@@ -146,13 +137,12 @@ void ols_output_destroy(ols_output_t *output)
 
 		blog(LOG_DEBUG, "output '%s' destroyed", output->context.name);
 
-		if (output->valid && active(output))
+		if (output->valid )
 			ols_output_actual_stop(output, true, 0);
 
 		if (output->context.data)
 			output->info.destroy(output->context.data);
 
-		free_packets(output);
 
 		os_event_destroy(output->reconnect_stop_event);
 		ols_context_data_free(&output->context);
@@ -176,19 +166,7 @@ bool ols_output_actual_start(ols_output_t *output)
 {
 	bool success = false;
 
-	os_event_wait(output->stopping_event);
-	output->stop_code = 0;
-	if (output->last_error_message) {
-		bfree(output->last_error_message);
-		output->last_error_message = NULL;
-	}
-
-	if (output->context.data)
-		success = output->info.start(output->context.data);
-
-	if (success) {
-
-	}
+	UNUSED_PARAMETER(output);
 
 	return success;
 }
@@ -213,78 +191,24 @@ static inline bool data_active(struct ols_output *output)
 	return os_atomic_load_bool(&output->data_active);
 }
 
-static void log_frame_info(struct ols_output *output)
-{
 
-}
 
 static inline void signal_stop(struct ols_output *output);
 
 void ols_output_actual_stop(ols_output_t *output, bool force, uint64_t ts)
 {
-	bool call_stop = true;
-	bool was_reconnecting = false;
 
-	if (stopping(output) && !force)
-		return;
-
-	os_event_reset(output->stopping_event);
-
-	was_reconnecting = reconnecting(output) && !delay_active(output);
-	if (reconnecting(output)) {
-		os_event_signal(output->reconnect_stop_event);
-		if (output->reconnect_thread_active)
-			pthread_join(output->reconnect_thread, NULL);
-	}
-
-
-	if (output->context.data && call_stop) {
-		output->info.stop(output->context.data, ts);
-
-	} else if (was_reconnecting) {
-		output->stop_code = OLS_OUTPUT_SUCCESS;
-		signal_stop(output);
-		os_event_signal(output->stopping_event);
-	}
+	UNUSED_PARAMETER(output);
+	UNUSED_PARAMETER(force);
+	UNUSED_PARAMETER(ts);
 
 }
 
 void ols_output_stop(ols_output_t *output)
 {
-	if (!ols_output_valid(output, "ols_output_stop"))
-		return;
-	if (!output->context.data)
-		return;
-	if (!active(output) && !reconnecting(output))
-		return;
-	if (reconnecting(output)) {
-		ols_output_force_stop(output);
-		return;
-	}
-
-	if (!stopping(output)) {
-		do_output_signal(output, "stopping");
-		ols_output_actual_stop(output, false, os_gettime_ns());
-	}
+	UNUSED_PARAMETER(output);
 }
 
-void ols_output_force_stop(ols_output_t *output)
-{
-	if (!ols_output_valid(output, "ols_output_force_stop"))
-		return;
-
-	if (!stopping(output)) {
-		output->stop_code = 0;
-		do_output_signal(output, "stopping");
-	}
-	ols_output_actual_stop(output, true, 0);
-}
-
-bool ols_output_active(const ols_output_t *output)
-{
-	return (output != NULL) ? (active(output) || reconnecting(output))
-				: false;
-}
 
 uint32_t ols_output_get_flags(const ols_output_t *output)
 {
@@ -392,11 +316,6 @@ void ols_output_set_reconnect_settings(ols_output_t *output, int retry_count,
 
 
 
-static inline bool preserve_active(struct ols_output *output)
-{
-	return (output->delay_flags & OLS_OUTPUT_DELAY_PRESERVE) != 0;
-}
-
 
 static inline void signal_start(struct ols_output *output)
 {
@@ -444,17 +363,14 @@ bool ols_output_begin_data_capture(ols_output_t *output, uint32_t flags)
 	if (!ols_output_valid(output, "ols_output_begin_data_capture"))
 		return false;
 
-	if (active(output))
-		return false;
 
 	output->total_frames = 0;
 
 	os_atomic_set_bool(&output->data_active, true);
-	hook_data_capture(output);
 
 
 	do_output_signal(output, "activate");
-	os_atomic_set_bool(&output->active, true);
+	//os_atomic_set_bool(&output->active, true);
 
 	if (reconnecting(output)) {
 		signal_reconnect_success(output);
@@ -468,76 +384,7 @@ bool ols_output_begin_data_capture(ols_output_t *output, uint32_t flags)
 }
 
 
-static void *reconnect_thread(void *param)
-{
-	struct ols_output *output = param;
 
-	output->reconnect_thread_active = true;
-
-	if (os_event_timedwait(output->reconnect_stop_event,
-			       output->reconnect_retry_cur_msec) == ETIMEDOUT)
-		ols_output_actual_start(output);
-
-	if (os_event_try(output->reconnect_stop_event) == EAGAIN)
-		pthread_detach(output->reconnect_thread);
-	else
-		os_atomic_set_bool(&output->reconnecting, false);
-
-	output->reconnect_thread_active = false;
-	return NULL;
-}
-
-static void output_reconnect(struct ols_output *output)
-{
-	int ret;
-
-	if (!reconnecting(output)) {
-		output->reconnect_retry_cur_msec =
-			output->reconnect_retry_sec * 1000;
-		output->reconnect_retries = 0;
-	}
-
-	if (output->reconnect_retries >= output->reconnect_retry_max) {
-		output->stop_code = OLS_OUTPUT_DISCONNECTED;
-		os_atomic_set_bool(&output->reconnecting, false);
-		if (delay_active(output))
-			os_atomic_set_bool(&output->delay_active, false);
-		ols_output_end_data_capture(output);
-		return;
-	}
-
-	if (!reconnecting(output)) {
-		os_atomic_set_bool(&output->reconnecting, true);
-		os_event_reset(output->reconnect_stop_event);
-	}
-
-	if (output->reconnect_retries) {
-		output->reconnect_retry_cur_msec =
-			(uint32_t)(output->reconnect_retry_cur_msec *
-				   output->reconnect_retry_exp);
-		if (output->reconnect_retry_cur_msec >
-		    RECONNECT_RETRY_MAX_MSEC) {
-			output->reconnect_retry_cur_msec =
-				RECONNECT_RETRY_MAX_MSEC;
-		}
-	}
-
-	output->reconnect_retries++;
-
-	output->stop_code = OLS_OUTPUT_DISCONNECTED;
-	ret = pthread_create(&output->reconnect_thread, NULL, &reconnect_thread,
-			     output);
-	if (ret < 0) {
-		blog(LOG_WARNING, "Failed to create reconnect thread");
-		os_atomic_set_bool(&output->reconnecting, false);
-	} else {
-		blog(LOG_INFO, "Output '%s': Reconnecting in %.02f seconds..",
-		     output->context.name,
-		     (float)(output->reconnect_retry_cur_msec / 1000.0));
-
-		signal_reconnect(output);
-	}
-}
 
 static inline bool can_reconnect(const ols_output_t *output, int code)
 {
@@ -554,16 +401,7 @@ void ols_output_signal_stop(ols_output_t *output, int code)
 
 	output->stop_code = code;
 
-	if (can_reconnect(output, code)) {
-		if (delay_active(output))
-			os_atomic_inc_long(&output->delay_restart_refs);
-		ols_output_end_data_capture_internal(output, false);
-		output_reconnect(output);
-	} else {
-		if (delay_active(output))
-			os_atomic_set_bool(&output->delay_active, false);
-		ols_output_end_data_capture(output);
-	}
+
 }
 
 void ols_output_addref(ols_output_t *output)
@@ -654,15 +492,7 @@ const char *ols_output_get_id(const ols_output_t *output)
 							     : NULL;
 }
 
-int ols_output_get_connect_time_ms(ols_output_t *output)
-{
-	if (!ols_output_valid(output, "ols_output_get_connect_time_ms"))
-		return -1;
 
-	if (output->info.get_connect_time_ms)
-		return output->info.get_connect_time_ms(output->context.data);
-	return -1;
-}
 
 const char *ols_output_get_last_error(ols_output_t *output)
 {
@@ -700,13 +530,5 @@ bool ols_output_reconnecting(const ols_output_t *output)
 	return reconnecting(output);
 }
 
-
-const char *ols_output_get_protocols(const ols_output_t *output)
-{
-	if (!ols_output_valid(output, "ols_output_get_protocols"))
-		return NULL;
-
-	return flag_service(output) ? output->info.protocols : NULL;
-}
 
 

@@ -1,4 +1,4 @@
-# OBS CMake ccache module
+# OLS CMake ccache module
 
 include_guard(GLOBAL)
 

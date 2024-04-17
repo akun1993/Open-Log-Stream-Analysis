@@ -1,4 +1,4 @@
-# OBS CMake operating system bootstrap module
+# OLS CMake operating system bootstrap module
 
 include_guard(GLOBAL)
 

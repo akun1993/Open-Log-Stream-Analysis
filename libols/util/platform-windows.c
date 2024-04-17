@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -27,7 +27,7 @@
 #include "platform.h"
 #include "darray.h"
 #include "dstr.h"
-#include "obsconfig.h"
+#include "olsconfig.h"
 #include "util_uint64.h"
 #include "windows/win-registry.h"
 #include "windows/win-version.h"
@@ -201,7 +201,7 @@ static bool has_qt5_import(VOID *base, PIMAGE_NT_HEADERS nt_headers)
 	return false;
 }
 
-static bool has_obs_export(VOID *base, PIMAGE_NT_HEADERS nt_headers)
+static bool has_ols_export(VOID *base, PIMAGE_NT_HEADERS nt_headers)
 {
 	__try {
 		PIMAGE_DATA_DIRECTORY data_dir;
@@ -252,7 +252,7 @@ static bool has_obs_export(VOID *base, PIMAGE_NT_HEADERS nt_headers)
 				      section->VirtualAddress +
 				      section->PointerToRawData);
 
-		/* iterate through each name and see if its an obs plugin */
+		/* iterate through each name and see if its an ols plugin */
 		CHAR *name;
 		size_t j;
 		for (j = 0; j < export->NumberOfNames; j++) {
@@ -261,7 +261,7 @@ static bool has_obs_export(VOID *base, PIMAGE_NT_HEADERS nt_headers)
 			       section->VirtualAddress +
 			       section->PointerToRawData;
 
-			if (!strcmp(name, "obs_module_load")) {
+			if (!strcmp(name, "ols_module_load")) {
 				return true;
 			}
 		}
@@ -274,7 +274,7 @@ static bool has_obs_export(VOID *base, PIMAGE_NT_HEADERS nt_headers)
 	return false;
 }
 
-void get_plugin_info(const char *path, bool *is_obs_plugin, bool *can_load)
+void get_plugin_info(const char *path, bool *is_ols_plugin, bool *can_load)
 {
 	struct dstr dll_name;
 	wchar_t *wpath;
@@ -286,7 +286,7 @@ void get_plugin_info(const char *path, bool *is_obs_plugin, bool *can_load)
 	PIMAGE_DOS_HEADER dos_header;
 	PIMAGE_NT_HEADERS nt_headers;
 
-	*is_obs_plugin = false;
+	*is_ols_plugin = false;
 	*can_load = false;
 
 	if (!path)
@@ -331,16 +331,16 @@ void get_plugin_info(const char *path, bool *is_obs_plugin, bool *can_load)
 		if (nt_headers->Signature != IMAGE_NT_SIGNATURE)
 			goto cleanup;
 
-		*is_obs_plugin = has_obs_export(base, nt_headers);
+		*is_ols_plugin = has_ols_export(base, nt_headers);
 
-		if (*is_obs_plugin) {
+		if (*is_ols_plugin) {
 			*can_load = !has_qt5_import(base, nt_headers);
 		}
 
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		/* we failed somehow, for compatibility let's assume it
 		 * was a valid plugin and let the loader deal with it */
-		*is_obs_plugin = true;
+		*is_ols_plugin = true;
 		*can_load = true;
 		goto cleanup;
 	}
@@ -356,14 +356,14 @@ cleanup:
 		CloseHandle(hFile);
 }
 
-bool os_is_obs_plugin(const char *path)
+bool os_is_ols_plugin(const char *path)
 {
-	bool is_obs_plugin;
+	bool is_ols_plugin;
 	bool can_load;
 
-	get_plugin_info(path, &is_obs_plugin, &can_load);
+	get_plugin_info(path, &is_ols_plugin, &can_load);
 
-	return is_obs_plugin && can_load;
+	return is_ols_plugin && can_load;
 }
 
 union time_data {
