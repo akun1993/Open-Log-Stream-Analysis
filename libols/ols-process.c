@@ -27,7 +27,6 @@
 
 #define get_weak(source) ((ols_weak_source_t *)source->context.control)
 
-static bool filter_compatible(ols_source_t *source, ols_source_t *filter);
 
 static inline bool data_valid(const struct ols_source *source, const char *f)
 {
@@ -93,7 +92,6 @@ const char *ols_source_get_display_name(const char *id)
 
 
 
-extern char *find_libols_data_file(const char *file);
 
 /* internal initialization */
 static bool ols_source_init(struct ols_source *source)

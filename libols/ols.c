@@ -27,7 +27,7 @@ struct ols_core *ols = NULL;
 static THREAD_LOCAL bool is_ui_thread = false;
 
 extern void add_default_module_paths(void);
-extern char *find_libols_data_file(const char *file);
+
 
 static bool ols_init_data(void)
 {
@@ -977,7 +977,18 @@ void ols_context_data_insert_uuid(struct ols_context_data *context,
 	pthread_mutex_unlock(mutex);
 }
 
-
+void ols_context_data_remove(struct ols_context_data *context)
+{
+	// if (context && context->prev_next) {
+	// 	pthread_mutex_lock(context->mutex);
+	// 	*context->prev_next = context->next;
+	// 	if (context->next)
+	// 		context->next->prev_next = context->prev_next;
+	// 	context->prev_next = NULL;
+	// 	pthread_mutex_unlock(context->mutex);
+	// }
+	UNUSED_PARAMETER(context);
+}
 
 void ols_context_data_remove_name(struct ols_context_data *context, void *phead)
 {

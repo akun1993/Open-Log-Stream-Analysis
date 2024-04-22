@@ -112,8 +112,8 @@ ols_output_t *ols_output_create(const char *id, const char *name,
 
 	ols_context_init_control(&output->context, output,
 				 (ols_destroy_cb)ols_output_destroy);
-	ols_context_data_insert(&output->context, &ols->data.outputs_mutex,
-				&ols->data.first_output);
+	// ols_context_data_insert(&output->context, &ols->data.outputs_mutex,
+	// 			&ols->data.first_output);
 
 	if (info)
 		output->context.data =

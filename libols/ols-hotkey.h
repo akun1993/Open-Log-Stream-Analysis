@@ -55,7 +55,6 @@ enum ols_hotkey_registerer_type {
 	OLS_HOTKEY_REGISTERER_FRONTEND,
 	OLS_HOTKEY_REGISTERER_SOURCE,
 	OLS_HOTKEY_REGISTERER_OUTPUT,
-	OLS_HOTKEY_REGISTERER_SERVICE,
 };
 typedef enum ols_hotkey_registerer_type ols_hotkey_registerer_t;
 

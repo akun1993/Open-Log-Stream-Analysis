@@ -159,7 +159,6 @@ void ols_hotkeys_platform_free(struct ols_core_hotkeys *hotkeys);
 bool ols_hotkeys_platform_is_pressed(ols_hotkeys_platform_t *context,
 				     ols_key_t key);
 
-const char *ols_get_hotkey_translation(ols_key_t key, const char *def);
 
 struct ols_context_data;
 void ols_hotkeys_context_release(struct ols_context_data *context);
@@ -327,10 +326,7 @@ extern void ols_context_init_control(struct ols_context_data *context,
 				     void *object, ols_destroy_cb destroy);
 extern void ols_context_data_free(struct ols_context_data *context);
 
-extern void ols_context_data_insert(struct ols_context_data *context,
-				    pthread_mutex_t *mutex, void *first);
-extern void ols_context_data_insert_name(struct ols_context_data *context,
-					 pthread_mutex_t *mutex, void *first);
+
 extern void ols_context_data_insert_uuid(struct ols_context_data *context,
 					 pthread_mutex_t *mutex,
 					 void *first_uuid);
@@ -343,12 +339,8 @@ extern void ols_context_data_remove_uuid(struct ols_context_data *context,
 
 extern void ols_context_wait(struct ols_context_data *context);
 
-extern void ols_context_data_setname(struct ols_context_data *context,
-				     const char *name);
-
 extern void ols_context_data_setname_ht(struct ols_context_data *context,
 					const char *name, void *phead);
-
 /* ------------------------------------------------------------------------- */
 /* ref-counting  */
 
@@ -481,8 +473,6 @@ static inline void ols_source_dosignal(struct ols_source *source,
 				      &data);
 }
 
-extern void ols_source_activate(ols_source_t *source, enum view_type type);
-extern void ols_source_deactivate(ols_source_t *source, enum view_type type);
 
 /* ------------------------------------------------------------------------- */
 /* outputs  */
@@ -532,9 +522,7 @@ static inline void do_output_signal(struct ols_output *output,
 	calldata_free(&params);
 }
 
-extern void ols_output_cleanup_delay(ols_output_t *output);
-extern bool ols_output_delay_start(ols_output_t *output);
-extern void ols_output_delay_stop(ols_output_t *output);
+
 extern bool ols_output_actual_start(ols_output_t *output);
 extern void ols_output_actual_stop(ols_output_t *output, bool force,
 				   uint64_t ts);
