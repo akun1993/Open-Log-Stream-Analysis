@@ -63,7 +63,7 @@ static inline bool ols_object_valid(const void *obj, const char *f,
 #define ols_ptr_valid(ptr, func) ols_object_valid(ptr, func, #ptr)
 #define ols_source_valid ols_ptr_valid
 #define ols_output_valid ols_ptr_valid
-#define ols_service_valid ols_ptr_valid
+
 
 /* ------------------------------------------------------------------------- */
 /* modules */
@@ -452,10 +452,7 @@ ols_source_create_set_last_ver(const char *id, const char *name,
 			       bool is_private);
 extern void ols_source_destroy(struct ols_source *source);
 
-enum view_type {
-	MAIN_VIEW,
-	AUX_VIEW,
-};
+
 
 static inline void ols_source_dosignal(struct ols_source *source,
 				       const char *signal_ols,
