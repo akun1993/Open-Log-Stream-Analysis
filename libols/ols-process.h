@@ -21,42 +21,40 @@
 extern "C" {
 #endif
 
-
 struct ols_process_info {
-	/* required */
-	const char *id;
+  /* required */
+  const char *id;
 
-	uint32_t flags;
+  uint32_t flags;
 
-	const char *(*get_name)(void *type_data);
+  const char *(*get_name)(void *type_data);
 
-	void *(*create)(ols_data_t *settings, ols_output_t *output);
-	void (*destroy)(void *data);
+  void *(*create)(ols_data_t *settings, ols_process_t *process);
+  void (*destroy)(void *data);
 
-	bool (*start)(void *data);
-	void (*stop)(void *data, uint64_t ts);
+  bool (*start)(void *data);
+  void (*stop)(void *data, uint64_t ts);
 
-	/* optional */
-	void (*update)(void *data, ols_data_t *settings);
+  /* optional */
+  void (*update)(void *data, ols_data_t *settings);
 
-	void (*get_defaults)(ols_data_t *settings);
+  void (*get_defaults)(ols_data_t *settings);
 
-	ols_properties_t *(*get_properties)(void *data);
+  ols_properties_t *(*get_properties)(void *data);
 
-	uint64_t (*get_total_bytes)(void *data);
+  uint64_t (*get_total_bytes)(void *data);
 
-	int (*get_dropped_frames)(void *data);
+  int (*get_dropped_frames)(void *data);
 
-	void *type_data;
-	void (*free_type_data)(void *type_data);
-
+  void *type_data;
+  void (*free_type_data)(void *type_data);
 };
 
 EXPORT void ols_register_process_s(const struct ols_process_info *info,
-				  size_t size);
+                                   size_t size);
 
-#define ols_register_process(info) \
-	ols_register_process_s(info, sizeof(struct ols_process_info))
+#define ols_register_process(info)                                             \
+  ols_register_process_s(info, sizeof(struct ols_process_info))
 
 #ifdef __cplusplus
 }

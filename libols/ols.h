@@ -17,40 +17,44 @@
 
 #pragma once
 
-#include "util/c99defs.h"
+#include "callback/proc.h"
+#include "callback/signal.h"
 #include "util/bmem.h"
+#include "util/c99defs.h"
 #include "util/profiler.h"
 #include "util/text-lookup.h"
-#include "callback/signal.h"
-#include "callback/proc.h"
 
 #include "ols-config.h"
-#include "ols-defs.h"
 #include "ols-data.h"
-#include "ols-properties.h"
+#include "ols-defs.h"
 #include "ols-interaction.h"
-
-
+#include "ols-properties.h"
 
 /* opaque types */
 struct ols_context_data;
 struct ols_source;
+struct ols_process;
 struct ols_output;
+struct ols_pad;
 struct ols_module;
 
 typedef struct ols_context_data ols_object_t;
 
 typedef struct ols_source ols_source_t;
+typedef struct ols_process ols_process_t;
 typedef struct ols_output ols_output_t;
 typedef struct ols_module ols_module_t;
+typedef struct ols_pad ols_pad_t;
 
 typedef struct ols_weak_object ols_weak_object_t;
 typedef struct ols_weak_source ols_weak_source_t;
+typedef struct ols_weak_process ols_weak_process_t;
 typedef struct ols_weak_output ols_weak_output_t;
 
-#include "ols-source.h"
-#include "ols-output.h"
 #include "ols-hotkey.h"
+#include "ols-output.h"
+#include "ols-process.h"
+#include "ols-source.h"
 
 /**
  * @file
@@ -71,8 +75,8 @@ extern "C" {
 
 /** Access to the argc/argv used to start OLS. What you see is what you get. */
 struct ols_cmdline_args {
-	int argc;
-	char **argv;
+  int argc;
+  char **argv;
 };
 
 /* ------------------------------------------------------------------------- */
@@ -112,7 +116,7 @@ EXPORT bool ols_remove_data_path(const char *path);
  * @param  store               The profiler name store for OLS to use or NULL
  */
 EXPORT bool ols_startup(const char *locale, const char *module_config_path,
-			profiler_name_store_t *store);
+                        profiler_name_store_t *store);
 
 /** Releases all data associated with OLS and terminates the OLS context */
 EXPORT void ols_shutdown(void);
@@ -168,8 +172,6 @@ EXPORT void ols_init_win32_crash_handler(void);
  */
 EXPORT profiler_name_store_t *ols_get_profiler_name_store(void);
 
-
-
 /**
  * Opens a plugin module directly from a specific path.
  *
@@ -192,7 +194,7 @@ EXPORT profiler_name_store_t *ols_get_profiler_name_store(void);
  *                    MODULE_INCOMPATIBLE_VER if incompatible version
  */
 EXPORT int ols_open_module(ols_module_t **module, const char *path,
-			   const char *data_path);
+                           const char *data_path);
 
 /**
  * Initializes the module, which calls its ols_module_load export.  If the
@@ -209,11 +211,11 @@ EXPORT void *ols_get_module_lib(ols_module_t *module);
 
 /** Returns locale text from a specific module */
 EXPORT bool ols_module_get_locale_string(const ols_module_t *mod,
-					 const char *lookup_string,
-					 const char **translated_string);
+                                         const char *lookup_string,
+                                         const char **translated_string);
 
 EXPORT const char *ols_module_get_locale_text(const ols_module_t *mod,
-					      const char *text);
+                                              const char *text);
 
 /** Logs loaded modules */
 EXPORT void ols_log_loaded_modules(void);
@@ -259,8 +261,8 @@ EXPORT void ols_add_safe_module(const char *name);
 EXPORT void ols_load_all_modules(void);
 
 struct ols_module_failure_info {
-	char **failed_modules;
-	size_t count;
+  char **failed_modules;
+  size_t count;
 };
 
 EXPORT void ols_module_failure_info_free(struct ols_module_failure_info *mfi);
@@ -271,28 +273,28 @@ EXPORT void ols_load_all_modules2(struct ols_module_failure_info *mfi);
 EXPORT void ols_post_load_modules(void);
 
 struct ols_module_info {
-	const char *bin_path;
-	const char *data_path;
+  const char *bin_path;
+  const char *data_path;
 };
 
 typedef void (*ols_find_module_callback_t)(void *param,
-					   const struct ols_module_info *info);
+                                           const struct ols_module_info *info);
 
 /** Finds all modules within the search paths added by ols_add_module_path. */
 EXPORT void ols_find_modules(ols_find_module_callback_t callback, void *param);
 
 struct ols_module_info2 {
-	const char *bin_path;
-	const char *data_path;
-	const char *name;
+  const char *bin_path;
+  const char *data_path;
+  const char *name;
 };
 
 typedef void (*ols_find_module_callback2_t)(
-	void *param, const struct ols_module_info2 *info);
+    void *param, const struct ols_module_info2 *info);
 
 /** Finds all modules within the search paths added by ols_add_module_path. */
 EXPORT void ols_find_modules2(ols_find_module_callback2_t callback,
-			      void *param);
+                              void *param);
 #endif
 
 typedef void (*ols_enum_module_callback_t)(void *param, ols_module_t *module);
@@ -302,8 +304,8 @@ EXPORT void ols_enum_modules(ols_enum_module_callback_t callback, void *param);
 
 /** Helper function for using default module locale */
 EXPORT lookup_t *ols_module_load_locale(ols_module_t *module,
-					const char *default_locale,
-					const char *locale);
+                                        const char *default_locale,
+                                        const char *locale);
 
 /**
  * Returns the location of a plugin module data file.
@@ -334,8 +336,6 @@ EXPORT char *ols_module_get_config_path(ols_module_t *module, const char *file);
 /** Enumerates all source types (inputs, filters, transitions, etc).  */
 EXPORT bool ols_enum_source_types(size_t idx, const char **id);
 
-
-
 /**
  * Enumerates all available filter source types.
  *
@@ -344,13 +344,8 @@ EXPORT bool ols_enum_source_types(size_t idx, const char **id);
  */
 EXPORT bool ols_enum_filter_types(size_t idx, const char **id);
 
-
 /** Enumerates all available output types. */
 EXPORT bool ols_enum_output_types(size_t idx, const char **id);
-
-
-
-
 
 /**
  * Enumerates all input sources
@@ -362,18 +357,15 @@ EXPORT bool ols_enum_output_types(size_t idx, const char **id);
  * a reference after ols_enum_sources finishes
  */
 EXPORT void ols_enum_sources(bool (*enum_proc)(void *, ols_source_t *),
-			     void *param);
-
+                             void *param);
 
 /** Enumerates all sources (regardless of type) */
 EXPORT void ols_enum_all_sources(bool (*enum_proc)(void *, ols_source_t *),
-				 void *param);
+                                 void *param);
 
 /** Enumerates outputs */
 EXPORT void ols_enum_outputs(bool (*enum_proc)(void *, ols_output_t *),
-			     void *param);
-
-
+                             void *param);
 
 /**
  * Gets a source by its UUID.
@@ -382,9 +374,6 @@ EXPORT void ols_enum_outputs(bool (*enum_proc)(void *, ols_output_t *),
  * release it when complete.
  */
 EXPORT ols_source_t *ols_get_source_by_uuid(const char *uuid);
-
-
-
 
 /** Returns the primary ols signal handler */
 EXPORT signal_handler_t *ols_get_signal_handler(void);
@@ -407,28 +396,28 @@ EXPORT void ols_source_save(ols_source_t *source);
 /** Send a load signal to sources (soft deprecated; does not load filters) */
 EXPORT void ols_source_load(ols_source_t *source);
 
-
 typedef void (*ols_load_source_cb)(void *private_data, ols_source_t *source);
 
 /** Loads sources from a data array */
 EXPORT void ols_load_sources(ols_data_array_t *array, ols_load_source_cb cb,
-			     void *private_data);
+                             void *private_data);
 
 /** Saves sources to a data array */
 EXPORT ols_data_array_t *ols_save_sources(void);
 
 typedef bool (*ols_save_source_filter_cb)(void *data, ols_source_t *source);
 EXPORT ols_data_array_t *ols_save_sources_filtered(ols_save_source_filter_cb cb,
-						   void *data);
+                                                   void *data);
 
 /** Reset source UUIDs. NOTE: this function is only to be used by the UI and
  *  will be removed in a future version! */
 EXPORT void ols_reset_source_uuids(void);
 
 enum ols_obj_type {
-	OLS_OBJ_TYPE_INVALID,
-	OLS_OBJ_TYPE_SOURCE,
-	OLS_OBJ_TYPE_OUTPUT,
+  OLS_OBJ_TYPE_INVALID,
+  OLS_OBJ_TYPE_SOURCE,
+  OLS_OBJ_TYPE_PROCESS,
+  OLS_OBJ_TYPE_OUTPUT,
 };
 
 EXPORT enum ols_obj_type ols_obj_get_type(void *obj);
@@ -437,9 +426,6 @@ EXPORT bool ols_obj_invalid(void *obj);
 EXPORT void *ols_obj_get_data(void *obj);
 EXPORT bool ols_obj_is_private(void *obj);
 
-
-
-
 EXPORT void ols_apply_private_data(ols_data_t *settings);
 EXPORT void ols_set_private_data(ols_data_t *settings);
 EXPORT ols_data_t *ols_get_private_data(void);
@@ -447,12 +433,12 @@ EXPORT ols_data_t *ols_get_private_data(void);
 typedef void (*ols_task_t)(void *param);
 
 enum ols_task_type {
-	OLS_TASK_UI,
-	OLS_TASK_DESTROY,
+  OLS_TASK_UI,
+  OLS_TASK_DESTROY,
 };
 
 EXPORT void ols_queue_task(enum ols_task_type type, ols_task_t task,
-			   void *param, bool wait);
+                           void *param, bool wait);
 EXPORT bool ols_in_task_thread(enum ols_task_type type);
 
 EXPORT bool ols_wait_for_destroy_queue(void);
@@ -469,8 +455,7 @@ EXPORT ols_weak_object_t *ols_object_get_weak_object(ols_object_t *object);
 EXPORT ols_object_t *ols_weak_object_get_object(ols_weak_object_t *weak);
 EXPORT bool ols_weak_object_expired(ols_weak_object_t *weak);
 EXPORT bool ols_weak_object_references_object(ols_weak_object_t *weak,
-					      ols_object_t *object);
-
+                                              ols_object_t *object);
 
 /* ------------------------------------------------------------------------- */
 /* Sources */
@@ -485,17 +470,17 @@ EXPORT const char *ols_source_get_display_name(const char *id);
  * or modifying video/audio.  Use ols_source_release to release it.
  */
 EXPORT ols_source_t *ols_source_create(const char *id, const char *name,
-				       ols_data_t *settings,
-				       ols_data_t *hotkey_data);
+                                       ols_data_t *settings,
+                                       ols_data_t *hotkey_data);
 
 EXPORT ols_source_t *ols_source_create_private(const char *id, const char *name,
-					       ols_data_t *settings);
+                                               ols_data_t *settings);
 
 /* if source has OLS_SOURCE_DO_NOT_DUPLICATE output flag set, only returns a
  * reference */
 EXPORT ols_source_t *ols_source_duplicate(ols_source_t *source,
-					  const char *desired_name,
-					  bool create_private);
+                                          const char *desired_name,
+                                          bool create_private);
 /**
  * Adds/releases a reference to a source.  When the last reference is
  * released, the source is destroyed.
@@ -512,7 +497,7 @@ EXPORT ols_source_t *ols_weak_source_get_source(ols_weak_source_t *weak);
 EXPORT bool ols_weak_source_expired(ols_weak_source_t *weak);
 
 EXPORT bool ols_weak_source_references_source(ols_weak_source_t *weak,
-					      ols_source_t *source);
+                                              ols_source_t *source);
 
 /** Notifies all references that the source should be released */
 EXPORT void ols_source_remove(ols_source_t *source);
@@ -532,7 +517,6 @@ EXPORT ols_data_t *ols_get_source_defaults(const char *id);
 /** Returns the property list, if any.  Free with ols_properties_destroy */
 EXPORT ols_properties_t *ols_get_source_properties(const char *id);
 
-
 /** Returns whether the source has custom properties or not */
 EXPORT bool ols_is_source_configurable(const char *id);
 
@@ -547,8 +531,7 @@ EXPORT ols_properties_t *ols_source_properties(const ols_source_t *source);
 /** Updates settings for this source */
 EXPORT void ols_source_update(ols_source_t *source, ols_data_t *settings);
 EXPORT void ols_source_reset_settings(ols_source_t *source,
-				      ols_data_t *settings);
-
+                                      ols_data_t *settings);
 
 /** Gets the settings string for a source */
 EXPORT ols_data_t *ols_source_get_settings(const ols_source_t *source);
@@ -578,7 +561,6 @@ EXPORT proc_handler_t *ols_source_get_proc_handler(const ols_source_t *source);
 /** Returns true if active, false if not */
 EXPORT bool ols_source_active(const ols_source_t *source);
 
-
 /** Unused flag */
 #define OLS_SOURCE_FLAG_UNUSED_1 (1 << 0)
 /** Specifies to force audio to mono */
@@ -594,7 +576,114 @@ EXPORT void ols_source_set_flags(ols_source_t *source, uint32_t flags);
 /** Gets source flags. */
 EXPORT uint32_t ols_source_get_flags(const ols_source_t *source);
 
+/* ------------------------------------------------------------------------- */
+/* Process */
+/**
+ * Creates a process of the specified type with the specified settings.
+ *
+ *   The "process" context is used for anything related to presenting
+ * or modifying video/audio.  Use ols_process_release to release it.
+ */
+EXPORT ols_process_t *ols_process_create(const char *id, const char *name,
+                                         ols_data_t *settings,
+                                         ols_data_t *hotkey_data);
 
+EXPORT ols_process_t *ols_process_create_private(const char *id,
+                                                 const char *name,
+                                                 ols_data_t *settings);
+
+/* if source has OLS_SOURCE_DO_NOT_DUPLICATE output flag set, only returns a
+ * reference */
+EXPORT ols_process_t *ols_process_duplicate(ols_process_t *process,
+                                            const char *desired_name,
+                                            bool create_private);
+/**
+ * Adds/releases a reference to a source.  When the last reference is
+ * released, the source is destroyed.
+ */
+OLS_EXTERNAL_DEPRECATED EXPORT void ols_process_addref(ols_process_t *process);
+EXPORT void ols_process_release(ols_process_t *source);
+
+EXPORT void ols_weak_process_addref(ols_weak_process_t *weak);
+EXPORT void ols_weak_process_release(ols_weak_process_t *weak);
+
+EXPORT ols_process_t *ols_process_get_ref(ols_process_t *source);
+EXPORT ols_weak_process_t *ols_process_get_weak_process(ols_process_t *process);
+EXPORT ols_process_t *ols_weak_process_get_processols_weak_process_t *weak);
+EXPORT bool ols_weak_process_expired(ols_weak_process_t *weak);
+
+EXPORT bool ols_weak_process_references_procsss(ols_weak_process_t *weak,
+                                                ols_process_t *process);
+
+/** Notifies all references that the source should be released */
+EXPORT void ols_process_remove(ols_process_t *process);
+
+/** Returns true if the source should be released */
+EXPORT bool ols_process_removed(const ols_process_t *process);
+
+/** Gets the default settings for a source type */
+EXPORT ols_data_t *ols_get_process_defaults(const char *id);
+
+/** Returns the property list, if any.  Free with ols_properties_destroy */
+EXPORT ols_properties_t *ols_get_process_properties(const char *id);
+
+/** Returns whether the source has custom properties or not */
+EXPORT bool ols_is_process_configurable(const char *id);
+
+EXPORT bool ols_process_configurable(const ols_process_t *process);
+
+/**
+ * Returns the properties list for a specific existing source.  Free with
+ * ols_properties_destroy
+ */
+EXPORT ols_properties_t *ols_process_properties(const ols_process_t *process);
+
+EXPORT void ols_process_reset_settings(ols_process_t *process,
+                                       ols_data_t *settings);
+
+/** Gets the settings string for a source */
+EXPORT ols_data_t *ols_process_get_settings(const ols_process_t *process);
+
+/** Gets the name of a source */
+EXPORT const char *ols_process_get_name(const ols_process_t *process);
+
+/** Sets the name of a source */
+EXPORT void ols_process_set_name(ols_process_t *process, const char *name);
+
+/** Gets the UUID of a source */
+EXPORT const char *ols_process_get_uuid(const ols_process_t *process);
+
+/** Gets the source type */
+EXPORT enum ols_process_type ols_process_get_type(const ols_process_t *process);
+
+/** Gets the source identifier */
+EXPORT const char *ols_process_get_id(const ols_process_t *process);
+
+/** Returns the signal handler for a source */
+EXPORT signal_handler_t *
+ols_process_get_signal_handler(const ols_process_t *process);
+
+/** Returns the procedure handler for a source */
+EXPORT proc_handler_t *
+ols_process_get_proc_handler(const ols_process_t *process);
+
+/** Returns true if active, false if not */
+EXPORT bool ols_process_active(const ols_process_t *source);
+
+/** Unused flag */
+#define OLS_PROCESS_FLAG_UNUSED_1 (1 << 0)
+/** Specifies to force audio to mono */
+#define OLS_PROCESS_FLAG_FORCE_MONO (1 << 1)
+
+/**
+ * Sets source flags.  Note that these are different from the main output
+ * flags.  These are generally things that can be set by the source or user,
+ * while the output flags are more used to determine capabilities of a source.
+ */
+EXPORT void ols_process_set_flags(ols_process_t *source, uint32_t flags);
+
+/** Gets source flags. */
+EXPORT uint32_t ols_process_get_flags(const ols_process_t *source);
 
 /* ------------------------------------------------------------------------- */
 /* Outputs */
@@ -608,8 +697,8 @@ EXPORT const char *ols_output_get_display_name(const char *id);
  * directshow, or other custom outputs.
  */
 EXPORT ols_output_t *ols_output_create(const char *id, const char *name,
-				       ols_data_t *settings,
-				       ols_data_t *hotkey_data);
+                                       ols_data_t *settings,
+                                       ols_data_t *hotkey_data);
 
 /**
  * Adds/releases a reference to an output.  When the last reference is
@@ -626,13 +715,13 @@ EXPORT ols_weak_output_t *ols_output_get_weak_output(ols_output_t *output);
 EXPORT ols_output_t *ols_weak_output_get_output(ols_weak_output_t *weak);
 
 EXPORT bool ols_weak_output_references_output(ols_weak_output_t *weak,
-					      ols_output_t *output);
+                                              ols_output_t *output);
 
 EXPORT const char *ols_output_get_name(const ols_output_t *output);
 
 /** Pass a string of the last output error, for UI use */
 EXPORT void ols_output_set_last_error(ols_output_t *output,
-				      const char *message);
+                                      const char *message);
 EXPORT const char *ols_output_get_last_error(ols_output_t *output);
 
 /**
@@ -641,7 +730,6 @@ EXPORT const char *ols_output_get_last_error(ols_output_t *output);
  * waiting to reconnect.
  */
 #define OLS_OUTPUT_DELAY_PRESERVE (1 << 0)
-
 
 /** Gets the default settings for an output type */
 EXPORT ols_data_t *ols_output_defaults(const char *id);
@@ -654,7 +742,6 @@ EXPORT ols_properties_t *ols_get_output_properties(const char *id);
  * ols_properties_destroy
  */
 EXPORT ols_properties_t *ols_output_properties(const ols_output_t *output);
-
 
 /* Gets the current output settings string */
 EXPORT ols_data_t *ols_output_get_settings(const ols_output_t *output);
@@ -670,7 +757,7 @@ EXPORT proc_handler_t *ols_output_get_proc_handler(const ols_output_t *output);
  * Sets the reconnect settings.  Set retry_count to 0 to disable reconnecting.
  */
 EXPORT void ols_output_set_reconnect_settings(ols_output_t *output,
-					      int retry_count, int retry_sec);
+                                              int retry_count, int retry_sec);
 
 /* ------------------------------------------------------------------------- */
 /* Get source icon type */

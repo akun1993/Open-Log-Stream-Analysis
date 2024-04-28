@@ -3,7 +3,6 @@
 #pragma once
 #include <cstdint>
 
-struct OlsPad;
 /**
  * OLSPadLinkReturn:
  * @OLS_PAD_LINK_OK		: link succeeded
@@ -114,8 +113,8 @@ typedef enum {
  *
  * Returns: #OLS_FLOW_OK for success
  */
-typedef OlsFlowReturn (*OlsPadChainFunction)(OlsPad *pad, OlsObject *parent,
-                                             OlsBuffer *buffer);
+typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad, OlsObject *parent,
+                                                OlsBuffer *buffer);
 
 /**
  * OlsPadChainListFunction:
@@ -137,8 +136,9 @@ typedef OlsFlowReturn (*OlsPadChainFunction)(OlsPad *pad, OlsObject *parent,
  *
  * Returns: #Ols_FLOW_OK for success
  */
-typedef OlsFlowReturn (*OlsPadChainListFunction)(OlsPad *pad, OlsObject *parent,
-                                                 OlsBufferList *list);
+typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
+                                                     OlsObject *parent,
+                                                     OlsBufferList *list);
 
 /**
  * OlsPadEventFunction:
@@ -152,8 +152,8 @@ typedef OlsFlowReturn (*OlsPadChainListFunction)(OlsPad *pad, OlsObject *parent,
  *
  * Returns: %TRUE if the pad could handle the event.
  */
-typedef bool (*OlsPadEventFunction)(OlsPad *pad, OlsObject *parent,
-                                    OlsEvent *event);
+typedef bool (*ols_pad_event_function)(ols_pad *pad, OlsObject *parent,
+                                       OlsEvent *event);
 
 /**
  * OlsPadEventFullFunction:
@@ -174,8 +174,9 @@ typedef bool (*OlsPadEventFunction)(OlsPad *pad, OlsObject *parent,
  *
  * Since: 1.8
  */
-typedef OlsFlowReturn (*OlsPadEventFullFunction)(OlsPad *pad, OlsObject *parent,
-                                                 OlsEvent *event);
+typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
+                                                     OlsObject *parent,
+                                                     OlsEvent *event);
 
 /* linking */
 /**
@@ -190,8 +191,9 @@ typedef OlsFlowReturn (*OlsPadEventFullFunction)(OlsPad *pad, OlsObject *parent,
  *
  * Returns: the result of the link with the specified peer.
  */
-typedef OlsPadLinkReturn (*OlsPadLinkFunction)(OlsPad *pad, OlsObject *parent,
-                                               OlsPad *peer);
+typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad *pad,
+                                                  OlsObject *parent,
+                                                  ols_pad *peer);
 /**
  * OlsPadUnlinkFunction:
  * @pad: the #OlsPad that is linked.
@@ -204,7 +206,7 @@ typedef OlsPadLinkReturn (*OlsPadLinkFunction)(OlsPad *pad, OlsObject *parent,
  * The pad's lock is already held when the unlink function is called, so most
  * pad functions cannot be called from within the callback.
  */
-typedef void (*OlsPadUnlinkFunction)(OlsPad *pad, OlsObject *parent);
+typedef void (*ols_pad_unlink_function)(ols_pad *pad, OlsObject *parent);
 
 /**
  * OlsPad:
@@ -215,12 +217,11 @@ typedef void (*OlsPadUnlinkFunction)(OlsPad *pad, OlsObject *parent);
  *
  * The #OlsPad structure. Use the functions to update the variables.
  */
-struct _OlsPad {
-  OLSObject object;
+struct ols_pad {
 
   /*< private >*/
   /* streaming rec_lock */
-  GRecMutex stream_rec_lock;
+  pthread_mutex_t *mutex;
   OLSTask *task;
 
   /* block cond, mutex is from the object */
@@ -228,36 +229,35 @@ struct _OlsPad {
   GHookList probes;
 
   /* pad link */
-  OlsPad *peer;
-  OlsPadLinkFunction linkfunc;
-  gpointer linkdata;
+  ols_pad *peer;
+  ols_pad_link_function linkfunc;
+  void *linkdata;
   // GDestroyNotify linknotify;
-  OlsPadUnlinkFunction unlinkfunc;
-  gpointer unlinkdata;
+  ols_pad_unlink_function unlinkfunc;
+  void *unlinkdata;
   // GDestroyNotify unlinknotify;
 
   /* data transport functions */
-  OlsPadChainFunction chainfunc;
-  gpointer chaindata;
+  ols_pad_chain_function chainfunc;
+  void *chaindata;
   // GDestroyNotify chainnotify;
-  OlsPadChainListFunction chainlistfunc;
-  gpointer chainlistdata;
+  ols_pad_chain_list_function chainlistfunc;
+  void *chainlistdata;
   // GDestroyNotify chainlistnotify;
 
-  GDestroyNotify getrangenotify;
-  OlsPadEventFunction eventfunc;
-  gpointer eventdata;
+  ols_pad_event_function eventfunc;
+  void *eventdata;
   // GDestroyNotify eventnotify;
 
   /* pad offset */
-  gint64 offset;
+  int64_t offset;
 
   /* counts number of probes attached. */
   int32_t num_probes;
   int32_t num_blocked;
 
-  OlsPadPrivate *priv;
+  // OlsPadPrivate *priv;
 
   OlsFlowReturn last_flowret;
-  OlsPadEventFullFunction eventfullfunc;
+  ols_pad_event_full_function eventfullfunc;
 };
