@@ -24,19 +24,20 @@
 #include <inttypes.h>
 #include <math.h>
 
-#define get_weak(process) ((ols_weak_source_t *)source->context.control)
+#define get_weak(process) ((ols_weak_process_t *)process->context.control)
 
-static inline bool data_valid(const struct ols_source *source, const char *f) {
-  return ols_source_valid(source, f) && source->context.data;
+static inline bool data_valid(const struct ols_process *process,
+                              const char *f) {
+  return ols_process_valid(process, f) && process->context.data;
 }
 
-static inline bool destroying(const struct ols_source *source) {
-  return os_atomic_load_long(&source->destroying);
+static inline bool destroying(const struct ols_process *process) {
+  return os_atomic_load_long(&process->destroying);
 }
 
-struct ols_source_info *get_source_info(const char *id) {
-  for (size_t i = 0; i < ols->source_types.num; i++) {
-    struct ols_source_info *info = &ols->source_types.array[i];
+struct ols_process_info *get_process_info(const char *id) {
+  for (size_t i = 0; i < ols->process_types.num; i++) {
+    struct ols_process_info *info = &ols->process_types.array[i];
     if (strcmp(info->id, id) == 0)
       return info;
   }
@@ -45,255 +46,257 @@ struct ols_source_info *get_source_info(const char *id) {
 }
 
 static const char *process_signals[] = {
-    "void destroy(ptr source)",
-    "void remove(ptr source)",
-    "void update(ptr source)",
-    "void save(ptr source)",
-    "void load(ptr source)",
-    "void activate(ptr source)",
-    "void deactivate(ptr source)",
-    "void show(ptr source)",
-    "void hide(ptr source)",
-    "void enable(ptr source, bool enabled)",
-    "void rename(ptr source, string new_name, string prev_name)",
-    "void update_properties(ptr source)",
-    "void update_flags(ptr source, int flags)",
-    "void filter_add(ptr source, ptr filter)",
-    "void filter_remove(ptr source, ptr filter)",
-    "void reorder_filters(ptr source)",
+    "void destroy(ptr process)",
+    "void remove(ptr process)",
+    "void update(ptr process)",
+    "void save(ptr process)",
+    "void load(ptr process)",
+    "void activate(ptr process)",
+    "void deactivate(ptr process)",
+    "void show(ptr process)",
+    "void hide(ptr process)",
+    "void enable(ptr process, bool enabled)",
+    "void rename(ptr process, string new_name, string prev_name)",
+    "void update_properties(ptr process)",
+    "void update_flags(ptr process, int flags)",
+    "void filter_add(ptr process, ptr filter)",
+    "void filter_remove(ptr process, ptr filter)",
+    "void reorder_filters(ptr process)",
     NULL,
 };
 
-bool ols_source_init_context(struct ols_source *source, ols_data_t *settings,
-                             const char *name, const char *uuid,
-                             ols_data_t *hotkey_data, bool private) {
-  if (!ols_context_data_init(&source->context, OLS_OBJ_TYPE_SOURCE, settings,
+bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
+                              const char *name, const char *uuid,
+                              ols_data_t *hotkey_data, bool private) {
+  if (!ols_context_data_init(&process->context, OLS_OBJ_TYPE_PROCESS, settings,
                              name, uuid, hotkey_data, private))
     return false;
 
-  return signal_handler_add_array(source->context.signals, source_signals);
+  return signal_handler_add_array(process->context.signals, process_signals);
 }
 
-const char *ols_source_get_display_name(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+const char *ols_process_get_display_name(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   return (info != NULL) ? info->get_name(info->type_data) : NULL;
 }
 
 /* internal initialization */
-static bool ols_source_init(struct ols_source *source) {
+static bool ols_process_init(struct ols_process *process) {
 
-  ols_context_init_control(&source->context, source,
-                           (ols_destroy_cb)ols_source_destroy);
+  ols_context_init_control(&process->context, process,
+                           (ols_destroy_cb)ols_process_destroy);
 
-  source->private_settings = ols_data_create();
+  process->private_settings = ols_data_create();
   return true;
 }
 
-static void ols_source_init_finalize(struct ols_source *source) {
+static void ols_process_init_finalize(struct ols_process *process) {
 
-  if (!source->context.private) {
-    // ols_context_data_insert_name(&source->context,
-    // 			     &ols->data.sources_mutex,
-    // 			     &ols->data.public_sources);
+  if (!process->context.private) {
+    // ols_context_data_insert_name(&process->context,
+    // 			     &ols->data.processs_mutex,
+    // 			     &ols->data.public_processs);
   }
-  ols_context_data_insert_uuid(&source->context, &ols->data.sources_mutex,
-                               &ols->data.sources);
+  ols_context_data_insert_uuid(&process->context, &ols->data.processs_mutex,
+                               &ols->data.processs);
 }
 
-static ols_source_t *
-ols_source_create_internal(const char *id, const char *name, const char *uuid,
-                           ols_data_t *settings, ols_data_t *hotkey_data,
-                           bool private, uint32_t last_ols_ver) {
-  struct ols_source *source = bzalloc(sizeof(struct ols_source));
+static ols_process_t *
+ols_process_create_internal(const char *id, const char *name, const char *uuid,
+                            ols_data_t *settings, ols_data_t *hotkey_data,
+                            bool private, uint32_t last_ols_ver) {
+  struct ols_process *process = bzalloc(sizeof(struct ols_process));
 
-  const struct ols_source_info *info = get_source_info(id);
+  const struct ols_process_info *info = get_process_info(id);
   if (!info) {
-    blog(LOG_ERROR, "Source ID '%s' not found", id);
+    blog(LOG_ERROR, "Process ID '%s' not found", id);
 
-    source->info.id = bstrdup(id);
-    source->owns_info_id = true;
+    process->info.id = bstrdup(id);
+    process->owns_info_id = true;
   } else {
-    source->info = *info;
+    process->info = *info;
 
     /* Always mark filters as private so they aren't found by
-     * source enum/search functions.
+     * process enum/search functions.
      *
      * XXX: Fix design flaws with filters */
-    if (info->type == OLS_SOURCE_TYPE_FILTER)
+    if (info->type == OLS_PROCESS_TYPE_FILTER)
     private
     = true;
   }
 
-  source->last_ols_ver = last_ols_ver;
+  process->last_ols_ver = last_ols_ver;
 
-  if (!ols_source_init_context(source, settings, name, uuid, hotkey_data,
-                               private))
+  if (!ols_process_init_context(process, settings, name, uuid, hotkey_data,
+                                private))
     goto fail;
 
   if (info) {
     if (info->get_defaults) {
-      info->get_defaults(source->context.settings);
+      info->get_defaults(process->context.settings);
     }
   }
 
-  if (!ols_source_init(source))
+  if (!ols_process_init(process))
     goto fail;
 
-  /* allow the source to be created even if creation fails so that the
+  /* allow the process to be created even if creation fails so that the
    * user's data doesn't become lost */
   if (info && info->create)
-    source->context.data = info->create(source->context.settings, source);
-  if ((!info || info->create) && !source->context.data)
-    blog(LOG_ERROR, "Failed to create source '%s'!", name);
+    process->context.data = info->create(process->context.settings, process);
+  if ((!info || info->create) && !process->context.data)
+    blog(LOG_ERROR, "Failed to create process '%s'!", name);
 
-  blog(LOG_DEBUG, "%ssource '%s' (%s) created", private ? "private " : "", name,
-       id);
+  blog(LOG_DEBUG, "%sprocess '%s' (%s) created", private ? "private " : "",
+       name, id);
 
-  source->flags = source->default_flags;
-  source->enabled = true;
+  process->flags = process->default_flags;
+  process->enabled = true;
 
-  ols_source_init_finalize(source);
+  ols_process_init_finalize(process);
   if (!private) {
-    ols_source_dosignal(source, "source_create", NULL);
+    ols_process_dosignal(process, "process_create", NULL);
   }
 
-  return source;
+  return process;
 
 fail:
-  blog(LOG_ERROR, "ols_source_create failed");
-  ols_source_destroy(source);
+  blog(LOG_ERROR, "ols_process_create failed");
+  ols_process_destroy(process);
   return NULL;
 }
 
-ols_source_t *ols_source_create(const char *id, const char *name,
-                                ols_data_t *settings, ols_data_t *hotkey_data) {
-  return ols_source_create_internal(id, name, NULL, settings, hotkey_data,
-                                    false, LIBOLS_API_VER);
+ols_process_t *ols_process_create(const char *id, const char *name,
+                                  ols_data_t *settings,
+                                  ols_data_t *hotkey_data) {
+  return ols_process_create_internal(id, name, NULL, settings, hotkey_data,
+                                     false, LIBOLS_API_VER);
 }
 
-ols_source_t *ols_source_create_private(const char *id, const char *name,
-                                        ols_data_t *settings) {
-  return ols_source_create_internal(id, name, NULL, settings, NULL, true,
-                                    LIBOLS_API_VER);
+ols_process_t *ols_process_create_private(const char *id, const char *name,
+                                          ols_data_t *settings) {
+  return ols_process_create_internal(id, name, NULL, settings, NULL, true,
+                                     LIBOLS_API_VER);
 }
 
-ols_source_t *ols_source_create_set_last_ver(
+ols_process_t *ols_process_create_set_last_ver(
     const char *id, const char *name, const char *uuid, ols_data_t *settings,
     ols_data_t *hotkey_data, uint32_t last_ols_ver, bool is_private) {
-  return ols_source_create_internal(id, name, uuid, settings, hotkey_data,
-                                    is_private, last_ols_ver);
+  return ols_process_create_internal(id, name, uuid, settings, hotkey_data,
+                                     is_private, last_ols_ver);
 }
 
-ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name,
-                                   bool create_private) {
-  ols_source_t *new_source;
+ols_process_t *ols_process_duplicate(ols_process_t *process,
+                                     const char *new_name,
+                                     bool create_private) {
+  ols_process_t *new_process;
   ols_data_t *settings;
 
-  if (!ols_source_valid(source, "ols_source_duplicate"))
+  if (!ols_process_valid(process, "ols_process_duplicate"))
     return NULL;
 
-  if ((source->info.output_flags & OLS_SOURCE_DO_NOT_DUPLICATE) != 0) {
-    return ols_source_get_ref(source);
+  if ((process->info.output_flags & OLS_PROCESS_DO_NOT_DUPLICATE) != 0) {
+    return ols_process_get_ref(process);
   }
 
   settings = ols_data_create();
-  ols_data_apply(settings, source->context.settings);
+  ols_data_apply(settings, process->context.settings);
 
-  new_source =
+  new_process =
       create_private
-          ? ols_source_create_private(source->info.id, new_name, settings)
-          : ols_source_create(source->info.id, new_name, settings, NULL);
+          ? ols_process_create_private(process->info.id, new_name, settings)
+          : ols_process_create(process->info.id, new_name, settings, NULL);
 
-  new_source->flags = source->flags;
+  new_process->flags = process->flags;
 
-  ols_data_apply(new_source->private_settings, source->private_settings);
+  ols_data_apply(new_process->private_settings, process->private_settings);
 
   ols_data_release(settings);
-  return new_source;
+  return new_process;
 }
 
-static void ols_source_destroy_defer(struct ols_source *source);
+static void ols_process_destroy_defer(struct ols_process *process);
 
-void ols_source_destroy(struct ols_source *source) {
-  if (!ols_source_valid(source, "ols_source_destroy"))
+void ols_process_destroy(struct ols_process *process) {
+  if (!ols_process_valid(process, "ols_process_destroy"))
     return;
 
-  if (os_atomic_set_long(&source->destroying, true) == true) {
+  if (os_atomic_set_long(&process->destroying, true) == true) {
     blog(LOG_ERROR, "Double destroy just occurred. "
-                    "Something called addref on a source "
+                    "Something called addref on a process "
                     "after it was already fully released, "
                     "I guess.");
     return;
   }
 
-  ols_context_data_remove_uuid(&source->context, &ols->data.sources);
-  if (!source->context.private)
-    ols_context_data_remove_name(&source->context, &ols->data.public_sources);
+  ols_context_data_remove_uuid(&process->context, &ols->data.processs);
+  if (!process->context.private)
+    ols_context_data_remove_name(&process->context, &ols->data.public_processs);
 
-  /* defer source destroy */
+  /* defer process destroy */
   os_task_queue_queue_task(ols->destruction_task_thread,
-                           (os_task_t)ols_source_destroy_defer, source);
+                           (os_task_t)ols_process_destroy_defer, process);
 }
 
-static void ols_source_destroy_defer(struct ols_source *source) {
+static void ols_process_destroy_defer(struct ols_process *process) {
   size_t i;
 
-  /* prevents the destruction of sources if destroy triggered inside of
+  /* prevents the destruction of processs if destroy triggered inside of
    * a video tick call */
-  ols_context_wait(&source->context);
+  ols_context_wait(&process->context);
 
-  ols_source_dosignal(source, "source_destroy", "destroy");
+  ols_process_dosignal(process, "process_destroy", "destroy");
 
-  if (source->context.data) {
-    source->info.destroy(source->context.data);
-    source->context.data = NULL;
+  if (process->context.data) {
+    process->info.destroy(process->context.data);
+    process->context.data = NULL;
   }
 
-  blog(LOG_DEBUG, "%ssource '%s' destroyed",
-       source->context.private ? "private " : "", source->context.name);
+  blog(LOG_DEBUG, "%sprocess '%s' destroyed",
+       process->context.private ? "private " : "", process->context.name);
 
-  ols_data_release(source->private_settings);
-  ols_context_data_free(&source->context);
+  ols_data_release(process->private_settings);
+  ols_context_data_free(&process->context);
 
-  if (source->owns_info_id) {
-    bfree((void *)source->info.id);
+  if (process->owns_info_id) {
+    bfree((void *)process->info.id);
   }
 
-  bfree(source);
+  bfree(process);
 }
 
-void ols_source_addref(ols_source_t *source) {
-  if (!source)
+void ols_process_addref(ols_process_t *process) {
+  if (!process)
     return;
 
-  ols_ref_addref(&source->context.control->ref);
+  ols_ref_addref(&process->context.control->ref);
 }
 
-void ols_source_release(ols_source_t *source) {
-  if (!ols && source) {
-    blog(LOG_WARNING, "Tried to release a source when the OLS "
+void ols_process_release(ols_process_t *process) {
+  if (!ols && process) {
+    blog(LOG_WARNING, "Tried to release a process when the OLS "
                       "core is shut down!");
     return;
   }
 
-  if (!source)
+  if (!process)
     return;
 
-  ols_weak_source_t *control = get_weak(source);
+  ols_weak_process_t *control = get_weak(process);
   if (ols_ref_release(&control->ref)) {
-    ols_source_destroy(source);
-    ols_weak_source_release(control);
+    ols_process_destroy(process);
+    ols_weak_process_release(control);
   }
 }
 
-void ols_weak_source_addref(ols_weak_source_t *weak) {
+void ols_weak_process_addref(ols_weak_process_t *weak) {
   if (!weak)
     return;
 
   ols_weak_ref_addref(&weak->ref);
 }
 
-void ols_weak_source_release(ols_weak_source_t *weak) {
+void ols_weak_process_release(ols_weak_process_t *weak) {
   if (!weak)
     return;
 
@@ -301,79 +304,79 @@ void ols_weak_source_release(ols_weak_source_t *weak) {
     bfree(weak);
 }
 
-ols_source_t *ols_source_get_ref(ols_source_t *source) {
-  if (!source)
+ols_process_t *ols_process_get_ref(ols_process_t *process) {
+  if (!process)
     return NULL;
 
-  return ols_weak_source_get_source(get_weak(source));
+  return ols_weak_process_get_process(get_weak(process));
 }
 
-ols_weak_source_t *ols_source_get_weak_source(ols_source_t *source) {
-  if (!source)
+ols_weak_process_t *ols_process_get_weak_process(ols_process_t *process) {
+  if (!process)
     return NULL;
 
-  ols_weak_source_t *weak = get_weak(source);
-  ols_weak_source_addref(weak);
+  ols_weak_process_t *weak = get_weak(process);
+  ols_weak_process_addref(weak);
   return weak;
 }
 
-ols_source_t *ols_weak_source_get_source(ols_weak_source_t *weak) {
+ols_process_t *ols_weak_process_get_process(ols_weak_process_t *weak) {
   if (!weak)
     return NULL;
 
   if (ols_weak_ref_get_ref(&weak->ref))
-    return weak->source;
+    return weak->process;
 
   return NULL;
 }
 
-bool ols_weak_source_expired(ols_weak_source_t *weak) {
+bool ols_weak_process_expired(ols_weak_process_t *weak) {
   return weak ? ols_weak_ref_expired(&weak->ref) : true;
 }
 
-bool ols_weak_source_references_source(ols_weak_source_t *weak,
-                                       ols_source_t *source) {
-  return weak && source && weak->source == source;
+bool ols_weak_process_references_process(ols_weak_process_t *weak,
+                                         ols_process_t *process) {
+  return weak && process && weak->process == process;
 }
 
-void ols_source_remove(ols_source_t *source) {
-  if (!ols_source_valid(source, "ols_source_remove"))
+void ols_process_remove(ols_process_t *process) {
+  if (!ols_process_valid(process, "ols_process_remove"))
     return;
 
-  if (!source->removed) {
-    ols_source_t *s = ols_source_get_ref(source);
+  if (!process->removed) {
+    ols_process_t *s = ols_process_get_ref(process);
     if (s) {
       s->removed = true;
-      ols_source_dosignal(s, "source_remove", "remove");
-      ols_source_release(s);
+      ols_process_dosignal(s, "process_remove", "remove");
+      ols_process_release(s);
     }
   }
 }
 
-bool ols_source_removed(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_removed") ? source->removed
-                                                        : true;
+bool ols_process_removed(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_removed") ? process->removed
+                                                           : true;
 }
 
-static inline ols_data_t *get_defaults(const struct ols_source_info *info) {
+static inline ols_data_t *get_defaults(const struct ols_process_info *info) {
   ols_data_t *settings = ols_data_create();
   if (info->get_defaults)
     info->get_defaults(settings);
   return settings;
 }
 
-ols_data_t *ols_source_settings(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+ols_data_t *ols_process_settings(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   return (info) ? get_defaults(info) : NULL;
 }
 
-ols_data_t *ols_get_source_defaults(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+ols_data_t *ols_get_process_defaults(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   return info ? get_defaults(info) : NULL;
 }
 
-ols_properties_t *ols_get_source_properties(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+ols_properties_t *ols_get_process_properties(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   if (info && info->get_properties) {
     ols_data_t *defaults = get_defaults(info);
     ols_properties_t *props;
@@ -387,72 +390,72 @@ ols_properties_t *ols_get_source_properties(const char *id) {
   return NULL;
 }
 
-bool ols_is_source_configurable(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+bool ols_is_process_configurable(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   return info && (info->get_properties);
 }
 
-bool ols_source_configurable(const ols_source_t *source) {
-  return data_valid(source, "ols_source_configurable") &&
-         (source->info.get_properties);
+bool ols_process_configurable(const ols_process_t *process) {
+  return data_valid(process, "ols_process_configurable") &&
+         (process->info.get_properties);
 }
 
-ols_properties_t *ols_source_properties(const ols_source_t *source) {
-  if (!data_valid(source, "ols_source_properties"))
+ols_properties_t *ols_process_properties(const ols_process_t *process) {
+  if (!data_valid(process, "ols_process_properties"))
     return NULL;
 
-  if (source->info.get_properties) {
+  if (process->info.get_properties) {
     ols_properties_t *props;
-    props = source->info.get_properties(source->context.data);
-    ols_properties_apply_settings(props, source->context.settings);
+    props = process->info.get_properties(process->context.data);
+    ols_properties_apply_settings(props, process->context.settings);
     return props;
   }
 
   return NULL;
 }
 
-void ols_source_update(ols_source_t *source, ols_data_t *settings) {
-  if (!ols_source_valid(source, "ols_source_update"))
+void ols_process_update(ols_process_t *process, ols_data_t *settings) {
+  if (!ols_process_valid(process, "ols_process_update"))
     return;
 
   if (settings) {
-    ols_data_apply(source->context.settings, settings);
+    ols_data_apply(process->context.settings, settings);
   }
 
-  if (source->context.data && source->info.update) {
-    source->info.update(source->context.data, source->context.settings);
-    ols_source_dosignal(source, "source_update", "update");
+  if (process->context.data && process->info.update) {
+    process->info.update(process->context.data, process->context.settings);
+    ols_process_dosignal(process, "process_update", "update");
   }
 }
 
-void ols_source_reset_settings(ols_source_t *source, ols_data_t *settings) {
-  if (!ols_source_valid(source, "ols_source_reset_settings"))
+void ols_process_reset_settings(ols_process_t *process, ols_data_t *settings) {
+  if (!ols_process_valid(process, "ols_process_reset_settings"))
     return;
 
-  ols_data_clear(source->context.settings);
-  ols_source_update(source, settings);
+  ols_data_clear(process->context.settings);
+  ols_process_update(process, settings);
 }
 
-void ols_source_update_properties(ols_source_t *source) {
-  if (!ols_source_valid(source, "ols_source_update_properties"))
+void ols_process_update_properties(ols_process_t *process) {
+  if (!ols_process_valid(process, "ols_process_update_properties"))
     return;
 
-  ols_source_dosignal(source, NULL, "update_properties");
+  ols_process_dosignal(process, NULL, "update_properties");
 }
 
-static void activate_source(ols_source_t *source) {
-  if (source->context.data && source->info.activate)
-    source->info.activate(source->context.data);
-  ols_source_dosignal(source, "source_activate", "activate");
+static void activate_process(ols_process_t *process) {
+  if (process->context.data && process->info.activate)
+    process->info.activate(process->context.data);
+  ols_process_dosignal(process, "process_activate", "activate");
 }
 
-static void deactivate_source(ols_source_t *source) {
-  if (source->context.data && source->info.deactivate)
-    source->info.deactivate(source->context.data);
-  ols_source_dosignal(source, "source_deactivate", "deactivate");
+static void deactivate_process(ols_process_t *process) {
+  if (process->context.data && process->info.deactivate)
+    process->info.deactivate(process->context.data);
+  ols_process_dosignal(process, "process_deactivate", "deactivate");
 }
 
-static void activate_tree(ols_source_t *parent, ols_source_t *child,
+static void activate_tree(ols_process_t *parent, ols_process_t *child,
                           void *param) {
   os_atomic_inc_long(&child->activate_refs);
 
@@ -460,7 +463,7 @@ static void activate_tree(ols_source_t *parent, ols_source_t *child,
   UNUSED_PARAMETER(param);
 }
 
-static void deactivate_tree(ols_source_t *parent, ols_source_t *child,
+static void deactivate_tree(ols_process_t *parent, ols_process_t *child,
                             void *param) {
   os_atomic_dec_long(&child->activate_refs);
 
@@ -468,14 +471,16 @@ static void deactivate_tree(ols_source_t *parent, ols_source_t *child,
   UNUSED_PARAMETER(param);
 }
 
-static void show_tree(ols_source_t *parent, ols_source_t *child, void *param) {
+static void show_tree(ols_process_t *parent, ols_process_t *child,
+                      void *param) {
   os_atomic_inc_long(&child->show_refs);
 
   UNUSED_PARAMETER(parent);
   UNUSED_PARAMETER(param);
 }
 
-static void hide_tree(ols_source_t *parent, ols_source_t *child, void *param) {
+static void hide_tree(ols_process_t *parent, ols_process_t *child,
+                      void *param) {
   os_atomic_dec_long(&child->show_refs);
 
   UNUSED_PARAMETER(parent);
@@ -486,148 +491,153 @@ static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2) {
   return (ts1 < ts2) ? (ts2 - ts1) : (ts1 - ts2);
 }
 
-ols_data_t *ols_source_get_settings(const ols_source_t *source) {
-  if (!ols_source_valid(source, "ols_source_get_settings"))
+ols_data_t *ols_process_get_settings(const ols_process_t *process) {
+  if (!ols_process_valid(process, "ols_process_get_settings"))
     return NULL;
 
-  ols_data_addref(source->context.settings);
-  return source->context.settings;
+  ols_data_addref(process->context.settings);
+  return process->context.settings;
 }
 
-const char *ols_source_get_name(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_name") ? source->context.name
-                                                         : NULL;
+const char *ols_process_get_name(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_name")
+             ? process->context.name
+             : NULL;
 }
 
-const char *ols_source_get_uuid(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_uuid") ? source->context.uuid
-                                                         : NULL;
+const char *ols_process_get_uuid(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_uuid")
+             ? process->context.uuid
+             : NULL;
 }
 
-void ols_source_set_name(ols_source_t *source, const char *name) {
-  if (!ols_source_valid(source, "ols_source_set_name"))
+void ols_process_set_name(ols_process_t *process, const char *name) {
+  if (!ols_process_valid(process, "ols_process_set_name"))
     return;
 
-  if (!name || !*name || !source->context.name ||
-      strcmp(name, source->context.name) != 0) {
+  if (!name || !*name || !process->context.name ||
+      strcmp(name, process->context.name) != 0) {
     struct calldata data;
-    char *prev_name = bstrdup(source->context.name);
+    char *prev_name = bstrdup(process->context.name);
 
-    if (!source->context.private) {
-      ols_context_data_setname_ht(&source->context, name,
-                                  &ols->data.public_sources);
+    if (!process->context.private) {
+      ols_context_data_setname_ht(&process->context, name,
+                                  &ols->data.public_processs);
     }
     calldata_init(&data);
-    calldata_set_ptr(&data, "source", source);
-    calldata_set_string(&data, "new_name", source->context.name);
+    calldata_set_ptr(&data, "process", process);
+    calldata_set_string(&data, "new_name", process->context.name);
     calldata_set_string(&data, "prev_name", prev_name);
-    if (!source->context.private)
-      signal_handler_signal(ols->signals, "source_rename", &data);
-    signal_handler_signal(source->context.signals, "rename", &data);
+    if (!process->context.private)
+      signal_handler_signal(ols->signals, "process_rename", &data);
+    signal_handler_signal(process->context.signals, "rename", &data);
     calldata_free(&data);
     bfree(prev_name);
   }
 }
 
-enum ols_source_type ols_source_get_type(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_type")
-             ? source->info.type
-             : OLS_SOURCE_TYPE_INPUT;
+enum ols_process_type ols_process_get_type(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_type")
+             ? process->info.type
+             : OLS_PROCESS_TYPE_INPUT;
 }
 
-const char *ols_source_get_id(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_id") ? source->info.id : NULL;
+const char *ols_process_get_id(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_id") ? process->info.id
+                                                          : NULL;
 }
 
-signal_handler_t *ols_source_get_signal_handler(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_signal_handler")
-             ? source->context.signals
+signal_handler_t *ols_process_get_signal_handler(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_signal_handler")
+             ? process->context.signals
              : NULL;
 }
 
-proc_handler_t *ols_source_get_proc_handler(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_proc_handler")
-             ? source->context.procs
+proc_handler_t *ols_process_get_proc_handler(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_proc_handler")
+             ? process->context.procs
              : NULL;
 }
 
-void ols_source_save(ols_source_t *source) {
-  if (!data_valid(source, "ols_source_save"))
+void ols_process_save(ols_process_t *process) {
+  if (!data_valid(process, "ols_process_save"))
     return;
 
-  ols_source_dosignal(source, "source_save", "save");
+  ols_process_dosignal(process, "process_save", "save");
 
-  if (source->info.save)
-    source->info.save(source->context.data, source->context.settings);
+  if (process->info.save)
+    process->info.save(process->context.data, process->context.settings);
 }
 
-void ols_source_load(ols_source_t *source) {
-  if (!data_valid(source, "ols_source_load"))
+void ols_process_load(ols_process_t *process) {
+  if (!data_valid(process, "ols_process_load"))
     return;
-  if (source->info.load)
-    source->info.load(source->context.data, source->context.settings);
+  if (process->info.load)
+    process->info.load(process->context.data, process->context.settings);
 
-  ols_source_dosignal(source, "source_load", "load");
+  ols_process_dosignal(process, "process_load", "load");
 }
 
-bool ols_source_active(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_active")
-             ? source->activate_refs != 0
+bool ols_process_active(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_active")
+             ? process->activate_refs != 0
              : false;
 }
 
-bool ols_source_showing(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_showing") ? source->show_refs != 0
-                                                        : false;
+bool ols_process_showing(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_showing")
+             ? process->show_refs != 0
+             : false;
 }
 
-static inline void signal_flags_updated(ols_source_t *source) {
+static inline void signal_flags_updated(ols_process_t *process) {
   struct calldata data;
   uint8_t stack[128];
 
   calldata_init_fixed(&data, stack, sizeof(stack));
-  calldata_set_ptr(&data, "source", source);
-  calldata_set_int(&data, "flags", source->flags);
+  calldata_set_ptr(&data, "process", process);
+  calldata_set_int(&data, "flags", process->flags);
 
-  signal_handler_signal(source->context.signals, "update_flags", &data);
+  signal_handler_signal(process->context.signals, "update_flags", &data);
 }
 
-void ols_source_set_flags(ols_source_t *source, uint32_t flags) {
-  if (!ols_source_valid(source, "ols_source_set_flags"))
+void ols_process_set_flags(ols_process_t *process, uint32_t flags) {
+  if (!ols_process_valid(process, "ols_process_set_flags"))
     return;
 
-  if (flags != source->flags) {
-    source->flags = flags;
-    signal_flags_updated(source);
+  if (flags != process->flags) {
+    process->flags = flags;
+    signal_flags_updated(process);
   }
 }
 
-void ols_source_set_default_flags(ols_source_t *source, uint32_t flags) {
-  if (!ols_source_valid(source, "ols_source_set_default_flags"))
+void ols_process_set_default_flags(ols_process_t *process, uint32_t flags) {
+  if (!ols_process_valid(process, "ols_process_set_default_flags"))
     return;
 
-  source->default_flags = flags;
+  process->default_flags = flags;
 }
 
-uint32_t ols_source_get_flags(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_flags") ? source->flags : 0;
+uint32_t ols_process_get_flags(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_flags") ? process->flags
+                                                             : 0;
 }
 
-ols_data_t *ols_source_get_private_settings(ols_source_t *source) {
-  if (!ols_ptr_valid(source, "ols_source_get_private_settings"))
+ols_data_t *ols_process_get_private_settings(ols_process_t *process) {
+  if (!ols_ptr_valid(process, "ols_process_get_private_settings"))
     return NULL;
 
-  ols_data_addref(source->private_settings);
-  return source->private_settings;
+  ols_data_addref(process->private_settings);
+  return process->private_settings;
 }
 
-uint32_t ols_source_get_last_ols_version(const ols_source_t *source) {
-  return ols_source_valid(source, "ols_source_get_last_ols_version")
-             ? source->last_ols_ver
+uint32_t ols_process_get_last_ols_version(const ols_process_t *process) {
+  return ols_process_valid(process, "ols_process_get_last_ols_version")
+             ? process->last_ols_ver
              : 0;
 }
 
-enum ols_icon_type ols_source_get_icon_type(const char *id) {
-  const struct ols_source_info *info = get_source_info(id);
+enum ols_icon_type ols_process_get_icon_type(const char *id) {
+  const struct ols_process_info *info = get_process_info(id);
   return (info) ? info->icon_type : OLS_ICON_TYPE_UNKNOWN;
 }

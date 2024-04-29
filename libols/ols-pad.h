@@ -113,7 +113,8 @@ typedef enum {
  *
  * Returns: #OLS_FLOW_OK for success
  */
-typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad, OlsObject *parent,
+typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad,
+                                                ols_object_t *parent,
                                                 OlsBuffer *buffer);
 
 /**
@@ -137,7 +138,7 @@ typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad, OlsObject *parent,
  * Returns: #Ols_FLOW_OK for success
  */
 typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
-                                                     OlsObject *parent,
+                                                     ols_object_t *parent,
                                                      OlsBufferList *list);
 
 /**
@@ -152,7 +153,7 @@ typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
  *
  * Returns: %TRUE if the pad could handle the event.
  */
-typedef bool (*ols_pad_event_function)(ols_pad *pad, OlsObject *parent,
+typedef bool (*ols_pad_event_function)(ols_pad *pad, ols_object_t *parent,
                                        OlsEvent *event);
 
 /**
@@ -175,7 +176,7 @@ typedef bool (*ols_pad_event_function)(ols_pad *pad, OlsObject *parent,
  * Since: 1.8
  */
 typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
-                                                     OlsObject *parent,
+                                                     ols_object_t *parent,
                                                      OlsEvent *event);
 
 /* linking */
@@ -192,7 +193,7 @@ typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
  * Returns: the result of the link with the specified peer.
  */
 typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad *pad,
-                                                  OlsObject *parent,
+                                                  ols_object_t *parent,
                                                   ols_pad *peer);
 /**
  * OlsPadUnlinkFunction:
@@ -206,7 +207,7 @@ typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad *pad,
  * The pad's lock is already held when the unlink function is called, so most
  * pad functions cannot be called from within the callback.
  */
-typedef void (*ols_pad_unlink_function)(ols_pad *pad, OlsObject *parent);
+typedef void (*ols_pad_unlink_function)(ols_pad *pad, ols_object_t *parent);
 
 /**
  * OlsPad:
@@ -221,12 +222,12 @@ struct ols_pad {
 
   /*< private >*/
   /* streaming rec_lock */
-  pthread_mutex_t *mutex;
-  OLSTask *task;
+  // pthread_mutex_t *mutex;
+  // OLSTask *task;
 
   /* block cond, mutex is from the object */
-  GCond block_cond;
-  GHookList probes;
+  // GCond block_cond;
+  // GHookList probes;
 
   /* pad link */
   ols_pad *peer;

@@ -21,6 +21,20 @@
 extern "C" {
 #endif
 
+/**
+ * Process should not be fully duplicated
+ *
+ * When this is used, specifies that the process should not be fully duplicated,
+ * and should prefer to duplicate via holding references rather than full
+ * duplication.
+ */
+#define OLS_PROCESS_DO_NOT_DUPLICATE (1 << 0)
+
+enum ols_process_type {
+  OLS_PROCESS_TYPE_INPUT,
+  OLS_PROCESS_TYPE_FILTER,
+};
+
 struct ols_process_info {
   /* required */
   const char *id;
