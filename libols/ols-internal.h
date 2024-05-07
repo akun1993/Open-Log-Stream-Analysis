@@ -18,6 +18,7 @@
 #pragma once
 #include "callback/proc.h"
 #include "callback/signal.h"
+#include "ols.h"
 #include "util/c99defs.h"
 #include "util/darray.h"
 #include "util/deque.h"
@@ -27,11 +28,8 @@
 #include "util/task.h"
 #include "util/threading.h"
 #include "util/uthash.h"
-#include <stdbool.h>
-
-#include "ols.h"
-
 #include <olsversion.h>
+#include <stdbool.h>
 
 /* Custom helpers for the UUID hash table */
 #define HASH_FIND_UUID(head, uuid, out)                                        \
@@ -302,6 +300,15 @@ struct ols_context_data {
   ols_data_t *hotkey_data;
 
   pthread_mutex_t *mutex;
+
+  /* element pads, these lists can only be iterated while holding
+   * the LOCK or checking the cookie after each LOCK. */
+  uint16_t numpads;
+  DARRAY(ols_pad) pads;
+  uint16_t numsrcpads;
+  DARRAY(ols_pad) srcpads;
+  uint16_t numsinkpads;
+  DARRAY(ols_pad) sinkpads;
 
   UT_hash_handle hh;
   UT_hash_handle hh_uuid;

@@ -115,7 +115,7 @@ typedef enum {
  */
 typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad,
                                                 ols_object_t *parent,
-                                                OlsBuffer *buffer);
+                                                ols_buffer *buffer);
 
 /**
  * OlsPadChainListFunction:
@@ -139,7 +139,7 @@ typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad,
  */
 typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
                                                      ols_object_t *parent,
-                                                     OlsBufferList *list);
+                                                     ols_buffer_list *list);
 
 /**
  * OlsPadEventFunction:
@@ -154,7 +154,7 @@ typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
  * Returns: %TRUE if the pad could handle the event.
  */
 typedef bool (*ols_pad_event_function)(ols_pad *pad, ols_object_t *parent,
-                                       OlsEvent *event);
+                                       ols_event *event);
 
 /**
  * OlsPadEventFullFunction:
@@ -177,7 +177,7 @@ typedef bool (*ols_pad_event_function)(ols_pad *pad, ols_object_t *parent,
  */
 typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
                                                      ols_object_t *parent,
-                                                     OlsEvent *event);
+                                                     ols_event *event);
 
 /* linking */
 /**

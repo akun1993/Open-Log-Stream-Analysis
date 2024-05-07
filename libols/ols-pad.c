@@ -95,7 +95,7 @@ void ols_pad_set_chain_list_function_full(ols_pad *pad,
  * If @link is installed on a source pad, it should call the #OlsPadLinkFunction
  * of the peer sink pad, if present.
  */
-void ols_pad_set_link_function_full(OlsPad *pad, ols_pad_link_function link,
+void ols_pad_set_link_function_full(ols_pad *pad, ols_pad_link_function link,
                                     void *user_data) {
   //   g_return_if_fail(OLS_IS_PAD(pad));
 
@@ -163,88 +163,88 @@ void ols_pad_set_unlink_function_full(ols_pad *pad,
 bool ols_pad_unlink(ols_pad *srcpad, ols_pad *sinkpad) {
   bool result = FALSE;
 
-  OLS_TRACER_PAD_UNLINK_PRE(srcpad, sinkpad);
+  //   OLS_TRACER_PAD_UNLINK_PRE(srcpad, sinkpad);
 
-  OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinking %s:%s(%p) and %s:%s(%p)",
-               OLS_DEBUG_PAD_NAME(srcpad), srcpad, OLS_DEBUG_PAD_NAME(sinkpad),
-               sinkpad);
+  //   OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinking %s:%s(%p) and %s:%s(%p)",
+  //                OLS_DEBUG_PAD_NAME(srcpad), srcpad,
+  //                OLS_DEBUG_PAD_NAME(sinkpad), sinkpad);
 
-  /* We need to notify the parent before taking any pad locks as the bin in
-   * question might be waiting for a lock on the pad while holding its lock
-   * that our message will try to take. */
-  if ((parent = OLS_ELEMENT_CAST(ols_pad_get_parent(srcpad)))) {
-    if (OLS_IS_ELEMENT(parent)) {
-      ols_element_post_message(parent, ols_message_new_structure_change(
-                                           OLS_OBJECT_CAST(sinkpad),
-                                           OLS_STRUCTURE_CHANGE_TYPE_PAD_UNLINK,
-                                           parent, TRUE));
-    } else {
-      ols_object_unref(parent);
-      parent = NULL;
-    }
-  }
+  //   /* We need to notify the parent before taking any pad locks as the bin in
+  //    * question might be waiting for a lock on the pad while holding its lock
+  //    * that our message will try to take. */
+  //   if ((parent = OLS_ELEMENT_CAST(ols_pad_get_parent(srcpad)))) {
+  //     if (OLS_IS_ELEMENT(parent)) {
+  //       ols_element_post_message(parent, ols_message_new_structure_change(
+  //                                            OLS_OBJECT_CAST(sinkpad),
+  //                                            OLS_STRUCTURE_CHANGE_TYPE_PAD_UNLINK,
+  //                                            parent, TRUE));
+  //     } else {
+  //       ols_object_unref(parent);
+  //       parent = NULL;
+  //     }
+  //   }
 
-  OLS_OBJECT_LOCK(srcpad);
-  OLS_OBJECT_LOCK(sinkpad);
+  //   OLS_OBJECT_LOCK(srcpad);
+  //   OLS_OBJECT_LOCK(sinkpad);
 
-  if (G_UNLIKELY(OLS_PAD_PEER(srcpad) != sinkpad))
-    goto not_linked_together;
+  //   if (G_UNLIKELY(OLS_PAD_PEER(srcpad) != sinkpad))
+  //     goto not_linked_together;
 
-  if (OLS_PAD_UNLINKFUNC(srcpad)) {
-    OlsObject *tmpparent;
+  //   if (OLS_PAD_UNLINKFUNC(srcpad)) {
+  //     OlsObject *tmpparent;
 
-    ACQUIRE_PARENT(srcpad, tmpparent, no_src_parent);
+  //     ACQUIRE_PARENT(srcpad, tmpparent, no_src_parent);
 
-    OLS_PAD_UNLINKFUNC(srcpad)(srcpad, tmpparent);
-    RELEASE_PARENT(tmpparent);
-  }
-no_src_parent:
-  if (OLS_PAD_UNLINKFUNC(sinkpad)) {
-    OlsObject *tmpparent;
+  //     OLS_PAD_UNLINKFUNC(srcpad)(srcpad, tmpparent);
+  //     RELEASE_PARENT(tmpparent);
+  //   }
+  // no_src_parent:
+  //   if (OLS_PAD_UNLINKFUNC(sinkpad)) {
+  //     OlsObject *tmpparent;
 
-    ACQUIRE_PARENT(sinkpad, tmpparent, no_sink_parent);
+  //     ACQUIRE_PARENT(sinkpad, tmpparent, no_sink_parent);
 
-    OLS_PAD_UNLINKFUNC(sinkpad)(sinkpad, tmpparent);
-    RELEASE_PARENT(tmpparent);
-  }
-no_sink_parent:
+  //     OLS_PAD_UNLINKFUNC(sinkpad)(sinkpad, tmpparent);
+  //     RELEASE_PARENT(tmpparent);
+  //   }
+  // no_sink_parent:
 
-  /* first clear peers */
-  OLS_PAD_PEER(srcpad) = NULL;
-  OLS_PAD_PEER(sinkpad) = NULL;
+  //   /* first clear peers */
+  //   OLS_PAD_PEER(srcpad) = NULL;
+  //   OLS_PAD_PEER(sinkpad) = NULL;
 
-  OLS_OBJECT_UNLOCK(sinkpad);
-  OLS_OBJECT_UNLOCK(srcpad);
+  //   OLS_OBJECT_UNLOCK(sinkpad);
+  //   OLS_OBJECT_UNLOCK(srcpad);
 
-  /* fire off a signal to each of the pads telling them
-   * that they've been unlinked */
-  g_signal_emit(srcpad, ols_pad_signals[PAD_UNLINKED], 0, sinkpad);
-  g_signal_emit(sinkpad, ols_pad_signals[PAD_UNLINKED], 0, srcpad);
+  //   /* fire off a signal to each of the pads telling them
+  //    * that they've been unlinked */
+  //   g_signal_emit(srcpad, ols_pad_signals[PAD_UNLINKED], 0, sinkpad);
+  //   g_signal_emit(sinkpad, ols_pad_signals[PAD_UNLINKED], 0, srcpad);
 
-  OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinked %s:%s and %s:%s",
-               OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
+  //   OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinked %s:%s and %s:%s",
+  //                OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
 
-  result = TRUE;
+  //   result = TRUE;
 
-done:
-  if (parent != NULL) {
-    ols_element_post_message(parent, ols_message_new_structure_change(
-                                         OLS_OBJECT_CAST(sinkpad),
-                                         OLS_STRUCTURE_CHANGE_TYPE_PAD_UNLINK,
-                                         parent, FALSE));
-    ols_object_unref(parent);
-  }
-  OLS_TRACER_PAD_UNLINK_POST(srcpad, sinkpad, result);
+  // done:
+  //   if (parent != NULL) {
+  //     ols_element_post_message(parent, ols_message_new_structure_change(
+  //                                          OLS_OBJECT_CAST(sinkpad),
+  //                                          OLS_STRUCTURE_CHANGE_TYPE_PAD_UNLINK,
+  //                                          parent, FALSE));
+  //     ols_object_unref(parent);
+  //   }
+  //   OLS_TRACER_PAD_UNLINK_POST(srcpad, sinkpad, result);
   return result;
 
-  /* ERRORS */
-not_linked_together : {
-  /* we do not emit a warning in this case because unlinking cannot
-   * be made MT safe.*/
-  OLS_OBJECT_UNLOCK(sinkpad);
-  OLS_OBJECT_UNLOCK(srcpad);
-  goto done;
-}
+  //   /* ERRORS */
+  // not_linked_together : {
+  //   /* we do not emit a warning in this case because unlinking cannot
+  //    * be made MT safe.*/
+  //   OLS_OBJECT_UNLOCK(sinkpad);
+  //   OLS_OBJECT_UNLOCK(srcpad);
+  //   goto done;
+  // }
 }
 
 /**
@@ -257,14 +257,14 @@ not_linked_together : {
  *
  * MT safe.
  */
-gboolean ols_pad_is_linked(ols_pad *pad) {
-  gboolean result;
+bool ols_pad_is_linked(ols_pad *pad) {
+  bool result;
 
-  g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
+  // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
 
-  OLS_OBJECT_LOCK(pad);
-  result = (OLS_PAD_PEER(pad) != NULL);
-  OLS_OBJECT_UNLOCK(pad);
+  // OLS_OBJECT_LOCK(pad);
+  // result = (OLS_PAD_PEER(pad) != NULL);
+  // OLS_OBJECT_UNLOCK(pad);
 
   return result;
 }
@@ -288,136 +288,136 @@ gboolean ols_pad_is_linked(ols_pad *pad) {
  * Returns: A result code indicating if the connection worked or
  *          what went wrong.
  */
-OlsPadLinkReturn ols_pad_link_full(ols_pad *srcpad, ols_pad *sinkpad,
-                                   OlsPadLinkCheck flags) {
+OlsPadLinkReturn ols_pad_link_full(ols_pad *srcpad, ols_pad *sinkpad) {
   OlsPadLinkReturn result;
-  OlsElement *parent;
-  OlsPadLinkFunction srcfunc, sinkfunc;
+  // OlsElement *parent;
+  ols_pad_link_function srcfunc, sinkfunc;
 
-  g_return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
-  g_return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
-  g_return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
-  g_return_val_if_fail(OLS_PAD_IS_SINK(sinkpad), OLS_PAD_LINK_WRONG_DIRECTION);
+  // g_return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
+  // g_return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
+  // g_return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
+  // g_return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),
+  // OLS_PAD_LINK_WRONG_DIRECTION);
 
-  OLS_TRACER_PAD_LINK_PRE(srcpad, sinkpad);
+  // OLS_TRACER_PAD_LINK_PRE(srcpad, sinkpad);
 
   /* Notify the parent early. See ols_pad_unlink for details. */
-  if (G_LIKELY((parent = OLS_ELEMENT_CAST(ols_pad_get_parent(srcpad))))) {
-    if (G_LIKELY(OLS_IS_ELEMENT(parent))) {
-      ols_element_post_message(parent, ols_message_new_structure_change(
-                                           OLS_OBJECT_CAST(sinkpad),
-                                           OLS_STRUCTURE_CHANGE_TYPE_PAD_LINK,
-                                           parent, TRUE));
-    } else {
-      ols_object_unref(parent);
-      parent = NULL;
-    }
-  }
+  // if (G_LIKELY((parent = OLS_ELEMENT_CAST(ols_pad_get_parent(srcpad))))) {
+  //   if (G_LIKELY(OLS_IS_ELEMENT(parent))) {
+  //     ols_element_post_message(parent, ols_message_new_structure_change(
+  //                                          OLS_OBJECT_CAST(sinkpad),
+  //                                          OLS_STRUCTURE_CHANGE_TYPE_PAD_LINK,
+  //                                          parent, TRUE));
+  //   } else {
+  //     ols_object_unref(parent);
+  //     parent = NULL;
+  //   }
+  // }
 
   /* prepare will also lock the two pads */
-  result = ols_pad_link_prepare(srcpad, sinkpad, flags);
+  // result = ols_pad_link_prepare(srcpad, sinkpad, flags);
 
-  if (G_UNLIKELY(result != OLS_PAD_LINK_OK)) {
-    OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
-                 OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
-                 ols_pad_link_get_name(result));
-    goto done;
-  }
+  // if (G_UNLIKELY(result != OLS_PAD_LINK_OK)) {
+  //   OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
+  //                OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
+  //                ols_pad_link_get_name(result));
+  //   goto done;
+  // }
 
   /* must set peers before calling the link function */
-  OLS_PAD_PEER(srcpad) = sinkpad;
-  OLS_PAD_PEER(sinkpad) = srcpad;
+  // OLS_PAD_PEER(srcpad) = sinkpad;
+  // OLS_PAD_PEER(sinkpad) = srcpad;
 
   /* check events, when something is different, mark pending */
-  schedule_events(srcpad, sinkpad);
+  // schedule_events(srcpad, sinkpad);
 
   /* get the link functions */
-  srcfunc = OLS_PAD_LINKFUNC(srcpad);
-  sinkfunc = OLS_PAD_LINKFUNC(sinkpad);
+  //   srcfunc = OLS_PAD_LINKFUNC(srcpad);
+  //   sinkfunc = OLS_PAD_LINKFUNC(sinkpad);
 
-  if (G_UNLIKELY(srcfunc || sinkfunc)) {
-    /* custom link functions, execute them */
-    OLS_OBJECT_UNLOCK(sinkpad);
-    OLS_OBJECT_UNLOCK(srcpad);
+  //   if (G_UNLIKELY(srcfunc || sinkfunc)) {
+  //     /* custom link functions, execute them */
+  //     OLS_OBJECT_UNLOCK(sinkpad);
+  //     OLS_OBJECT_UNLOCK(srcpad);
 
-    if (srcfunc) {
-      OlsObject *tmpparent;
+  //     if (srcfunc) {
+  //       OlsObject *tmpparent;
 
-      ACQUIRE_PARENT(srcpad, tmpparent, no_parent);
-      /* this one will call the peer link function */
-      result = srcfunc(srcpad, tmpparent, sinkpad);
-      RELEASE_PARENT(tmpparent);
-    } else if (sinkfunc) {
-      OlsObject *tmpparent;
+  //       ACQUIRE_PARENT(srcpad, tmpparent, no_parent);
+  //       /* this one will call the peer link function */
+  //       result = srcfunc(srcpad, tmpparent, sinkpad);
+  //       RELEASE_PARENT(tmpparent);
+  //     } else if (sinkfunc) {
+  //       OlsObject *tmpparent;
 
-      ACQUIRE_PARENT(sinkpad, tmpparent, no_parent);
-      /* if no source link function, we need to call the sink link
-       * function ourselves. */
-      result = sinkfunc(sinkpad, tmpparent, srcpad);
-      RELEASE_PARENT(tmpparent);
-    }
-  no_parent:
+  //       ACQUIRE_PARENT(sinkpad, tmpparent, no_parent);
+  //       /* if no source link function, we need to call the sink link
+  //        * function ourselves. */
+  //       result = sinkfunc(sinkpad, tmpparent, srcpad);
+  //       RELEASE_PARENT(tmpparent);
+  //     }
+  //   no_parent:
 
-    OLS_OBJECT_LOCK(srcpad);
-    OLS_OBJECT_LOCK(sinkpad);
+  //     OLS_OBJECT_LOCK(srcpad);
+  //     OLS_OBJECT_LOCK(sinkpad);
 
-    /* we released the lock, check if the same pads are linked still */
-    if (OLS_PAD_PEER(srcpad) != sinkpad || OLS_PAD_PEER(sinkpad) != srcpad)
-      goto concurrent_link;
+  //     /* we released the lock, check if the same pads are linked still */
+  //     if (OLS_PAD_PEER(srcpad) != sinkpad || OLS_PAD_PEER(sinkpad) != srcpad)
+  //       goto concurrent_link;
 
-    if (G_UNLIKELY(result != OLS_PAD_LINK_OK))
-      goto link_failed;
-  }
-  OLS_OBJECT_UNLOCK(sinkpad);
-  OLS_OBJECT_UNLOCK(srcpad);
+  //     if (G_UNLIKELY(result != OLS_PAD_LINK_OK))
+  //       goto link_failed;
+  //   }
+  //   OLS_OBJECT_UNLOCK(sinkpad);
+  //   OLS_OBJECT_UNLOCK(srcpad);
 
-  /* fire off a signal to each of the pads telling them
-   * that they've been linked */
-  g_signal_emit(srcpad, ols_pad_signals[PAD_LINKED], 0, sinkpad);
-  g_signal_emit(sinkpad, ols_pad_signals[PAD_LINKED], 0, srcpad);
+  //   /* fire off a signal to each of the pads telling them
+  //    * that they've been linked */
+  //   g_signal_emit(srcpad, ols_pad_signals[PAD_LINKED], 0, sinkpad);
+  //   g_signal_emit(sinkpad, ols_pad_signals[PAD_LINKED], 0, srcpad);
 
-  OLS_CAT_INFO(OLS_CAT_PADS, "linked %s:%s and %s:%s, successful",
-               OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
+  //   OLS_CAT_INFO(OLS_CAT_PADS, "linked %s:%s and %s:%s, successful",
+  //                OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
 
-  if (!(flags & OLS_PAD_LINK_CHECK_NO_RECONFIGURE))
-    ols_pad_send_event(srcpad, ols_event_new_reconfigure());
+  //   if (!(flags & OLS_PAD_LINK_CHECK_NO_RECONFIGURE))
+  //     ols_pad_send_event(srcpad, ols_event_new_reconfigure());
 
-done:
-  if (G_LIKELY(parent)) {
-    ols_element_post_message(parent, ols_message_new_structure_change(
-                                         OLS_OBJECT_CAST(sinkpad),
-                                         OLS_STRUCTURE_CHANGE_TYPE_PAD_LINK,
-                                         parent, FALSE));
-    ols_object_unref(parent);
-  }
+  // done:
+  //   if (G_LIKELY(parent)) {
+  //     ols_element_post_message(parent, ols_message_new_structure_change(
+  //                                          OLS_OBJECT_CAST(sinkpad),
+  //                                          OLS_STRUCTURE_CHANGE_TYPE_PAD_LINK,
+  //                                          parent, FALSE));
+  //     ols_object_unref(parent);
+  //   }
 
-  OLS_TRACER_PAD_LINK_POST(srcpad, sinkpad, result);
+  //   OLS_TRACER_PAD_LINK_POST(srcpad, sinkpad, result);
   return result;
 
-  /* ERRORS */
-concurrent_link : {
-  OLS_CAT_INFO(OLS_CAT_PADS, "concurrent link between %s:%s and %s:%s",
-               OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
-  OLS_OBJECT_UNLOCK(sinkpad);
-  OLS_OBJECT_UNLOCK(srcpad);
+  //   /* ERRORS */
+  // concurrent_link : {
+  //   OLS_CAT_INFO(OLS_CAT_PADS, "concurrent link between %s:%s and %s:%s",
+  //                OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
+  //   OLS_OBJECT_UNLOCK(sinkpad);
+  //   OLS_OBJECT_UNLOCK(srcpad);
 
-  /* The other link operation succeeded first */
-  result = OLS_PAD_LINK_WAS_LINKED;
-  goto done;
-}
-link_failed : {
-  OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
-               OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
-               ols_pad_link_get_name(result));
+  //   /* The other link operation succeeded first */
+  //   result = OLS_PAD_LINK_WAS_LINKED;
+  //   goto done;
+  // }
+  // link_failed : {
+  //   OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
+  //                OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
+  //                ols_pad_link_get_name(result));
 
-  OLS_PAD_PEER(srcpad) = NULL;
-  OLS_PAD_PEER(sinkpad) = NULL;
+  //   OLS_PAD_PEER(srcpad) = NULL;
+  //   OLS_PAD_PEER(sinkpad) = NULL;
 
-  OLS_OBJECT_UNLOCK(sinkpad);
-  OLS_OBJECT_UNLOCK(srcpad);
+  //   OLS_OBJECT_UNLOCK(sinkpad);
+  //   OLS_OBJECT_UNLOCK(srcpad);
 
-  goto done;
-}
+  //   goto done;
+  // }
 }
 
 /**
@@ -433,7 +433,7 @@ link_failed : {
  * MT Safe.
  */
 OlsPadLinkReturn ols_pad_link(ols_pad *srcpad, ols_pad *sinkpad) {
-  return ols_pad_link_full(srcpad, sinkpad, OLS_PAD_LINK_CHECK_DEFAULT);
+  return ols_pad_link_full(srcpad, sinkpad);
 }
 
 /**
@@ -450,11 +450,11 @@ OlsPadLinkReturn ols_pad_link(ols_pad *srcpad, ols_pad *sinkpad) {
 ols_pad *ols_pad_get_peer(ols_pad *pad) {
   ols_pad *result;
 
-  OLS_OBJECT_LOCK(pad);
-  result = OLS_PAD_PEER(pad);
-  if (result)
-    ols_object_ref(result);
-  OLS_OBJECT_UNLOCK(pad);
+  // OLS_OBJECT_LOCK(pad);
+  // result = OLS_PAD_PEER(pad);
+  // if (result)
+  //   ols_object_ref(result);
+  // OLS_OBJECT_UNLOCK(pad);
 
   return result;
 }
@@ -475,100 +475,102 @@ ols_pad *ols_pad_get_peer(ols_pad *pad) {
  *
  * MT safe.
  */
-bool ols_pad_push_event(OlsPad *pad, OlsEvent *event) {
-  gboolean res = FALSE;
-  OlsPadProbeType type;
-  gboolean sticky, serialized;
+bool ols_pad_push_event(ols_pad *pad, ols_event *event) {
+  bool res = FALSE;
+  //   OlsPadProbeType type;
+  //   bool sticky, serialized;
 
-  g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
-  g_return_val_if_fail(OLS_IS_EVENT(event), FALSE);
+  //   g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
+  //   g_return_val_if_fail(OLS_IS_EVENT(event), FALSE);
 
-  OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
+  //   OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
 
-  if (OLS_PAD_IS_SRC(pad)) {
-    if (G_UNLIKELY(!OLS_EVENT_IS_DOWNSTREAM(event)))
-      goto wrong_direction;
-    type = OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM;
-  } else if (OLS_PAD_IS_SINK(pad)) {
-    if (G_UNLIKELY(!OLS_EVENT_IS_UPSTREAM(event)))
-      goto wrong_direction;
-    /* events pushed on sinkpad never are sticky */
-    type = OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM;
-  } else
-    goto unknown_direction;
+  //   if (OLS_PAD_IS_SRC(pad)) {
+  //     if (G_UNLIKELY(!OLS_EVENT_IS_DOWNSTREAM(event)))
+  //       goto wrong_direction;
+  //     type = OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM;
+  //   } else if (OLS_PAD_IS_SINK(pad)) {
+  //     if (G_UNLIKELY(!OLS_EVENT_IS_UPSTREAM(event)))
+  //       goto wrong_direction;
+  //     /* events pushed on sinkpad never are sticky */
+  //     type = OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM;
+  //   } else
+  //     goto unknown_direction;
 
-  OLS_OBJECT_LOCK(pad);
-  sticky = OLS_EVENT_IS_STICKY(event);
-  serialized = OLS_EVENT_IS_SERIALIZED(event);
+  //   OLS_OBJECT_LOCK(pad);
+  //   sticky = OLS_EVENT_IS_STICKY(event);
+  //   serialized = OLS_EVENT_IS_SERIALIZED(event);
 
-  if (sticky) {
-    /* srcpad sticky events are stored immediately, the received flag is set
-     * to FALSE and will be set to TRUE when we can successfully push the
-     * event to the peer pad */
-    switch (store_sticky_event(pad, event)) {
-    case OLS_FLOW_FLUSHING:
-      goto flushed;
-    case OLS_FLOW_EOS:
-      goto eos;
-    default:
-      break;
-    }
-  }
-  if (OLS_PAD_IS_SRC(pad) && serialized) {
-    /* All serialized events on the srcpad trigger push of sticky events.
-     *
-     * Note that we do not do this for non-serialized sticky events since it
-     * could potentially block. */
-    res = (check_sticky(pad, event) == OLS_FLOW_OK);
-  }
-  if (!serialized || !sticky) {
-    OlsFlowReturn ret;
+  //   if (sticky) {
+  //     /* srcpad sticky events are stored immediately, the received flag is
+  //     set
+  //      * to FALSE and will be set to TRUE when we can successfully push the
+  //      * event to the peer pad */
+  //     switch (store_sticky_event(pad, event)) {
+  //     case OLS_FLOW_FLUSHING:
+  //       goto flushed;
+  //     case OLS_FLOW_EOS:
+  //       goto eos;
+  //     default:
+  //       break;
+  //     }
+  //   }
+  //   if (OLS_PAD_IS_SRC(pad) && serialized) {
+  //     /* All serialized events on the srcpad trigger push of sticky events.
+  //      *
+  //      * Note that we do not do this for non-serialized sticky events since
+  //      it
+  //      * could potentially block. */
+  //     res = (check_sticky(pad, event) == OLS_FLOW_OK);
+  //   }
+  //   if (!serialized || !sticky) {
+  //     OlsFlowReturn ret;
 
-    /* non-serialized and non-sticky events are pushed right away. */
-    ret = ols_pad_push_event_unchecked(pad, event, type);
-    /* dropped events by a probe are not an error */
-    res = (ret == OLS_FLOW_OK || ret == OLS_FLOW_CUSTOM_SUCCESS ||
-           ret == OLS_FLOW_CUSTOM_SUCCESS_1);
-  } else {
-    /* Errors in sticky event pushing are no problem and ignored here
-     * as they will cause more meaningful errors during data flow.
-     * For EOS events, that are not followed by data flow, we still
-     * return FALSE here though.
-     */
-    if (OLS_EVENT_TYPE(event) != OLS_EVENT_EOS)
-      res = TRUE;
-    ols_event_unref(event);
-  }
-  OLS_OBJECT_UNLOCK(pad);
+  //     /* non-serialized and non-sticky events are pushed right away. */
+  //     ret = ols_pad_push_event_unchecked(pad, event, type);
+  //     /* dropped events by a probe are not an error */
+  //     res = (ret == OLS_FLOW_OK || ret == OLS_FLOW_CUSTOM_SUCCESS ||
+  //            ret == OLS_FLOW_CUSTOM_SUCCESS_1);
+  //   } else {
+  //     /* Errors in sticky event pushing are no problem and ignored here
+  //      * as they will cause more meaningful errors during data flow.
+  //      * For EOS events, that are not followed by data flow, we still
+  //      * return FALSE here though.
+  //      */
+  //     if (OLS_EVENT_TYPE(event) != OLS_EVENT_EOS)
+  //       res = TRUE;
+  //     ols_event_unref(event);
+  //   }
+  //   OLS_OBJECT_UNLOCK(pad);
 
-  OLS_TRACER_PAD_PUSH_EVENT_POST(pad, res);
-  return res;
+  //   OLS_TRACER_PAD_PUSH_EVENT_POST(pad, res);
+  //   return res;
 
-  /* ERROR handling */
-wrong_direction : {
-  g_warning("pad %s:%s pushing %s event in wrong direction",
-            OLS_DEBUG_PAD_NAME(pad), OLS_EVENT_TYPE_NAME(event));
-  ols_event_unref(event);
-  goto done;
-}
-unknown_direction : {
-  g_warning("pad %s:%s has invalid direction", OLS_DEBUG_PAD_NAME(pad));
-  ols_event_unref(event);
-  goto done;
-}
-flushed : {
-  OLS_DEBUG_OBJECT(pad, "We're flushing");
-  OLS_OBJECT_UNLOCK(pad);
-  ols_event_unref(event);
-  goto done;
-}
-eos : {
-  OLS_DEBUG_OBJECT(pad, "We're EOS");
-  OLS_OBJECT_UNLOCK(pad);
-  ols_event_unref(event);
-  goto done;
-}
-done:
-  OLS_TRACER_PAD_PUSH_EVENT_POST(pad, FALSE);
+  //   /* ERROR handling */
+  // wrong_direction : {
+  //   g_warning("pad %s:%s pushing %s event in wrong direction",
+  //             OLS_DEBUG_PAD_NAME(pad), OLS_EVENT_TYPE_NAME(event));
+  //   ols_event_unref(event);
+  //   goto done;
+  // }
+  // unknown_direction : {
+  //   g_warning("pad %s:%s has invalid direction", OLS_DEBUG_PAD_NAME(pad));
+  //   ols_event_unref(event);
+  //   goto done;
+  // }
+  // flushed : {
+  //   OLS_DEBUG_OBJECT(pad, "We're flushing");
+  //   OLS_OBJECT_UNLOCK(pad);
+  //   ols_event_unref(event);
+  //   goto done;
+  // }
+  // eos : {
+  //   OLS_DEBUG_OBJECT(pad, "We're EOS");
+  //   OLS_OBJECT_UNLOCK(pad);
+  //   ols_event_unref(event);
+  //   goto done;
+  // }
+  // done:
+  //   OLS_TRACER_PAD_PUSH_EVENT_POST(pad, FALSE);
   return FALSE;
 }
