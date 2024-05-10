@@ -1,6 +1,6 @@
 
 #pragma once
-#include <cstdint>
+#include <stdint.h>
 
 typedef enum {
   OLS_EVENT_LINK_OK = 0,
@@ -14,3 +14,5 @@ struct ols_event {
 
   ols_event_type ev_type;
 };
+
+typedef struct ols_event ols_event_t;

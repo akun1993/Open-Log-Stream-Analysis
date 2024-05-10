@@ -170,14 +170,6 @@ void ols_hotkey_name_map_free(void);
 /* ------------------------------------------------------------------------- */
 /* views */
 
-// struct ols_view {
-// 	pthread_mutex_t channels_mutex;
-// 	ols_source_t *channels[MAX_CHANNELS];
-// };
-
-// extern bool ols_view_init(struct ols_view *view);
-// extern void ols_view_free(struct ols_view *view);
-
 /* ------------------------------------------------------------------------- */
 /* core */
 
@@ -191,11 +183,13 @@ struct ols_core_data {
   /* Hash tables (uthash) */
   struct ols_source *sources;        /* Lookup by UUID (hh_uuid) */
   struct ols_source *public_sources; /* Lookup by name (hh) */
+  struct ols_process *processes;     /* Lookup by UUID (hh_uuid) */
 
   /* Linked lists */
   struct ols_output *first_output;
 
   pthread_mutex_t sources_mutex;
+  pthread_mutex_t processes_mutex;
   pthread_mutex_t outputs_mutex;
   DARRAY(struct tick_callback) tick_callbacks;
 
@@ -246,8 +240,9 @@ struct ols_core {
   DARRAY(char *) safe_modules;
 
   ols_source_info_array_t source_types;
-  ols_source_info_array_t input_types;
-  ols_source_info_array_t filter_types;
+  // ols_source_info_array_t input_types;
+  // ols_source_info_array_t filter_types;
+  DARRAY(struct ols_process_info) process_types;
   DARRAY(struct ols_output_info) output_types;
 
   signal_handler_t *signals;
@@ -455,7 +450,7 @@ static inline void ols_source_dosignal(struct ols_source *source,
 
 struct ols_weak_process {
   struct ols_weak_ref ref;
-  struct ols_process *source;
+  struct ols_process *process;
 };
 
 struct ols_process {
@@ -488,6 +483,8 @@ struct ols_process {
   uint64_t last_sys_timestamp;
 
   /* private data */
+  /*< protected >*/
+  ols_pad *sinkpad;
   ols_data_t *private_settings;
 };
 
@@ -514,7 +511,7 @@ static inline void ols_process_dosignal(struct ols_process *process,
   if (signal_ols && !process->context.private)
     signal_handler_signal(ols->signals, signal_ols, &data);
   if (signal_process)
-    signal_handler_signal(source->context.signals, signal_process, &data);
+    signal_handler_signal(process->context.signals, signal_process, &data);
 }
 
 /* ------------------------------------------------------------------------- */

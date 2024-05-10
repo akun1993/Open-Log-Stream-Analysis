@@ -1,6 +1,7 @@
 #include "ols-pad.h"
+#include <stdbool.h>
 
-static void ols_pad_init(ols_pad *pad) {}
+static void ols_pad_init(ols_pad_t *pad) {}
 
 #define _to_sticky_order(t) ols_event_type_to_sticky_ordering(t)
 
@@ -22,7 +23,8 @@ static void ols_pad_init(ols_pad *pad) {}
  * Sets the given chain function for the pad. The chain function is called to
  * process a #OlsBuffer input buffer. see #OlsPadChainFunction for more details.
  */
-void ols_pad_set_chain_function_full(ols_pad *pad, ols_pad_chain_function chain,
+void ols_pad_set_chain_function_full(ols_pad_t *pad,
+                                     ols_pad_chain_function chain,
                                      void *user_data) {
 
   // if (pad->chainnotify)
@@ -54,7 +56,7 @@ void ols_pad_set_chain_function_full(ols_pad *pad, ols_pad_chain_function chain,
  * called to process a #OlsBufferList input buffer list. See
  * #OlsPadChainListFunction for more details.
  */
-void ols_pad_set_chain_list_function_full(ols_pad *pad,
+void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
                                           ols_pad_chain_list_function chainlist,
                                           void *user_data) {
 
@@ -95,7 +97,7 @@ void ols_pad_set_chain_list_function_full(ols_pad *pad,
  * If @link is installed on a source pad, it should call the #OlsPadLinkFunction
  * of the peer sink pad, if present.
  */
-void ols_pad_set_link_function_full(ols_pad *pad, ols_pad_link_function link,
+void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
                                     void *user_data) {
   //   g_return_if_fail(OLS_IS_PAD(pad));
 
@@ -132,7 +134,7 @@ void ols_pad_set_link_function_full(ols_pad *pad, ols_pad_link_function link,
  * function is called, so most pad functions cannot be called
  * from within the callback.
  */
-void ols_pad_set_unlink_function_full(ols_pad *pad,
+void ols_pad_set_unlink_function_full(ols_pad_t *pad,
                                       ols_pad_unlink_function unlink,
                                       void *user_data) {
   // g_return_if_fail(OLS_IS_PAD(pad));
@@ -160,8 +162,8 @@ void ols_pad_set_unlink_function_full(ols_pad *pad,
  *
  * MT safe.
  */
-bool ols_pad_unlink(ols_pad *srcpad, ols_pad *sinkpad) {
-  bool result = FALSE;
+bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
+  bool result = false;
 
   //   OLS_TRACER_PAD_UNLINK_PRE(srcpad, sinkpad);
 
@@ -257,7 +259,7 @@ bool ols_pad_unlink(ols_pad *srcpad, ols_pad *sinkpad) {
  *
  * MT safe.
  */
-bool ols_pad_is_linked(ols_pad *pad) {
+bool ols_pad_is_linked(ols_pad_t *pad) {
   bool result;
 
   // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
@@ -288,7 +290,7 @@ bool ols_pad_is_linked(ols_pad *pad) {
  * Returns: A result code indicating if the connection worked or
  *          what went wrong.
  */
-OlsPadLinkReturn ols_pad_link_full(ols_pad *srcpad, ols_pad *sinkpad) {
+OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   OlsPadLinkReturn result;
   // OlsElement *parent;
   ols_pad_link_function srcfunc, sinkfunc;
@@ -432,7 +434,7 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad *srcpad, ols_pad *sinkpad) {
  *
  * MT Safe.
  */
-OlsPadLinkReturn ols_pad_link(ols_pad *srcpad, ols_pad *sinkpad) {
+OlsPadLinkReturn ols_pad_link(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   return ols_pad_link_full(srcpad, sinkpad);
 }
 
@@ -447,8 +449,8 @@ OlsPadLinkReturn ols_pad_link(ols_pad *srcpad, ols_pad *sinkpad) {
  *
  * MT safe.
  */
-ols_pad *ols_pad_get_peer(ols_pad *pad) {
-  ols_pad *result;
+ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
+  ols_pad_t *result;
 
   // OLS_OBJECT_LOCK(pad);
   // result = OLS_PAD_PEER(pad);
@@ -475,8 +477,8 @@ ols_pad *ols_pad_get_peer(ols_pad *pad) {
  *
  * MT safe.
  */
-bool ols_pad_push_event(ols_pad *pad, ols_event *event) {
-  bool res = FALSE;
+bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
+  bool res = false;
   //   OlsPadProbeType type;
   //   bool sticky, serialized;
 
@@ -572,5 +574,5 @@ bool ols_pad_push_event(ols_pad *pad, ols_event *event) {
   // }
   // done:
   //   OLS_TRACER_PAD_PUSH_EVENT_POST(pad, FALSE);
-  return FALSE;
+  return false;
 }

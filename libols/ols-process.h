@@ -41,6 +41,14 @@ struct ols_process_info {
 
   uint32_t flags;
 
+  /**
+   * Type of process.
+   *
+   */
+  enum ols_process_type type;
+  /** Source output flags */
+  uint32_t output_flags;
+
   const char *(*get_name)(void *type_data);
 
   void *(*create)(ols_data_t *settings, ols_process_t *process);
@@ -48,6 +56,15 @@ struct ols_process_info {
 
   bool (*start)(void *data);
   void (*stop)(void *data, uint64_t ts);
+
+  /** Called when the source has been activated in the main view */
+  void (*activate)(void *data);
+
+  /**
+   * Called when the source has been deactivated from the main view
+   * (no longer being played/displayed)
+   */
+  void (*deactivate)(void *data);
 
   /* optional */
   void (*update)(void *data, ols_data_t *settings);
@@ -60,8 +77,32 @@ struct ols_process_info {
 
   int (*get_dropped_frames)(void *data);
 
+  /**
+   * Called when saving a source.  This is a separate function because
+   * sometimes a source needs to know when it is being saved so it
+   * doesn't always have to update the current settings until a certain
+   * point.
+   *
+   * @param  data      Source data
+   * @param  settings  Settings
+   */
+  void (*save)(void *data, ols_data_t *settings);
+
+  /**
+   * Called when loading a source from saved data.  This should be called
+   * after all the loading sources have actually been created because
+   * sometimes there are sources that depend on each other.
+   *
+   * @param  data      Source data
+   * @param  settings  Settings
+   */
+  void (*load)(void *data, ols_data_t *settings);
+
   void *type_data;
   void (*free_type_data)(void *type_data);
+
+  /** Icon type for the source */
+  enum ols_icon_type icon_type;
 };
 
 EXPORT void ols_register_process_s(const struct ols_process_info *info,

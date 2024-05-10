@@ -65,12 +65,34 @@ static const char *process_signals[] = {
     NULL,
 };
 
+static OlsFlowReturn chain(ols_pad *pad, ols_object_t *parent,
+                           ols_buffer *buffer) {
+  struct ols_process *process = (struct ols_process *)parent;
+
+  // process->info.analysis(buffer);
+
+  for (int i = 0; i < process->context.numsrcpads; ++i) {
+    // ols_pad *pad = process->context.srcpads[i];
+
+    //
+  }
+}
+
 bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
                               const char *name, const char *uuid,
                               ols_data_t *hotkey_data, bool private) {
   if (!ols_context_data_init(&process->context, OLS_OBJ_TYPE_PROCESS, settings,
                              name, uuid, hotkey_data, private))
     return false;
+
+  // process->context.sink =
+  //     gst_ghost_pad_new_from_template("sink", scale->sinkpads->data,
+  //     template);
+  // ols_pad_set_chain_function(process->sink, (ols_pad_chain_function)chain);
+  // gst_element_add_pad(GST_ELEMENT(self), process->sink);
+  // gst_object_unref(template);
+
+  // gst_element_add_pad(GST_ELEMENT(self), pad);
 
   return signal_handler_add_array(process->context.signals, process_signals);
 }
@@ -97,8 +119,8 @@ static void ols_process_init_finalize(struct ols_process *process) {
     // 			     &ols->data.processs_mutex,
     // 			     &ols->data.public_processs);
   }
-  ols_context_data_insert_uuid(&process->context, &ols->data.processs_mutex,
-                               &ols->data.processs);
+  ols_context_data_insert_uuid(&process->context, &ols->data.processes_mutex,
+                               &ols->data.processes);
 }
 
 static ols_process_t *
@@ -151,7 +173,7 @@ ols_process_create_internal(const char *id, const char *name, const char *uuid,
        name, id);
 
   process->flags = process->default_flags;
-  process->enabled = true;
+  // process->enabled = true;
 
   ols_process_init_finalize(process);
   if (!private) {
@@ -229,9 +251,10 @@ void ols_process_destroy(struct ols_process *process) {
     return;
   }
 
-  ols_context_data_remove_uuid(&process->context, &ols->data.processs);
-  if (!process->context.private)
-    ols_context_data_remove_name(&process->context, &ols->data.public_processs);
+  // ols_context_data_remove_uuid(&process->context, &ols->data.processs);
+  // if (!process->context.private)
+  //   ols_context_data_remove_name(&process->context,
+  //   &ols->data.public_processs);
 
   /* defer process destroy */
   os_task_queue_queue_task(ols->destruction_task_thread,
@@ -521,8 +544,8 @@ void ols_process_set_name(ols_process_t *process, const char *name) {
     char *prev_name = bstrdup(process->context.name);
 
     if (!process->context.private) {
-      ols_context_data_setname_ht(&process->context, name,
-                                  &ols->data.public_processs);
+      // ols_context_data_setname_ht(&process->context, name,
+      //                             &ols->data.public_processs);
     }
     calldata_init(&data);
     calldata_set_ptr(&data, "process", process);

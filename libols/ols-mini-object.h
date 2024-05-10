@@ -1,10 +1,10 @@
 #pragma once
-#include <cstdint>
+#include <stdint.h>
 
 typedef struct _ols_mini_object ols_mini_object;
 
 /**
- * GstMiniObjectCopyFunction:
+ * ols_mini_object_copy_function:
  * @obj: MiniObject to copy
  *
  * Function prototype for methods to create copies of instances.
@@ -14,7 +14,7 @@ typedef struct _ols_mini_object ols_mini_object;
 typedef ols_mini_object *(*ols_mini_object_copy_function)(
     const ols_mini_object *obj);
 /**
- * GstMiniObjectDisposeFunction:
+ * ols_mini_object_dispose_function:
  * @obj: MiniObject to dispose
  *
  * Function prototype for when a miniobject has lost its last refcount.
@@ -27,7 +27,7 @@ typedef ols_mini_object *(*ols_mini_object_copy_function)(
  */
 typedef bool (*ols_mini_object_dispose_function)(ols_mini_object *obj);
 /**
- * GstMiniObjectFreeFunction:
+ * ols_mini_object_free_function:
  * @obj: MiniObject to free
  *
  * Virtual function prototype for methods to free resources used by

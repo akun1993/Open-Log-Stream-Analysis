@@ -24,10 +24,14 @@
 #include "util/profiler.h"
 #include "util/text-lookup.h"
 
+#include "ols-buffer-list.h"
+#include "ols-buffer.h"
 #include "ols-config.h"
 #include "ols-data.h"
 #include "ols-defs.h"
+#include "ols-event.h"
 #include "ols-interaction.h"
+#include "ols-mini-object.h"
 #include "ols-properties.h"
 
 /* opaque types */
@@ -35,7 +39,7 @@ struct ols_context_data;
 struct ols_source;
 struct ols_process;
 struct ols_output;
-struct ols_pad;
+
 struct ols_module;
 
 typedef struct ols_context_data ols_object_t;
@@ -44,7 +48,6 @@ typedef struct ols_source ols_source_t;
 typedef struct ols_process ols_process_t;
 typedef struct ols_output ols_output_t;
 typedef struct ols_module ols_module_t;
-typedef struct ols_pad ols_pad_t;
 
 typedef struct ols_weak_object ols_weak_object_t;
 typedef struct ols_weak_source ols_weak_source_t;
@@ -53,6 +56,7 @@ typedef struct ols_weak_output ols_weak_output_t;
 
 #include "ols-hotkey.h"
 #include "ols-output.h"
+#include "ols-pad.h"
 #include "ols-process.h"
 #include "ols-source.h"
 

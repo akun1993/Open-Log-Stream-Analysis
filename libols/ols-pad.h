@@ -1,7 +1,14 @@
 
 
 #pragma once
-#include <cstdint>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct ols_pad;
+typedef struct ols_pad ols_pad_t;
 
 /**
  * OLSPadLinkReturn:
@@ -113,9 +120,9 @@ typedef enum {
  *
  * Returns: #OLS_FLOW_OK for success
  */
-typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad,
+typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad_t *pad,
                                                 ols_object_t *parent,
-                                                ols_buffer *buffer);
+                                                ols_buffer_t *buffer);
 
 /**
  * OlsPadChainListFunction:
@@ -137,9 +144,9 @@ typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad *pad,
  *
  * Returns: #Ols_FLOW_OK for success
  */
-typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
+typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad_t *pad,
                                                      ols_object_t *parent,
-                                                     ols_buffer_list *list);
+                                                     ols_buffer_list_t *list);
 
 /**
  * OlsPadEventFunction:
@@ -153,8 +160,8 @@ typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad *pad,
  *
  * Returns: %TRUE if the pad could handle the event.
  */
-typedef bool (*ols_pad_event_function)(ols_pad *pad, ols_object_t *parent,
-                                       ols_event *event);
+typedef bool (*ols_pad_event_function)(ols_pad_t *pad, ols_object_t *parent,
+                                       ols_event_t *event);
 
 /**
  * OlsPadEventFullFunction:
@@ -175,9 +182,9 @@ typedef bool (*ols_pad_event_function)(ols_pad *pad, ols_object_t *parent,
  *
  * Since: 1.8
  */
-typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
+typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad_t *pad,
                                                      ols_object_t *parent,
-                                                     ols_event *event);
+                                                     ols_event_t *event);
 
 /* linking */
 /**
@@ -192,9 +199,9 @@ typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad *pad,
  *
  * Returns: the result of the link with the specified peer.
  */
-typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad *pad,
+typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad_t *pad,
                                                   ols_object_t *parent,
-                                                  ols_pad *peer);
+                                                  ols_pad_t *peer);
 /**
  * OlsPadUnlinkFunction:
  * @pad: the #OlsPad that is linked.
@@ -207,7 +214,7 @@ typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad *pad,
  * The pad's lock is already held when the unlink function is called, so most
  * pad functions cannot be called from within the callback.
  */
-typedef void (*ols_pad_unlink_function)(ols_pad *pad, ols_object_t *parent);
+typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 
 /**
  * OlsPad:
@@ -228,9 +235,8 @@ struct ols_pad {
   /* block cond, mutex is from the object */
   // GCond block_cond;
   // GHookList probes;
-
   /* pad link */
-  ols_pad *peer;
+  ols_pad_t *peer;
   ols_pad_link_function linkfunc;
   void *linkdata;
   // GDestroyNotify linknotify;
@@ -262,3 +268,7 @@ struct ols_pad {
   OlsFlowReturn last_flowret;
   ols_pad_event_full_function eventfullfunc;
 };
+
+#ifdef __cplusplus
+}
+#endif
