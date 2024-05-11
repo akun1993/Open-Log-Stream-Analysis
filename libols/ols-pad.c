@@ -275,7 +275,7 @@ bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
  */
 bool ols_pad_is_linked(ols_pad_t *pad) {
   bool result = false;
-  ;
+
   UNUSED_PARAMETER(pad);
 
   // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);

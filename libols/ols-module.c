@@ -705,8 +705,8 @@ cleanup:
   blog(LOG_WARNING, "ols_register_source: " format, ##__VA_ARGS__)
 #define output_warn(format, ...)                                               \
   blog(LOG_WARNING, "ols_register_output: " format, ##__VA_ARGS__)
-#define encoder_warn(format, ...)                                              \
-  blog(LOG_WARNING, "ols_register_encoder: " format, ##__VA_ARGS__)
+#define process_warn(format, ...)                                              \
+  blog(LOG_WARNING, "ols_register_process: " format, ##__VA_ARGS__)
 #define service_warn(format, ...)                                              \
   blog(LOG_WARNING, "ols_register_service: " format, ##__VA_ARGS__)
 

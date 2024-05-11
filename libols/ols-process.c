@@ -53,8 +53,6 @@ static const char *process_signals[] = {
     "void load(ptr process)",
     "void activate(ptr process)",
     "void deactivate(ptr process)",
-    "void show(ptr process)",
-    "void hide(ptr process)",
     "void enable(ptr process, bool enabled)",
     "void update_properties(ptr process)",
     "void update_flags(ptr process, int flags)",
@@ -111,11 +109,6 @@ static bool ols_process_init(struct ols_process *process) {
 
 static void ols_process_init_finalize(struct ols_process *process) {
 
-  if (!process->context.private) {
-    // ols_context_data_insert_name(&process->context,
-    // 			     &ols->data.processs_mutex,
-    // 			     &ols->data.public_processs);
-  }
   ols_context_data_insert_uuid(&process->context, &ols->data.processes_mutex,
                                &ols->data.processes);
 }
@@ -134,14 +127,6 @@ ols_process_create_internal(const char *id, const char *name, const char *uuid,
     process->owns_info_id = true;
   } else {
     process->info = *info;
-
-    /* Always mark filters as private so they aren't found by
-     * process enum/search functions.
-     *
-     * XXX: Fix design flaws with filters */
-    if (info->type == OLS_PROCESS_TYPE_FILTER)
-    private
-    = true;
   }
 
   process->last_ols_ver = last_ols_ver;
@@ -258,7 +243,7 @@ void ols_process_destroy(struct ols_process *process) {
                            (os_task_t)ols_process_destroy_defer, process);
 }
 
-static void ols_process_destroy_defer(struct ols_process *process) {
+void ols_process_destroy_defer(struct ols_process *process) {
   size_t i;
 
   /* prevents the destruction of processs if destroy triggered inside of
@@ -473,38 +458,6 @@ static void deactivate_process(ols_process_t *process) {
   if (process->context.data && process->info.deactivate)
     process->info.deactivate(process->context.data);
   ols_process_dosignal(process, "process_deactivate", "deactivate");
-}
-
-static void activate_tree(ols_process_t *parent, ols_process_t *child,
-                          void *param) {
-  os_atomic_inc_long(&child->activate_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void deactivate_tree(ols_process_t *parent, ols_process_t *child,
-                            void *param) {
-  os_atomic_dec_long(&child->activate_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void show_tree(ols_process_t *parent, ols_process_t *child,
-                      void *param) {
-  os_atomic_inc_long(&child->show_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void hide_tree(ols_process_t *parent, ols_process_t *child,
-                      void *param) {
-  os_atomic_dec_long(&child->show_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
 }
 
 static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2) {

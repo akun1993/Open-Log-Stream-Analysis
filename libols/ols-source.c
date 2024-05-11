@@ -16,18 +16,15 @@
 ******************************************************************************/
 
 #include "callback/calldata.h"
+#include "ols-internal.h"
+#include "ols.h"
 #include "util/platform.h"
 #include "util/threading.h"
 #include "util/util_uint64.h"
 #include <inttypes.h>
 #include <math.h>
 
-#include "ols-internal.h"
-#include "ols.h"
-
 #define get_weak(source) ((ols_weak_source_t *)source->context.control)
-
-static bool filter_compatible(ols_source_t *source, ols_source_t *filter);
 
 static inline bool data_valid(const struct ols_source *source, const char *f) {
   return ols_source_valid(source, f) && source->context.data;
@@ -55,15 +52,9 @@ static const char *source_signals[] = {
     "void load(ptr source)",
     "void activate(ptr source)",
     "void deactivate(ptr source)",
-    "void show(ptr source)",
-    "void hide(ptr source)",
     "void enable(ptr source, bool enabled)",
-    "void rename(ptr source, string new_name, string prev_name)",
     "void update_properties(ptr source)",
     "void update_flags(ptr source, int flags)",
-    "void filter_add(ptr source, ptr filter)",
-    "void filter_remove(ptr source, ptr filter)",
-    "void reorder_filters(ptr source)",
     NULL,
 };
 
@@ -96,11 +87,6 @@ static bool ols_source_init(struct ols_source *source) {
 
 static void ols_source_init_finalize(struct ols_source *source) {
 
-  if (!source->context.private) {
-    // ols_context_data_insert_name(&source->context,
-    // 			     &ols->data.sources_mutex,
-    // 			     &ols->data.public_sources);
-  }
   ols_context_data_insert_uuid(&source->context, &ols->data.sources_mutex,
                                &ols->data.sources);
 }
@@ -119,14 +105,6 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
     source->owns_info_id = true;
   } else {
     source->info = *info;
-
-    /* Always mark filters as private so they aren't found by
-     * source enum/search functions.
-     *
-     * XXX: Fix design flaws with filters */
-    if (info->type == OLS_SOURCE_TYPE_FILTER)
-    private
-    = true;
   }
 
   source->last_ols_ver = last_ols_ver;
@@ -455,36 +433,6 @@ static void deactivate_source(ols_source_t *source) {
   if (source->context.data && source->info.deactivate)
     source->info.deactivate(source->context.data);
   ols_source_dosignal(source, "source_deactivate", "deactivate");
-}
-
-static void activate_tree(ols_source_t *parent, ols_source_t *child,
-                          void *param) {
-  os_atomic_inc_long(&child->activate_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void deactivate_tree(ols_source_t *parent, ols_source_t *child,
-                            void *param) {
-  os_atomic_dec_long(&child->activate_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void show_tree(ols_source_t *parent, ols_source_t *child, void *param) {
-  os_atomic_inc_long(&child->show_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
-}
-
-static void hide_tree(ols_source_t *parent, ols_source_t *child, void *param) {
-  os_atomic_dec_long(&child->show_refs);
-
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(param);
 }
 
 static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2) {
