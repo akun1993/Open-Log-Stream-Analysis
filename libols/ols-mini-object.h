@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-typedef struct _ols_mini_object ols_mini_object;
+typedef struct ols_mini_object ols_mini_object_t;
 
 /**
  * ols_mini_object_copy_function:
@@ -11,8 +11,8 @@ typedef struct _ols_mini_object ols_mini_object;
  *
  * Returns: reference to cloned instance.
  */
-typedef ols_mini_object *(*ols_mini_object_copy_function)(
-    const ols_mini_object *obj);
+typedef ols_mini_object_t *(*ols_mini_object_copy_function)(
+    const ols_mini_object_t *obj);
 /**
  * ols_mini_object_dispose_function:
  * @obj: MiniObject to dispose
@@ -25,7 +25,7 @@ typedef ols_mini_object *(*ols_mini_object_copy_function)(
  *
  * Returns: %TRUE if the object should be cleaned up.
  */
-typedef bool (*ols_mini_object_dispose_function)(ols_mini_object *obj);
+typedef bool (*ols_mini_object_dispose_function)(ols_mini_object_t *obj);
 /**
  * ols_mini_object_free_function:
  * @obj: MiniObject to free
@@ -33,9 +33,9 @@ typedef bool (*ols_mini_object_dispose_function)(ols_mini_object *obj);
  * Virtual function prototype for methods to free resources used by
  * mini-objects.
  */
-typedef void (*ols_mini_object_free_function)(ols_mini_object *obj);
+typedef void (*ols_mini_object_free_function)(ols_mini_object_t *obj);
 
-struct _ols_mini_object {
+struct ols_mini_object {
   // GType   type;
 
   /*< public >*/ /* with COW */

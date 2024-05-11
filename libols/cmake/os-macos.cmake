@@ -1,5 +1,5 @@
 target_link_libraries(
-  libobs
+  libols
   PRIVATE # cmake-format: sortable
           "$<LINK_LIBRARY:FRAMEWORK,AppKit.framework>"
           "$<LINK_LIBRARY:FRAMEWORK,AudioToolbox.framework>"
@@ -10,13 +10,13 @@ target_link_libraries(
           "$<LINK_LIBRARY:FRAMEWORK,IOKit.framework>")
 
 target_sources(
-  libobs
+  libols
   PRIVATE # cmake-format: sortable
           audio-monitoring/osx/coreaudio-enum-devices.c
           audio-monitoring/osx/coreaudio-monitoring-available.c
           audio-monitoring/osx/coreaudio-output.c
           audio-monitoring/osx/mac-helpers.h
-          obs-cocoa.m
+          ols-cocoa.m
           util/apple/cfstring-utils.h
           util/pipe-posix.c
           util/platform-cocoa.m
@@ -24,7 +24,7 @@ target_sources(
           util/threading-posix.c
           util/threading-posix.h)
 
-target_compile_options(libobs PUBLIC -Wno-strict-prototypes -Wno-shorten-64-to-32)
+target_compile_options(libols PUBLIC -Wno-strict-prototypes -Wno-shorten-64-to-32)
 
-set_property(SOURCE obs-cocoa.m util/platform-cocoa.m PROPERTY COMPILE_FLAGS -fobjc-arc)
-set_property(TARGET libobs PROPERTY FRAMEWORK TRUE)
+set_property(SOURCE ols-cocoa.m util/platform-cocoa.m PROPERTY COMPILE_FLAGS -fobjc-arc)
+set_property(TARGET libols PROPERTY FRAMEWORK TRUE)

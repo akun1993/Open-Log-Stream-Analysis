@@ -58,6 +58,7 @@ static inline bool ols_object_valid(const void *obj, const char *f,
 #define ols_ptr_valid(ptr, func) ols_object_valid(ptr, func, #ptr)
 #define ols_source_valid ols_ptr_valid
 #define ols_output_valid ols_ptr_valid
+#define ols_process_valid ols_ptr_valid
 
 /* ------------------------------------------------------------------------- */
 /* modules */
@@ -299,11 +300,11 @@ struct ols_context_data {
   /* element pads, these lists can only be iterated while holding
    * the LOCK or checking the cookie after each LOCK. */
   uint16_t numpads;
-  DARRAY(ols_pad) pads;
+  DARRAY(ols_pad_t) pads;
   uint16_t numsrcpads;
-  DARRAY(ols_pad) srcpads;
+  DARRAY(ols_pad_t) srcpads;
   uint16_t numsinkpads;
-  DARRAY(ols_pad) sinkpads;
+  DARRAY(ols_pad_t) sinkpads;
 
   UT_hash_handle hh;
   UT_hash_handle hh_uuid;
@@ -477,6 +478,11 @@ struct ols_process {
   /* source is in the process of being destroyed */
   volatile long destroying;
 
+  /* used to indicate that the source has been removed and all
+   * references to it should be released (not exactly how I would prefer
+   * to handle things but it's the best option) */
+  bool removed;
+
   bool active;
 
   uint64_t last_frame_ts;
@@ -484,13 +490,13 @@ struct ols_process {
 
   /* private data */
   /*< protected >*/
-  ols_pad *sinkpad;
+  ols_pad_t *sinkpad;
   ols_data_t *private_settings;
 };
 
 extern struct ols_process_info *get_process_info(const char *id);
 
-extern bool ols_process_init_context(struct ols_source *source,
+extern bool ols_process_init_context(struct ols_process *source,
                                      ols_data_t *settings, const char *name,
                                      const char *uuid, ols_data_t *hotkey_data,
                                      bool private);

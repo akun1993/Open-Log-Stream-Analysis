@@ -340,14 +340,6 @@ EXPORT char *ols_module_get_config_path(ols_module_t *module, const char *file);
 /** Enumerates all source types (inputs, filters, transitions, etc).  */
 EXPORT bool ols_enum_source_types(size_t idx, const char **id);
 
-/**
- * Enumerates all available filter source types.
- *
- *   Filters are sources that are used to modify the video/audio output of
- * other sources.
- */
-EXPORT bool ols_enum_filter_types(size_t idx, const char **id);
-
 /** Enumerates all available output types. */
 EXPORT bool ols_enum_output_types(size_t idx, const char **id);
 
@@ -613,7 +605,7 @@ EXPORT void ols_weak_process_release(ols_weak_process_t *weak);
 
 EXPORT ols_process_t *ols_process_get_ref(ols_process_t *source);
 EXPORT ols_weak_process_t *ols_process_get_weak_process(ols_process_t *process);
-EXPORT ols_process_t *ols_weak_process_get_processols_weak_process_t *weak);
+EXPORT ols_process_t *ols_weak_process_get_process(ols_weak_process_t *weak);
 EXPORT bool ols_weak_process_expired(ols_weak_process_t *weak);
 
 EXPORT bool ols_weak_process_references_procsss(ols_weak_process_t *weak,

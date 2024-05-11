@@ -3,15 +3,15 @@ find_package(LibUUID REQUIRED)
 # cmake-format: on
 
 target_sources(
-  libobs
+  libols
   PRIVATE # cmake-format: sortable
           util/pipe-posix.c
           util/platform-nix.c
           util/threading-posix.c
           util/threading-posix.h)
 
-target_compile_definitions(libobs PRIVATE USE_XDG $<$<COMPILE_LANG_AND_ID:C,GNU>:ENABLE_DARRAY_TYPE_TEST>
+target_compile_definitions(libols PRIVATE USE_XDG $<$<COMPILE_LANG_AND_ID:C,GNU>:ENABLE_DARRAY_TYPE_TEST>
                                           $<$<COMPILE_LANG_AND_ID:CXX,GNU>:ENABLE_DARRAY_TYPE_TEST>)
 
 
-set_target_properties(libobs PROPERTIES OUTPUT_NAME obs)
+set_target_properties(libols PROPERTIES OUTPUT_NAME ols)

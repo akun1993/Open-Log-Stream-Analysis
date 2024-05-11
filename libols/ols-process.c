@@ -56,19 +56,16 @@ static const char *process_signals[] = {
     "void show(ptr process)",
     "void hide(ptr process)",
     "void enable(ptr process, bool enabled)",
-    "void rename(ptr process, string new_name, string prev_name)",
     "void update_properties(ptr process)",
     "void update_flags(ptr process, int flags)",
-    "void filter_add(ptr process, ptr filter)",
-    "void filter_remove(ptr process, ptr filter)",
-    "void reorder_filters(ptr process)",
     NULL,
 };
 
-static OlsFlowReturn chain(ols_pad *pad, ols_object_t *parent,
-                           ols_buffer *buffer) {
+static OlsFlowReturn chain(ols_pad_t *pad, ols_object_t *parent,
+                           ols_buffer_t *buffer) {
   struct ols_process *process = (struct ols_process *)parent;
-
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(buffer);
   // process->info.analysis(buffer);
 
   for (int i = 0; i < process->context.numsrcpads; ++i) {
@@ -658,9 +655,4 @@ uint32_t ols_process_get_last_ols_version(const ols_process_t *process) {
   return ols_process_valid(process, "ols_process_get_last_ols_version")
              ? process->last_ols_ver
              : 0;
-}
-
-enum ols_icon_type ols_process_get_icon_type(const char *id) {
-  const struct ols_process_info *info = get_process_info(id);
-  return (info) ? info->icon_type : OLS_ICON_TYPE_UNKNOWN;
 }

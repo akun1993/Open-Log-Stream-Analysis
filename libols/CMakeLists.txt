@@ -45,8 +45,14 @@ target_sources(
           ols-properties.h
           ols-source.c
           ols-source.h
+          ols-process.c
+          ols-process.h
           ols.c
           ols.h
+          ols-nix.c
+          ols-nix.h
+          ols-pad.c
+          ols-pad.h
           ols.hpp)
 
 target_sources(
@@ -115,9 +121,7 @@ target_compile_features(libols PUBLIC cxx_std_17)
 
 target_compile_definitions(
   libols
-  PRIVATE IS_LIBOLS
-  PUBLIC $<BUILD_INTERFACE:$<$<BOOL:${ENABLE_HEVC}>:ENABLE_HEVC>>
-         $<BUILD_INTERFACE:$<$<BOOL:${ENABLE_FFMPEG_MUX_DEBUG}>:SHOW_SUBPROCESSES>>)
+  PRIVATE IS_LIBOLS)
 
 target_link_libraries(
   libols
@@ -161,6 +165,7 @@ set(public_headers
     ols-output.h
     ols-properties.h
     ols-source.h
+    ols-process.h
     ols.h
     ols.hpp
     util/apple/cfstring-utils.h

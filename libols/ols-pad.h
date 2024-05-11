@@ -1,6 +1,7 @@
 
 
 #pragma once
+#include "ols.h"
 #include <stdint.h>
 
 #ifdef __cplusplus

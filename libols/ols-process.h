@@ -16,6 +16,7 @@
 ******************************************************************************/
 
 #pragma once
+#include "ols.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,7 +103,7 @@ struct ols_process_info {
   void (*free_type_data)(void *type_data);
 
   /** Icon type for the source */
-  enum ols_icon_type icon_type;
+  // enum ols_icon_type icon_type;
 };
 
 EXPORT void ols_register_process_s(const struct ols_process_info *info,

@@ -1,7 +1,8 @@
 #include "ols-pad.h"
+#include "ols-internal.h"
 #include <stdbool.h>
 
-static void ols_pad_init(ols_pad_t *pad) {}
+static void ols_pad_init(ols_pad_t *pad) { UNUSED_PARAMETER(pad); }
 
 #define _to_sticky_order(t) ols_event_type_to_sticky_ordering(t)
 
@@ -27,6 +28,9 @@ void ols_pad_set_chain_function_full(ols_pad_t *pad,
                                      ols_pad_chain_function chain,
                                      void *user_data) {
 
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(chain);
+  UNUSED_PARAMETER(user_data);
   // if (pad->chainnotify)
   //   pad->chainnotify(pad->chaindata);
   // OLS_PAD_CHAINFUNC(pad) = chain;
@@ -60,6 +64,9 @@ void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
                                           ols_pad_chain_list_function chainlist,
                                           void *user_data) {
 
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(chainlist);
+  UNUSED_PARAMETER(user_data);
   // if (pad->chainlistnotify)
   //   pad->chainlistnotify(pad->chainlistdata);
   // OLS_PAD_CHAINLISTFUNC(pad) = chainlist;
@@ -101,6 +108,9 @@ void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
                                     void *user_data) {
   //   g_return_if_fail(OLS_IS_PAD(pad));
 
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(link);
+  UNUSED_PARAMETER(user_data);
   //   if (pad->linknotify)
   //     pad->linknotify(pad->linkdata);
   //   OLS_PAD_LINKFUNC(pad) = link;
@@ -139,6 +149,9 @@ void ols_pad_set_unlink_function_full(ols_pad_t *pad,
                                       void *user_data) {
   // g_return_if_fail(OLS_IS_PAD(pad));
 
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(unlink);
+  UNUSED_PARAMETER(user_data);
   // if (pad->unlinknotify)
   //   pad->unlinknotify(pad->unlinkdata);
   // OLS_PAD_UNLINKFUNC(pad) = unlink;
@@ -164,7 +177,8 @@ void ols_pad_set_unlink_function_full(ols_pad_t *pad,
  */
 bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   bool result = false;
-
+  UNUSED_PARAMETER(srcpad);
+  UNUSED_PARAMETER(sinkpad);
   //   OLS_TRACER_PAD_UNLINK_PRE(srcpad, sinkpad);
 
   //   OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinking %s:%s(%p) and %s:%s(%p)",
@@ -260,7 +274,9 @@ bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
  * MT safe.
  */
 bool ols_pad_is_linked(ols_pad_t *pad) {
-  bool result;
+  bool result = false;
+  ;
+  UNUSED_PARAMETER(pad);
 
   // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
 
@@ -291,10 +307,12 @@ bool ols_pad_is_linked(ols_pad_t *pad) {
  *          what went wrong.
  */
 OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
-  OlsPadLinkReturn result;
+  OlsPadLinkReturn result = false;
+  ;
   // OlsElement *parent;
-  ols_pad_link_function srcfunc, sinkfunc;
-
+  // ols_pad_link_function srcfunc, sinkfunc;
+  UNUSED_PARAMETER(srcpad);
+  UNUSED_PARAMETER(sinkpad);
   // g_return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
   // g_return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
   // g_return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
@@ -450,8 +468,8 @@ OlsPadLinkReturn ols_pad_link(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
  * MT safe.
  */
 ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
-  ols_pad_t *result;
-
+  ols_pad_t *result = NULL;
+  UNUSED_PARAMETER(pad);
   // OLS_OBJECT_LOCK(pad);
   // result = OLS_PAD_PEER(pad);
   // if (result)
@@ -479,6 +497,8 @@ ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
  */
 bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   bool res = false;
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(event);
   //   OlsPadProbeType type;
   //   bool sticky, serialized;
 
@@ -574,5 +594,5 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   // }
   // done:
   //   OLS_TRACER_PAD_PUSH_EVENT_POST(pad, FALSE);
-  return false;
+  return res;
 }
