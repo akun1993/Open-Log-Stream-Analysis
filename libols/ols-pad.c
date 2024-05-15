@@ -426,7 +426,16 @@ eos : {
   ret = OLS_FLOW_EOS;
   goto out;
 }
-
+wrong_mode : {
+  // g_critical("chain on pad %s:%s but it was not in push mode",
+  //            OLS_DEBUG_PAD_NAME(pad));
+  // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
+  OLS_OBJECT_UNLOCK(pad);
+  OLS_PAD_STREAM_UNLOCK(pad);
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
+  ret = OLS_FLOW_ERROR;
+  goto out;
+}
 probe_stopped : {
   /* We unref the buffer, except if the probe handled it (CUSTOM_SUCCESS_1) */
   if (!handled)
@@ -631,9 +640,9 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
     /* Remove pending EOS events */
     // OLS_LOG_OBJECT(pad, "Removing pending EOS and SEGMENT events");
     remove_event_by_type(pad, OLS_EVENT_EOS);
-    remove_event_by_type(pad, OLS_EVENT_STREAM_GROUP_DONE);
-    remove_event_by_type(pad, OLS_EVENT_SEGMENT);
-    OLS_OBJECT_FLAG_UNSET(pad, OLS_PAD_FLAG_EOS);
+    // remove_event_by_type(pad, OLS_EVENT_STREAM_GROUP_DONE);
+    // remove_event_by_type(pad, OLS_EVENT_SEGMENT);
+    // OLS_OBJECT_FLAG_UNSET(pad, OLS_PAD_FLAG_EOS);
     // pad->ABI.abi.last_flowret = OLS_FLOW_OK;
 
     OLS_OBJECT_UNLOCK(pad);
@@ -668,9 +677,9 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
       /* Remove sticky EOS events */
       OLS_LOG_OBJECT(pad, "Removing pending EOS events");
       remove_event_by_type(pad, OLS_EVENT_EOS);
-      remove_event_by_type(pad, OLS_EVENT_STREAM_GROUP_DONE);
+      // remove_event_by_type(pad, OLS_EVENT_STREAM_GROUP_DONE);
       remove_event_by_type(pad, OLS_EVENT_TAG);
-      OLS_OBJECT_FLAG_UNSET(pad, OLS_PAD_FLAG_EOS);
+      // OLS_OBJECT_FLAG_UNSET(pad, OLS_PAD_FLAG_EOS);
       break;
     default:
       if (serialized) {
