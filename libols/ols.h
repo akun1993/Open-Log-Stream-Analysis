@@ -83,6 +83,40 @@ struct ols_cmdline_args {
   char **argv;
 };
 
+#define OLS_OBJECT_CAST(obj) ((ols_object_t *)(obj))
+
+/**
+ * OLS_OBJECT_GET_LOCK:
+ * @obj: a #ols_object
+ *
+ * Acquire a reference to the mutex of this object.
+ */
+#define OLS_OBJECT_GET_LOCK(obj) (&OLS_OBJECT_CAST(obj)->mutex)
+/**
+ * OLS_OBJECT_LOCK:
+ * @obj: a #ols_object_t to lock
+ *
+ * This macro will obtain a lock on the object, making serialization possible.
+ * It blocks until the lock can be obtained.
+ */
+#define OLS_OBJECT_LOCK(obj) pthread_mutex_lock(OLS_OBJECT_GET_LOCK(obj))
+
+/**
+ * OLS_OBJECT_TRYLOCK:
+ * @obj: a #ols_object_t.
+ *
+ * This macro will try to obtain a lock on the object, but will return with
+ * %FALSE if it can't get it immediately.
+ */
+#define OLS_OBJECT_TRYLOCK(obj) pthread_mutex_trylock(OLS_OBJECT_GET_LOCK(obj))
+/**
+ * OLS_OBJECT_UNLOCK:
+ * @obj: a #ols_object_t to unlock.
+ *
+ * This macro releases a lock on the object.
+ */
+#define OLS_OBJECT_UNLOCK(obj) pthread_mutex_unlock(OLS_OBJECT_GET_LOCK(obj))
+
 /* ------------------------------------------------------------------------- */
 /* OLS context */
 

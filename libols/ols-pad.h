@@ -11,6 +11,152 @@ extern "C" {
 struct ols_pad;
 typedef struct ols_pad ols_pad_t;
 
+#define OLS_PAD_CAST(obj) ((ols_pad_t *)(obj))
+
+/**
+ * OLSPadDirection:
+ * @OLS_PAD_UNKNOWN: direction is unknown.
+ * @OLS_PAD_SRC: the pad is a source pad.
+ * @OLS_PAD_SINK: the pad is a sink pad.
+ *
+ * The direction of a pad.
+ */
+typedef enum { OLS_PAD_UNKNOWN, OLS_PAD_SRC, OLS_PAD_SINK } OLSPadDirection;
+
+/**
+ * OLSPadMode:
+ * @OLS_PAD_MODE_NONE: Pad will not handle dataflow
+ * @OLS_PAD_MODE_PUSH: Pad handles dataflow in downstream push mode
+ * @OLS_PAD_MODE_PULL: Pad handles dataflow in upstream pull mode
+ *
+ * The status of a OLSPad. After activating a pad, which usually happens when
+ * the parent element goes from READY to PAUSED, the OLSPadMode defines if the
+ * pad operates in push or pull mode.
+ */
+typedef enum {
+  OLS_PAD_MODE_NONE,
+  OLS_PAD_MODE_PUSH,
+  OLS_PAD_MODE_PULL
+} OLSPadMode;
+
+/**
+ * OLSPadProbeType:
+ * @OLS_PAD_PROBE_TYPE_INVALID: invalid probe type
+ * @OLS_PAD_PROBE_TYPE_IDLE: probe idle pads and block while the callback is
+ * called
+ * @OLS_PAD_PROBE_TYPE_BLOCK: probe and block pads
+ * @OLS_PAD_PROBE_TYPE_BUFFER: probe buffers
+ * @OLS_PAD_PROBE_TYPE_BUFFER_LIST: probe buffer lists
+ * @OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM: probe downstream events
+ * @OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM: probe upstream events
+ * @OLS_PAD_PROBE_TYPE_EVENT_FLUSH: probe flush events. This probe has to be
+ *     explicitly enabled and is not included in the
+ *     @@OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM or
+ *     @@OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM probe types.
+ * @OLS_PAD_PROBE_TYPE_QUERY_DOWNSTREAM: probe downstream queries
+ * @OLS_PAD_PROBE_TYPE_QUERY_UPSTREAM: probe upstream queries
+ * @OLS_PAD_PROBE_TYPE_PUSH: probe push
+ * @OLS_PAD_PROBE_TYPE_PULL: probe pull
+ * @OLS_PAD_PROBE_TYPE_BLOCKING: probe and block at the next opportunity, at
+ * data flow or when idle
+ * @OLS_PAD_PROBE_TYPE_DATA_DOWNSTREAM: probe downstream data (buffers, buffer
+ * lists, and events)
+ * @OLS_PAD_PROBE_TYPE_DATA_UPSTREAM: probe upstream data (events)
+ * @OLS_PAD_PROBE_TYPE_DATA_BOTH: probe upstream and downstream data (buffers,
+ * buffer lists, and events)
+ * @OLS_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM: probe and block downstream data
+ * (buffers, buffer lists, and events)
+ * @OLS_PAD_PROBE_TYPE_BLOCK_UPSTREAM: probe and block upstream data (events)
+ * @OLS_PAD_PROBE_TYPE_EVENT_BOTH: probe upstream and downstream events
+ * @OLS_PAD_PROBE_TYPE_QUERY_BOTH: probe upstream and downstream queries
+ * @OLS_PAD_PROBE_TYPE_ALL_BOTH: probe upstream events and queries and
+ * downstream buffers, buffer lists, events and queries
+ * @OLS_PAD_PROBE_TYPE_SCHEDULING: probe push and pull
+ *
+ * The different probing types that can occur. When either one of
+ * @OLS_PAD_PROBE_TYPE_IDLE or @OLS_PAD_PROBE_TYPE_BLOCK is used, the probe will
+ * be a blocking probe.
+ */
+typedef enum {
+  OLS_PAD_PROBE_TYPE_INVALID = 0,
+  /* flags to control blocking */
+  OLS_PAD_PROBE_TYPE_IDLE = (1 << 0),
+  OLS_PAD_PROBE_TYPE_BLOCK = (1 << 1),
+  /* flags to select datatypes */
+  OLS_PAD_PROBE_TYPE_BUFFER = (1 << 4),
+  OLS_PAD_PROBE_TYPE_BUFFER_LIST = (1 << 5),
+  OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM = (1 << 6),
+  OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM = (1 << 7),
+  OLS_PAD_PROBE_TYPE_EVENT_FLUSH = (1 << 8),
+  OLS_PAD_PROBE_TYPE_QUERY_DOWNSTREAM = (1 << 9),
+  OLS_PAD_PROBE_TYPE_QUERY_UPSTREAM = (1 << 10),
+  /* flags to select scheduling mode */
+  OLS_PAD_PROBE_TYPE_PUSH = (1 << 12),
+  OLS_PAD_PROBE_TYPE_PULL = (1 << 13),
+
+  /* flag combinations */
+  OLS_PAD_PROBE_TYPE_BLOCKING =
+      OLS_PAD_PROBE_TYPE_IDLE | OLS_PAD_PROBE_TYPE_BLOCK,
+  OLS_PAD_PROBE_TYPE_DATA_DOWNSTREAM = OLS_PAD_PROBE_TYPE_BUFFER |
+                                       OLS_PAD_PROBE_TYPE_BUFFER_LIST |
+                                       OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
+  OLS_PAD_PROBE_TYPE_DATA_UPSTREAM = OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM,
+  OLS_PAD_PROBE_TYPE_DATA_BOTH =
+      OLS_PAD_PROBE_TYPE_DATA_DOWNSTREAM | OLS_PAD_PROBE_TYPE_DATA_UPSTREAM,
+  OLS_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM =
+      OLS_PAD_PROBE_TYPE_BLOCK | OLS_PAD_PROBE_TYPE_DATA_DOWNSTREAM,
+  OLS_PAD_PROBE_TYPE_BLOCK_UPSTREAM =
+      OLS_PAD_PROBE_TYPE_BLOCK | OLS_PAD_PROBE_TYPE_DATA_UPSTREAM,
+  OLS_PAD_PROBE_TYPE_EVENT_BOTH =
+      OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM | OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM,
+  OLS_PAD_PROBE_TYPE_QUERY_BOTH =
+      OLS_PAD_PROBE_TYPE_QUERY_DOWNSTREAM | OLS_PAD_PROBE_TYPE_QUERY_UPSTREAM,
+  OLS_PAD_PROBE_TYPE_ALL_BOTH =
+      OLS_PAD_PROBE_TYPE_DATA_BOTH | OLS_PAD_PROBE_TYPE_QUERY_BOTH,
+  OLS_PAD_PROBE_TYPE_SCHEDULING =
+      OLS_PAD_PROBE_TYPE_PUSH | OLS_PAD_PROBE_TYPE_PULL
+} OlsPadProbeType;
+
+/**
+ * OLS_PAD_DIRECTION:
+ * @pad: a #OLSPad
+ *
+ * Get the #OLSPadDirection of the given @pad. Accessor macro, use
+ * ols_pad_get_direction() instead.
+ */
+#define OLS_PAD_DIRECTION(pad) (OLS_PAD_CAST(pad)->direction)
+
+/**
+ * OLS_PAD_DIRECTION:
+ * @pad: a #OLSPad
+ *
+ * Get the #OLSPadDirection of the given @pad. Accessor macro, use
+ * ols_pad_get_direction() instead.
+ */
+#define OLS_PAD_PARENT(pad) (OLS_PAD_CAST(pad)->parent)
+
+/**
+ * OLS_PAD_MODE:
+ * @pad: a #OLSPad
+ *
+ * Get the #OLSPadMode of pad, which will be OLS_PAD_MODE_NONE if the pad
+ * has not been activated yet, and otherwise either OLS_PAD_MODE_PUSH or
+ * OLS_PAD_MODE_PULL depending on which mode the pad was activated in.
+ */
+#define OLS_PAD_MODE(pad) (OLS_PAD_CAST(pad)->mode)
+
+/**
+ * OLS_PAD_EVENTFUNC:
+ * @pad: a #OlsPad
+ *
+ * Get the #OlsPadEventFunction from the given @pad, which
+ * is the function that handles events on the pad. You can
+ * use this to set your own event handling function on a pad
+ * after you create it.  If your element derives from a base
+ * class, use the base class's virtual functions instead.
+ */
+#define OLS_PAD_EVENTFUNC(pad) (OLS_PAD_CAST(pad)->eventfunc)
+
 /**
  * OLSPadLinkReturn:
  * @OLS_PAD_LINK_OK		: link succeeded
@@ -50,6 +196,47 @@ typedef enum {
  * link step.
  */
 #define OLS_PAD_LINK_SUCCESSFUL(ret) ((ret) >= OLS_PAD_LINK_OK)
+
+/**
+ * OLS_PAD_CHAINFUNC:
+ * @pad: a #OLSPad
+ *
+ * Get the #OLSPadChainFunction from the given @pad.
+ */
+#define OLS_PAD_CHAINFUNC(pad) (OLS_PAD_CAST(pad)->chainfunc)
+
+/**
+ * OLS_PAD_CHAINLISTFUNC:
+ * @pad: a #OLSPad
+ *
+ * Get the #OlsPadChainListFunction from the given @pad.
+ */
+#define OLS_PAD_CHAINLISTFUNC(pad) (OLS_PAD_CAST(pad)->chainlistfunc)
+
+/**
+ * OLS_PAD_PEER:
+ * @pad: a #OlsPad
+ *
+ * Return the pad's peer member. This member is a pointer to the linked @pad.
+ * No locking is performed in this function, use ols_pad_get_peer() instead.
+ */
+#define OLS_PAD_PEER(pad) (OLS_PAD_CAST(pad)->peer)
+
+/**
+ * OLS_PAD_LINKFUNC:
+ * @pad: a #OLSPad
+ *
+ * Get the #OlsPadChainListFunction from the given @pad.
+ */
+#define OLS_PAD_LINKFUNC(pad) (OLS_PAD_CAST(pad)->linkfunc)
+
+/**
+ * OLS_PAD_UNLINKFUNC:
+ * @pad: a #OLSPad
+ *
+ * Get the #OlsPadChainListFunction from the given @pad.
+ */
+#define OLS_PAD_UNLINKFUNC(pad) (OLS_PAD_CAST(pad)->unlinkfunc)
 
 /**
  * OLSFlowReturn:
@@ -226,12 +413,29 @@ typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
  *
  * The #OlsPad structure. Use the functions to update the variables.
  */
+
+#define ols_pad_set_link_function(p, f)                                        \
+  ols_pad_set_link_function_full((p), (f), NULL, NULL)
+#define ols_pad_set_unlink_function(p, f)                                      \
+  ols_pad_set_unlink_function_full((p), (f), NULL, NULL)
+
 struct ols_pad {
+
+  ols_object_t *parent;
+  /*< private >*/
+  /* streaming rec_lock */
+  pthread_mutex_t *mutex;
+  // OLSTask *task;
+  OLSPadDirection direction;
 
   /*< private >*/
   /* streaming rec_lock */
-  // pthread_mutex_t *mutex;
-  // OLSTask *task;
+  pthread_mutex_t stream_rec_lock;
+
+  /* block cond, mutex is from the object */
+  pthread_cond_t block_cond;
+
+  OLSPadMode mode;
 
   /* block cond, mutex is from the object */
   // GCond block_cond;
