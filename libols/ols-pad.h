@@ -127,7 +127,7 @@ typedef enum {
 #define OLS_PAD_DIRECTION(pad) (OLS_PAD_CAST(pad)->direction)
 
 /**
- * OLS_PAD_DIRECTION:
+ * OLS_PAD_PARENT:
  * @pad: a #OLSPad
  *
  * Get the #OLSPadDirection of the given @pad. Accessor macro, use
@@ -178,6 +178,61 @@ typedef enum {
   OLS_PAD_LINK_NOSCHED = -5,
   OLS_PAD_LINK_REFUSED = -6
 } OlsPadLinkReturn;
+
+/**
+ * OlsPadFlags:
+ * @OLS_PAD_FLAG_BLOCKED: is dataflow on a pad blocked
+ * @OLS_PAD_FLAG_FLUSHING: is pad flushing
+ * @OLS_PAD_FLAG_EOS: is pad in EOS state
+ * @OLS_PAD_FLAG_BLOCKING: is pad currently blocking on a buffer or event
+ * @OLS_PAD_FLAG_NEED_PARENT: ensure that there is a parent object before
+ * calling into the pad callbacks.
+ * @OLS_PAD_FLAG_NEED_RECONFIGURE: the pad should be reconfigured/renegotiated.
+ *                            The flag has to be unset manually after
+ *                            reconfiguration happened.
+ * @OLS_PAD_FLAG_PENDING_EVENTS: the pad has pending events
+ * @OLS_PAD_FLAG_FIXED_CAPS: the pad is using fixed caps. This means that
+ *     once the caps are set on the pad, the default caps query function
+ *     will only return those caps.
+ * @OLS_PAD_FLAG_PROXY_CAPS: the default event and query handler will forward
+ *                      all events and queries to the internally linked pads
+ *                      instead of discarding them.
+ * @OLS_PAD_FLAG_PROXY_ALLOCATION: the default query handler will forward
+ *                      allocation queries to the internally linked pads
+ *                      instead of discarding them.
+ * @OLS_PAD_FLAG_PROXY_SCHEDULING: the default query handler will forward
+ *                      scheduling queries to the internally linked pads
+ *                      instead of discarding them.
+ * @OLS_PAD_FLAG_ACCEPT_INTERSECT: the default accept-caps handler will check
+ *                      it the caps intersect the query-caps result instead
+ *                      of checking for a subset. This is interesting for
+ *                      parsers that can accept incompletely specified caps.
+ * @OLS_PAD_FLAG_ACCEPT_TEMPLATE: the default accept-caps handler will use
+ *                      the template pad caps instead of query caps to
+ *                      compare with the accept caps. Use this in combination
+ *                      with %OLS_PAD_FLAG_ACCEPT_INTERSECT. (Since: 1.6)
+ * @OLS_PAD_FLAG_LAST: offset to define more flags
+ *
+ * Pad state flags
+ */
+
+typedef enum {
+  OLS_PAD_FLAG_BLOCKED = (1 << 0),
+  OLS_PAD_FLAG_FLUSHING = (1 << 1),
+  OLS_PAD_FLAG_EOS = (1 << 2),
+  OLS_PAD_FLAG_BLOCKING = (1 << 3),
+  OLS_PAD_FLAG_NEED_PARENT = (1 << 4),
+  OLS_PAD_FLAG_NEED_RECONFIGURE = (1 << 5),
+  OLS_PAD_FLAG_PENDING_EVENTS = (1 << 6),
+  OLS_PAD_FLAG_FIXED_CAPS = (1 << 7),
+  OLS_PAD_FLAG_PROXY_CAPS = (1 << 8),
+  OLS_PAD_FLAG_PROXY_ALLOCATION = (1 << 9),
+  OLS_PAD_FLAG_PROXY_SCHEDULING = (1 << 10),
+  OLS_PAD_FLAG_ACCEPT_INTERSECT = (1 << 11),
+  OLS_PAD_FLAG_ACCEPT_TEMPLATE = (1 << 12),
+  /* padding */
+  OLS_PAD_FLAG_LAST = (1 << 16)
+} OlsPadFlags;
 
 /**
  * OLS_PAD_LINK_FAILED:
@@ -237,6 +292,45 @@ typedef enum {
  * Get the #OlsPadChainListFunction from the given @pad.
  */
 #define OLS_PAD_UNLINKFUNC(pad) (OLS_PAD_CAST(pad)->unlinkfunc)
+
+/**
+ * OLS_OBJECT_FLAGS:
+ * @obj: a #OlsObject
+ *
+ * This macro returns the entire set of flags for the object.
+ */
+#define OLS_PAD_FLAGS(obj) (OLS_PAD_CAST(obj)->flags)
+/**
+ * OLS_OBJECT_FLAG_IS_SET:
+ * @obj: a #OlsObject
+ * @flag: Flag to check for
+ *
+ * This macro checks to see if the given flag is set.
+ */
+#define OLS_PAD_FLAG_IS_SET(obj, flag) ((OLS_PAD_FLAGS(obj) & (flag)) == (flag))
+
+/**
+ * OLS_PAD_IS_EOS:
+ * @pad: a #OlsPad
+ *
+ * Check if the @pad is in EOS state.
+ */
+#define OLS_PAD_IS_EOS(pad) (OLS_PAD_FLAG_IS_SET(pad, OLS_PAD_FLAG_EOS))
+
+/**
+ * OLS_PAD_IS_SRC:
+ * @pad: a #OlsPad
+ *
+ * Returns: %TRUE if the pad is a source pad (i.e. produces data).
+ */
+#define OLS_PAD_IS_SRC(pad) (OLS_PAD_DIRECTION(pad) == OLS_PAD_SRC)
+/**
+ * OLS_PAD_IS_SINK:
+ * @pad: a #OlsPad
+ *
+ * Returns: %TRUE if the pad is a sink pad (i.e. consumes data).
+ */
+#define OLS_PAD_IS_SINK(pad) (OLS_PAD_DIRECTION(pad) == OLS_PAD_SINK)
 
 /**
  * OLSFlowReturn:
@@ -404,6 +498,8 @@ typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad_t *pad,
  */
 typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 
+OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
+
 /**
  * OlsPad:
  * @element_private: private data owned by the parent element
@@ -422,6 +518,8 @@ typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 struct ols_pad {
 
   ols_object_t *parent;
+
+  uint32_t flags;
   /*< private >*/
   /* streaming rec_lock */
   pthread_mutex_t *mutex;
