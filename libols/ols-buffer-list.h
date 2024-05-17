@@ -43,10 +43,6 @@ static inline void ols_buffer_list_unref(ols_buffer_list_t *list) {
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(list));
 }
 
-static inline void ols_clear_buffer_list(ols_buffer_list_t **list_ptr) {
-  ols_clear_mini_object((ols_mini_object_t **)list_ptr);
-}
-
 /* copy */
 static inline ols_buffer_list_t *
 ols_buffer_list_copy(const ols_buffer_list_t *list) {
@@ -54,32 +50,14 @@ ols_buffer_list_copy(const ols_buffer_list_t *list) {
       ols_mini_object_copy(OLS_MINI_OBJECT_CONST_CAST(list)));
 }
 
-static inline bool ols_buffer_list_replace(ols_buffer_list_t **old_list,
-                                           ols_buffer_list_t *new_list) {
-  return ols_mini_object_replace((ols_mini_object_t **)old_list,
-                                 (ols_mini_object_t *)new_list);
-}
-
-static inline bool ols_buffer_list_take(ols_buffer_list_t **old_list,
-                                        ols_buffer_list_t *new_list) {
-  return ols_mini_object_take((ols_mini_object_t **)old_list,
-                              (ols_mini_object_t *)new_list);
-}
-#else  /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
+#else /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
 ols_buffer_list_t *ols_buffer_list_ref(ols_buffer_list_t *list);
 
 void ols_buffer_list_unref(ols_buffer_list_t *list);
 
-void ols_clear_buffer_list(ols_buffer_list_t **list_ptr);
-
 ols_buffer_list_t *ols_buffer_list_copy(const ols_buffer_list_t *list);
 
-bool ols_buffer_list_replace(ols_buffer_list_t **old_list,
-                             ols_buffer_list_t *new_list);
-
-bool ols_buffer_list_take(ols_buffer_list_t **old_list,
-                          ols_buffer_list_t *new_list);
 #endif /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
 /**
@@ -89,7 +67,7 @@ bool ols_buffer_list_take(ols_buffer_list_t **old_list,
  */
 struct ols_buffer_list {
   // OlsMiniObject mini_object;
-
+  ols_mini_object_t mini_object;
   ols_buffer_t **buffers;
   uint32_t n_buffers;
   uint32_t n_allocated;

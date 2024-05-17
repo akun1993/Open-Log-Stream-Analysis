@@ -1,12 +1,48 @@
 #pragma once
-#include "ols.h"
+#include <stdbool.h>
 #include <stdint.h>
 
+struct ols_mini_object;
 typedef struct ols_mini_object ols_mini_object_t;
 
 #define OLS_MINI_OBJECT_CAST(obj) ((ols_mini_object_t *)(obj))
 #define OLS_MINI_OBJECT_CONST_CAST(obj) ((const ols_mini_object_t *)(obj))
 #define OLS_MINI_OBJECT(obj) (OLS_MINI_OBJECT_CONST_CAST(obj))
+
+/**
+ * OLS_MINI_OBJECT_FLAGS:
+ * @obj: MiniObject to return flags for.
+ *
+ * This macro returns the entire set of flags for the mini-object.
+ */
+#define OLS_MINI_OBJECT_FLAGS(obj) (OLS_MINI_OBJECT_CAST(obj)->flags)
+/**
+ * OLS_MINI_OBJECT_FLAG_IS_SET:
+ * @obj: MiniObject to check for flags.
+ * @flag: Flag to check for
+ *
+ * This macro checks to see if the given flag is set.
+ */
+#define OLS_MINI_OBJECT_FLAG_IS_SET(obj, flag)                                 \
+  !!(OLS_MINI_OBJECT_FLAGS(obj) & (flag))
+/**
+ * OLS_MINI_OBJECT_FLAG_SET:
+ * @obj: MiniObject to set flag in.
+ * @flag: Flag to set, can by any number of bits in uint32_t.
+ *
+ * This macro sets the given bits.
+ */
+#define OLS_MINI_OBJECT_FLAG_SET(obj, flag)                                    \
+  (OLS_MINI_OBJECT_FLAGS(obj) |= (flag))
+/**
+ * OLS_MINI_OBJECT_FLAG_UNSET:
+ * @obj: MiniObject to unset flag in.
+ * @flag: Flag to set, must be a single bit in uint32_t.
+ *
+ * This macro unsets the given bits.
+ */
+#define OLS_MINI_OBJECT_FLAG_UNSET(obj, flag)                                  \
+  (OLS_MINI_OBJECT_FLAGS(obj) &= ~(flag))
 
 /**
  * OlsMiniObjectFlags:
@@ -81,13 +117,12 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
 ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object);
 
-void ols_clear_mini_object(ols_mini_object_t **object_ptr);
+// bool ols_mini_object_replace(ols_mini_object_t **olddata,
+//                              ols_mini_object_t *newdata);
 
-bool ols_mini_object_replace(ols_mini_object_t **olddata,
-                             ols_mini_object_t *newdata);
-
-bool ols_mini_object_take(ols_mini_object_t **olddata,
-                          ols_mini_object_t *newdata);
+// void ols_clear_mini_object(ols_mini_object_t **object_ptr);
+// bool ols_mini_object_take(ols_mini_object_t **olddata,
+//                           ols_mini_object_t *newdata);
 
 struct ols_mini_object {
   // GType   type;

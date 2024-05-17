@@ -1,5 +1,5 @@
 /******************************************************************************
-    Copyright (C) 2023 by Lain Bailey <lain@olsproject.com>
+    Copyright (C) 2023 by Lain Bailey <lain@obsproject.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 /** Maximum number of source channels for output and per display */
 #define MAX_CHANNELS 64
 
-
 #define MODULE_SUCCESS 0
 #define MODULE_ERROR -1
 #define MODULE_FILE_NOT_FOUND -2
@@ -36,5 +35,3 @@
 #define OLS_OUTPUT_DISCONNECTED -5
 #define OLS_OUTPUT_UNSUPPORTED -6
 #define OLS_OUTPUT_NO_SPACE -7
-
-

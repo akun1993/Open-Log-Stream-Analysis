@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Lain Bailey <lain@olsproject.com>
+ * Copyright (c) 2023 Lain Bailey <lain@obsproject.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <wchar.h>
-#include <sys/types.h>
 #include "c99defs.h"
+#include <stdio.h>
+#include <sys/types.h>
+#include <wchar.h>
 
 /*
  * Platform-independent functions for Accessing files, encoding, DLLs,
@@ -49,26 +49,26 @@ EXPORT size_t os_fread_utf8(FILE *file, char **pstr);
 /* functions purely for convenience */
 EXPORT char *os_quick_read_utf8_file(const char *path);
 EXPORT bool os_quick_write_utf8_file(const char *path, const char *str,
-				     size_t len, bool marker);
+                                     size_t len, bool marker);
 EXPORT bool os_quick_write_utf8_file_safe(const char *path, const char *str,
-					  size_t len, bool marker,
-					  const char *temp_ext,
-					  const char *backup_ext);
+                                          size_t len, bool marker,
+                                          const char *temp_ext,
+                                          const char *backup_ext);
 EXPORT char *os_quick_read_mbs_file(const char *path);
 EXPORT bool os_quick_write_mbs_file(const char *path, const char *str,
-				    size_t len);
+                                    size_t len);
 
 EXPORT int64_t os_get_file_size(const char *path);
 EXPORT int64_t os_get_free_space(const char *path);
 
 EXPORT size_t os_mbs_to_wcs(const char *str, size_t str_len, wchar_t *dst,
-			    size_t dst_size);
+                            size_t dst_size);
 EXPORT size_t os_utf8_to_wcs(const char *str, size_t len, wchar_t *dst,
-			     size_t dst_size);
+                             size_t dst_size);
 EXPORT size_t os_wcs_to_mbs(const wchar_t *str, size_t len, char *dst,
-			    size_t dst_size);
+                            size_t dst_size);
 EXPORT size_t os_wcs_to_utf8(const wchar_t *str, size_t len, char *dst,
-			     size_t dst_size);
+                             size_t dst_size);
 
 EXPORT size_t os_mbs_to_wcs_ptr(const char *str, size_t len, wchar_t **pstr);
 EXPORT size_t os_utf8_to_wcs_ptr(const char *str, size_t len, wchar_t **pstr);
@@ -129,8 +129,8 @@ struct os_dir;
 typedef struct os_dir os_dir_t;
 
 struct os_dirent {
-	char d_name[256];
-	bool directory;
+  char d_name[256];
+  bool directory;
 };
 
 EXPORT os_dir_t *os_opendir(const char *path);
@@ -138,13 +138,13 @@ EXPORT struct os_dirent *os_readdir(os_dir_t *dir);
 EXPORT void os_closedir(os_dir_t *dir);
 
 struct os_globent {
-	char *path;
-	bool directory;
+  char *path;
+  bool directory;
 };
 
 struct os_glob_info {
-	size_t gl_pathc;
-	struct os_globent *gl_pathv;
+  size_t gl_pathc;
+  struct os_globent *gl_pathv;
 };
 
 typedef struct os_glob_info os_glob_t;
@@ -171,8 +171,7 @@ EXPORT int os_mkdirs(const char *path);
 EXPORT int os_rename(const char *old_path, const char *new_path);
 EXPORT int os_copyfile(const char *file_in, const char *file_out);
 EXPORT int os_safe_replace(const char *target_path, const char *from_path,
-			   const char *backup_path);
-
+                           const char *backup_path);
 
 struct os_inhibit_info;
 typedef struct os_inhibit_info os_inhibit_t;
@@ -190,8 +189,8 @@ EXPORT uint64_t os_get_sys_free_size(void);
 EXPORT uint64_t os_get_sys_total_size(void);
 
 struct os_proc_memory_usage {
-	uint64_t resident_size;
-	uint64_t virtual_size;
+  uint64_t resident_size;
+  uint64_t virtual_size;
 };
 typedef struct os_proc_memory_usage os_proc_memory_usage_t;
 

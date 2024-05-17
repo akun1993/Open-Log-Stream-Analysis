@@ -1,5 +1,5 @@
 /******************************************************************************
-    Copyright (C) 2023 by Lain Bailey <lain@olsproject.com>
+    Copyright (C) 2023 by Lain Bailey <lain@obsproject.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 
-
 /*
  * OLS data settings storage
  *
@@ -39,18 +38,18 @@ typedef struct ols_data_item ols_data_item_t;
 typedef struct ols_data_array ols_data_array_t;
 
 enum ols_data_type {
-	OLS_DATA_NULL,
-	OLS_DATA_STRING,
-	OLS_DATA_NUMBER,
-	OLS_DATA_BOOLEAN,
-	OLS_DATA_OBJECT,
-	OLS_DATA_ARRAY
+  OLS_DATA_NULL,
+  OLS_DATA_STRING,
+  OLS_DATA_NUMBER,
+  OLS_DATA_BOOLEAN,
+  OLS_DATA_OBJECT,
+  OLS_DATA_ARRAY
 };
 
 enum ols_data_number_type {
-	OLS_DATA_NUM_INVALID,
-	OLS_DATA_NUM_INT,
-	OLS_DATA_NUM_DOUBLE
+  OLS_DATA_NUM_INVALID,
+  OLS_DATA_NUM_INT,
+  OLS_DATA_NUM_DOUBLE
 };
 
 /* ------------------------------------------------------------------------- */
@@ -60,7 +59,7 @@ EXPORT ols_data_t *ols_data_create();
 EXPORT ols_data_t *ols_data_create_from_json(const char *json_string);
 EXPORT ols_data_t *ols_data_create_from_json_file(const char *json_file);
 EXPORT ols_data_t *ols_data_create_from_json_file_safe(const char *json_file,
-						       const char *backup_ext);
+                                                       const char *backup_ext);
 EXPORT void ols_data_addref(ols_data_t *data);
 EXPORT void ols_data_release(ols_data_t *data);
 
@@ -69,11 +68,11 @@ EXPORT const char *ols_data_get_json_pretty(ols_data_t *data);
 EXPORT const char *ols_data_get_last_json(ols_data_t *data);
 EXPORT bool ols_data_save_json(ols_data_t *data, const char *file);
 EXPORT bool ols_data_save_json_safe(ols_data_t *data, const char *file,
-				    const char *temp_ext,
-				    const char *backup_ext);
+                                    const char *temp_ext,
+                                    const char *backup_ext);
 EXPORT bool ols_data_save_json_pretty_safe(ols_data_t *data, const char *file,
-					   const char *temp_ext,
-					   const char *backup_ext);
+                                           const char *temp_ext,
+                                           const char *backup_ext);
 
 EXPORT void ols_data_apply(ols_data_t *target, ols_data_t *apply_data);
 
@@ -82,14 +81,14 @@ EXPORT void ols_data_clear(ols_data_t *data);
 
 /* Set functions */
 EXPORT void ols_data_set_string(ols_data_t *data, const char *name,
-				const char *val);
+                                const char *val);
 EXPORT void ols_data_set_int(ols_data_t *data, const char *name, long long val);
 EXPORT void ols_data_set_double(ols_data_t *data, const char *name, double val);
 EXPORT void ols_data_set_bool(ols_data_t *data, const char *name, bool val);
 EXPORT void ols_data_set_obj(ols_data_t *data, const char *name,
-			     ols_data_t *obj);
+                             ols_data_t *obj);
 EXPORT void ols_data_set_array(ols_data_t *data, const char *name,
-			       ols_data_array_t *array);
+                               ols_data_array_t *array);
 
 /*
  * Creates an ols_data_t * filled with all default values.
@@ -100,17 +99,17 @@ EXPORT ols_data_t *ols_data_get_defaults(ols_data_t *data);
  * Default value functions.
  */
 EXPORT void ols_data_set_default_string(ols_data_t *data, const char *name,
-					const char *val);
+                                        const char *val);
 EXPORT void ols_data_set_default_int(ols_data_t *data, const char *name,
-				     long long val);
+                                     long long val);
 EXPORT void ols_data_set_default_double(ols_data_t *data, const char *name,
-					double val);
+                                        double val);
 EXPORT void ols_data_set_default_bool(ols_data_t *data, const char *name,
-				      bool val);
+                                      bool val);
 EXPORT void ols_data_set_default_obj(ols_data_t *data, const char *name,
-				     ols_data_t *obj);
+                                     ols_data_t *obj);
 EXPORT void ols_data_set_default_array(ols_data_t *data, const char *name,
-				       ols_data_array_t *arr);
+                                       ols_data_array_t *arr);
 
 /*
  * Application overrides
@@ -118,17 +117,17 @@ EXPORT void ols_data_set_default_array(ols_data_t *data, const char *name,
  * settings aren't appropriate
  */
 EXPORT void ols_data_set_autoselect_string(ols_data_t *data, const char *name,
-					   const char *val);
+                                           const char *val);
 EXPORT void ols_data_set_autoselect_int(ols_data_t *data, const char *name,
-					long long val);
+                                        long long val);
 EXPORT void ols_data_set_autoselect_double(ols_data_t *data, const char *name,
-					   double val);
+                                           double val);
 EXPORT void ols_data_set_autoselect_bool(ols_data_t *data, const char *name,
-					 bool val);
+                                         bool val);
 EXPORT void ols_data_set_autoselect_obj(ols_data_t *data, const char *name,
-					ols_data_t *obj);
+                                        ols_data_t *obj);
 EXPORT void ols_data_set_autoselect_array(ols_data_t *data, const char *name,
-					  ols_data_array_t *arr);
+                                          ols_data_array_t *arr);
 
 /*
  * Get functions
@@ -141,25 +140,25 @@ EXPORT ols_data_t *ols_data_get_obj(ols_data_t *data, const char *name);
 EXPORT ols_data_array_t *ols_data_get_array(ols_data_t *data, const char *name);
 
 EXPORT const char *ols_data_get_default_string(ols_data_t *data,
-					       const char *name);
+                                               const char *name);
 EXPORT long long ols_data_get_default_int(ols_data_t *data, const char *name);
 EXPORT double ols_data_get_default_double(ols_data_t *data, const char *name);
 EXPORT bool ols_data_get_default_bool(ols_data_t *data, const char *name);
 EXPORT ols_data_t *ols_data_get_default_obj(ols_data_t *data, const char *name);
 EXPORT ols_data_array_t *ols_data_get_default_array(ols_data_t *data,
-						    const char *name);
+                                                    const char *name);
 
 EXPORT const char *ols_data_get_autoselect_string(ols_data_t *data,
-						  const char *name);
+                                                  const char *name);
 EXPORT long long ols_data_get_autoselect_int(ols_data_t *data,
-					     const char *name);
+                                             const char *name);
 EXPORT double ols_data_get_autoselect_double(ols_data_t *data,
-					     const char *name);
+                                             const char *name);
 EXPORT bool ols_data_get_autoselect_bool(ols_data_t *data, const char *name);
 EXPORT ols_data_t *ols_data_get_autoselect_obj(ols_data_t *data,
-					       const char *name);
+                                               const char *name);
 EXPORT ols_data_array_t *ols_data_get_autoselect_array(ols_data_t *data,
-						       const char *name);
+                                                       const char *name);
 
 /* Array functions */
 EXPORT ols_data_array_t *ols_data_array_create();
@@ -169,15 +168,15 @@ EXPORT void ols_data_array_release(ols_data_array_t *array);
 EXPORT size_t ols_data_array_count(ols_data_array_t *array);
 EXPORT ols_data_t *ols_data_array_item(ols_data_array_t *array, size_t idx);
 EXPORT size_t ols_data_array_push_back(ols_data_array_t *array,
-				       ols_data_t *obj);
+                                       ols_data_t *obj);
 EXPORT void ols_data_array_insert(ols_data_array_t *array, size_t idx,
-				  ols_data_t *obj);
+                                  ols_data_t *obj);
 EXPORT void ols_data_array_push_back_array(ols_data_array_t *array,
-					   ols_data_array_t *array2);
+                                           ols_data_array_t *array2);
 EXPORT void ols_data_array_erase(ols_data_array_t *array, size_t idx);
 EXPORT void ols_data_array_enum(ols_data_array_t *array,
-				void (*cb)(ols_data_t *data, void *param),
-				void *param);
+                                void (*cb)(ols_data_t *data, void *param),
+                                void *param);
 
 /* ------------------------------------------------------------------------- */
 /* Item status inspection */
@@ -206,7 +205,7 @@ EXPORT void ols_data_item_unset_autoselect_value(ols_data_item_t *data);
 
 EXPORT ols_data_item_t *ols_data_first(ols_data_t *data);
 EXPORT ols_data_item_t *ols_data_item_byname(ols_data_t *data,
-					     const char *name);
+                                             const char *name);
 EXPORT bool ols_data_item_next(ols_data_item_t **item);
 EXPORT void ols_data_item_release(ols_data_item_t **item);
 EXPORT void ols_data_item_remove(ols_data_item_t **item);
@@ -223,31 +222,31 @@ EXPORT void ols_data_item_set_double(ols_data_item_t **item, double val);
 EXPORT void ols_data_item_set_bool(ols_data_item_t **item, bool val);
 EXPORT void ols_data_item_set_obj(ols_data_item_t **item, ols_data_t *val);
 EXPORT void ols_data_item_set_array(ols_data_item_t **item,
-				    ols_data_array_t *val);
+                                    ols_data_array_t *val);
 
 EXPORT void ols_data_item_set_default_string(ols_data_item_t **item,
-					     const char *val);
+                                             const char *val);
 EXPORT void ols_data_item_set_default_int(ols_data_item_t **item,
-					  long long val);
+                                          long long val);
 EXPORT void ols_data_item_set_default_double(ols_data_item_t **item,
-					     double val);
+                                             double val);
 EXPORT void ols_data_item_set_default_bool(ols_data_item_t **item, bool val);
 EXPORT void ols_data_item_set_default_obj(ols_data_item_t **item,
-					  ols_data_t *val);
+                                          ols_data_t *val);
 EXPORT void ols_data_item_set_default_array(ols_data_item_t **item,
-					    ols_data_array_t *val);
+                                            ols_data_array_t *val);
 
 EXPORT void ols_data_item_set_autoselect_string(ols_data_item_t **item,
-						const char *val);
+                                                const char *val);
 EXPORT void ols_data_item_set_autoselect_int(ols_data_item_t **item,
-					     long long val);
+                                             long long val);
 EXPORT void ols_data_item_set_autoselect_double(ols_data_item_t **item,
-						double val);
+                                                double val);
 EXPORT void ols_data_item_set_autoselect_bool(ols_data_item_t **item, bool val);
 EXPORT void ols_data_item_set_autoselect_obj(ols_data_item_t **item,
-					     ols_data_t *val);
+                                             ols_data_t *val);
 EXPORT void ols_data_item_set_autoselect_array(ols_data_item_t **item,
-					       ols_data_array_t *val);
+                                               ols_data_array_t *val);
 
 /* Item get functions */
 EXPORT const char *ols_data_item_get_string(ols_data_item_t *item);
@@ -272,15 +271,13 @@ EXPORT ols_data_t *ols_data_item_get_autoselect_obj(ols_data_item_t *item);
 EXPORT ols_data_array_t *
 ols_data_item_get_autoselect_array(ols_data_item_t *item);
 
+static inline ols_data_t *ols_data_newref(ols_data_t *data) {
+  if (data)
+    ols_data_addref(data);
+  else
+    data = ols_data_create();
 
-static inline ols_data_t *ols_data_newref(ols_data_t *data)
-{
-	if (data)
-		ols_data_addref(data);
-	else
-		data = ols_data_create();
-
-	return data;
+  return data;
 }
 
 #ifdef __cplusplus

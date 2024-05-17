@@ -516,7 +516,8 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
   ols_pad_set_unlink_function_full((p), (f), NULL, NULL)
 
 struct ols_pad {
-
+  // ols_object_t context;
+  ols_mini_object_t object;
   ols_object_t *parent;
 
   uint32_t flags;

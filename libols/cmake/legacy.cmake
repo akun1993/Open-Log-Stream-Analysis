@@ -48,9 +48,13 @@ target_sources(
           ols-nix.h
           ols-pad.c
           ols-pad.h
+          ols-event.c
           ols-event.h
+          ols-mini-object.c
           ols-mini-object.h
+          ols-buffer.c
           ols-buffer.h
+          ols-buffer-list.c
           ols-buffer-list.h
           ols-config.h)
 

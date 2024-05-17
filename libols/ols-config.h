@@ -1,5 +1,5 @@
 /******************************************************************************
-    Copyright (C) 2023 by Lain Bailey <lain@olsproject.com>
+    Copyright (C) 2023 by Lain Bailey <lain@obsproject.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,12 +43,12 @@
  */
 #define LIBOLS_API_PATCH_VER 1
 
-#define MAKE_SEMANTIC_VERSION(major, minor, patch) \
-	((major << 24) | (minor << 16) | patch)
+#define MAKE_SEMANTIC_VERSION(major, minor, patch)                             \
+  ((major << 24) | (minor << 16) | patch)
 
-#define LIBOLS_API_VER                                                    \
-	MAKE_SEMANTIC_VERSION(LIBOLS_API_MAJOR_VER, LIBOLS_API_MINOR_VER, \
-			      LIBOLS_API_PATCH_VER)
+#define LIBOLS_API_VER                                                         \
+  MAKE_SEMANTIC_VERSION(LIBOLS_API_MAJOR_VER, LIBOLS_API_MINOR_VER,            \
+                        LIBOLS_API_PATCH_VER)
 
 #ifdef HAVE_OLSCONFIG_H
 #include "olsconfig.h"

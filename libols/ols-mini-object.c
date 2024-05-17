@@ -1,4 +1,5 @@
 #include "ols-mini-object.h"
+#include "util/threading.h"
 
 #define SHARE_ONE (1 << 16)
 #define SHARE_TWO (2 << 16)
@@ -160,13 +161,13 @@ void ols_mini_object_unlock(ols_mini_object_t *object, OlsLockFlags flags) {
 
     if (access_mode & OLS_LOCK_FLAG_EXCLUSIVE) {
       /* shared counter */
-      g_return_if_fail(state >= SHARE_ONE);
+      // g_return_if_fail(state >= SHARE_ONE);
       newstate -= SHARE_ONE;
       access_mode &= ~OLS_LOCK_FLAG_EXCLUSIVE;
     }
 
     if (access_mode) {
-      g_return_if_fail((state & access_mode) == access_mode);
+      // g_return_if_fail((state & access_mode) == access_mode);
       /* decrease the refcount */
       newstate -= LOCK_ONE;
       /* last refcount, unset access_mode */
@@ -215,6 +216,7 @@ ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object) {
 }
 
 static void free_priv_data(ols_mini_object_t *obj) {
+  UNUSED_PARAMETER(obj);
   //   uint32_t i;
   //   int32_t priv_state = g_atomic_int_get((int32_t *)&obj->priv_uint);
   //   PrivData *priv_data;
@@ -249,30 +251,6 @@ static void free_priv_data(ols_mini_object_t *obj) {
   //   g_free(priv_data->parents);
 
   //   g_free(priv_data);
-}
-
-/**
- * ols_mini_object_copy: (skip)
- * @mini_object: the mini-object to copy
- *
- * Creates a copy of the mini-object.
- *
- * MT safe
- *
- * Returns: (transfer full) (nullable): the new mini-object if copying is
- * possible, %NULL otherwise.
- */
-ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object) {
-  ols_mini_object_t *copy;
-
-  // g_return_val_if_fail(mini_object != NULL, NULL);
-
-  if (mini_object->copy)
-    copy = mini_object->copy(mini_object);
-  else
-    copy = NULL;
-
-  return copy;
 }
 
 /**
@@ -321,139 +299,4 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
         mini_object->free(mini_object);
     }
   }
-}
-
-/**
- * ols_clear_mini_object: (skip)
- * @object_ptr: a pointer to a #OlsMiniObject reference
- *
- * Clears a reference to a #OlsMiniObject.
- *
- * @object_ptr must not be %NULL.
- *
- * If the reference is %NULL then this function does nothing.
- * Otherwise, the reference count of the object is decreased using
- * ols_mini_object_unref() and the pointer is set to %NULL.
- *
- * A macro is also included that allows this function to be used without
- * pointer casts.
- *
- * Since: 1.16
- **/
-#undef ols_clear_mini_object
-void ols_clear_mini_object(ols_mini_object_t **object_ptr) {
-  // g_clear_pointer(object_ptr, ols_mini_object_unref);
-}
-/**
- * ols_mini_object_replace:
- * @olddata: (inout) (transfer full) (nullable): pointer to a pointer to a
- *     mini-object to be replaced
- * @newdata: (allow-none): pointer to new mini-object
- *
- * Atomically modifies a pointer to point to a new mini-object.
- * The reference count of @olddata is decreased and the reference count of
- * @newdata is increased.
- *
- * Either @newdata and the value pointed to by @olddata may be %NULL.
- *
- * Returns: %TRUE if @newdata was different from @olddata
- */
-bool ols_mini_object_replace(ols_mini_object_t **olddata,
-                             ols_mini_object_t *newdata) {
-  ols_mini_object_t *olddata_val;
-
-  // g_return_val_if_fail(olddata != NULL, FALSE);
-
-  //   OLS_CAT_TRACE(OLS_CAT_REFCOUNTING, "replace %p (%d) with %p (%d)",
-  //   *olddata,
-  //                 *olddata ? (*olddata)->refcount : 0, newdata,
-  //                 newdata ? newdata->refcount : 0);
-
-  olddata_val = (ols_mini_object_t *)g_atomic_pointer_get((gpointer *)olddata);
-
-  if ((olddata_val == newdata))
-    return false;
-
-  if (newdata)
-    ols_mini_object_ref(newdata);
-
-  while ((!g_atomic_pointer_compare_and_exchange(
-      (gpointer *)olddata, (gpointer)olddata_val, newdata))) {
-    olddata_val = g_atomic_pointer_get((gpointer *)olddata);
-    if ((olddata_val == newdata))
-      break;
-  }
-
-  if (olddata_val)
-    ols_mini_object_unref(olddata_val);
-
-  return olddata_val != newdata;
-}
-
-/**
- * ols_mini_object_steal: (skip)
- * @olddata: (inout) (transfer full): pointer to a pointer to a mini-object to
- *     be stolen
- *
- * Replace the current #OlsMiniObject pointer to by @olddata with %NULL and
- * return the old value.
- *
- * Returns: (nullable): the #OlsMiniObject at @oldata
- */
-ols_mini_object_t *ols_mini_object_steal(ols_mini_object_t **olddata) {
-  ols_mini_object_t *olddata_val;
-
-  //   g_return_val_if_fail(olddata != NULL, NULL);
-
-  //   OLS_CAT_TRACE(OLS_CAT_REFCOUNTING, "steal %p (%d)", *olddata,
-  //                 *olddata ? (*olddata)->refcount : 0);
-
-  do {
-    olddata_val =
-        (ols_mini_object_t *)g_atomic_pointer_get((gpointer *)olddata);
-    if (olddata_val == NULL)
-      break;
-  } while ((!g_atomic_pointer_compare_and_exchange(
-      (gpointer *)olddata, (gpointer)olddata_val, NULL)));
-
-  return olddata_val;
-}
-
-/**
- * ols_mini_object_take:
- * @olddata: (inout) (transfer full): pointer to a pointer to a mini-object to
- *     be replaced
- * @newdata: pointer to new mini-object
- *
- * Modifies a pointer to point to a new mini-object. The modification
- * is done atomically. This version is similar to ols_mini_object_replace()
- * except that it does not increase the refcount of @newdata and thus
- * takes ownership of @newdata.
- *
- * Either @newdata and the value pointed to by @olddata may be %NULL.
- *
- * Returns: %TRUE if @newdata was different from @olddata
- */
-bool ols_mini_object_take(ols_mini_object_t **olddata,
-                          ols_mini_object_t *newdata) {
-  ols_mini_object_t *olddata_val;
-
-  // g_return_val_if_fail(olddata != NULL, FALSE);
-
-  //   OLS_CAT_TRACE(OLS_CAT_REFCOUNTING, "take %p (%d) with %p (%d)", *olddata,
-  //                 *olddata ? (*olddata)->refcount : 0, newdata,
-  //                 newdata ? newdata->refcount : 0);
-
-  do {
-    olddata_val =
-        (ols_mini_object_t *)g_atomic_pointer_get((gpointer *)olddata);
-    if ((olddata_val == newdata))
-      break;
-  } while ((!g_atomic_pointer_compare_and_exchange(
-      (gpointer *)olddata, (gpointer)olddata_val, newdata)));
-
-  if (olddata_val)
-    ols_mini_object_unref(olddata_val);
-
-  return olddata_val != newdata;
 }

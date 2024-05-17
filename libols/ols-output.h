@@ -1,5 +1,5 @@
 /******************************************************************************
-    Copyright (C) 2023 by Lain Bailey <lain@olsproject.com>
+    Copyright (C) 2023 by Lain Bailey <lain@obsproject.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,42 +24,40 @@ extern "C" {
 #define OLS_OUTPUT_SERVICE (1 << 3)
 #define OLS_OUTPUT_CAN_PAUSE (1 << 5)
 
-
 struct ols_output_info {
-	/* required */
-	const char *id;
+  /* required */
+  const char *id;
 
-	uint32_t flags;
+  uint32_t flags;
 
-	const char *(*get_name)(void *type_data);
+  const char *(*get_name)(void *type_data);
 
-	void *(*create)(ols_data_t *settings, ols_output_t *output);
-	void (*destroy)(void *data);
+  void *(*create)(ols_data_t *settings, ols_output_t *output);
+  void (*destroy)(void *data);
 
-	bool (*start)(void *data);
-	void (*stop)(void *data, uint64_t ts);
+  bool (*start)(void *data);
+  void (*stop)(void *data, uint64_t ts);
 
-	/* optional */
-	void (*update)(void *data, ols_data_t *settings);
+  /* optional */
+  void (*update)(void *data, ols_data_t *settings);
 
-	void (*get_defaults)(ols_data_t *settings);
+  void (*get_defaults)(ols_data_t *settings);
 
-	ols_properties_t *(*get_properties)(void *data);
+  ols_properties_t *(*get_properties)(void *data);
 
-	uint64_t (*get_total_bytes)(void *data);
+  uint64_t (*get_total_bytes)(void *data);
 
-	int (*get_dropped_frames)(void *data);
+  int (*get_dropped_frames)(void *data);
 
-	void *type_data;
-	void (*free_type_data)(void *type_data);
-
+  void *type_data;
+  void (*free_type_data)(void *type_data);
 };
 
 EXPORT void ols_register_output_s(const struct ols_output_info *info,
-				  size_t size);
+                                  size_t size);
 
-#define ols_register_output(info) \
-	ols_register_output_s(info, sizeof(struct ols_output_info))
+#define ols_register_output(info)                                              \
+  ols_register_output_s(info, sizeof(struct ols_output_info))
 
 #ifdef __cplusplus
 }

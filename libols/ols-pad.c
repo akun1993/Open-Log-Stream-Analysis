@@ -359,6 +359,14 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   // g_return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),
   // OLS_PAD_LINK_WRONG_DIRECTION);
 
+  if (!OLS_PAD_IS_SRC(srcpad)) {
+    return OLS_PAD_LINK_WRONG_DIRECTION;
+  }
+
+  if (!OLS_PAD_IS_SINK(sinkpad)) {
+    return OLS_PAD_LINK_WRONG_DIRECTION;
+  }
+
   // OLS_TRACER_PAD_LINK_PRE(srcpad, sinkpad);
 
   /* Notify the parent early. See ols_pad_unlink for details. */
@@ -378,12 +386,6 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   // result = ols_pad_link_prepare(srcpad, sinkpad, flags);
   OLS_PAD_LOCK(srcpad);
   OLS_PAD_LOCK(sinkpad);
-  if (result != OLS_PAD_LINK_OK) {
-    // OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
-    //              OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
-    //              ols_pad_link_get_name(result));
-    goto done;
-  }
 
   /* must set peers before calling the link function */
   OLS_PAD_PEER(srcpad) = sinkpad;
@@ -656,6 +658,8 @@ no_function : {
 static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
                                                 ols_object_t *parent,
                                                 ols_buffer_list_t *list) {
+
+  UNUSED_PARAMETER(parent);
   uint32_t i, len;
   ols_buffer_t *buffer;
   OlsFlowReturn ret;
@@ -676,6 +680,60 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
   ols_buffer_list_unref(list);
 
   return ret;
+}
+
+static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
+                                       void *data) {
+  ols_pad_t *peer;
+  OlsFlowReturn ret;
+  bool handled = false;
+
+  OLS_PAD_LOCK(pad);
+
+  if (OLS_PAD_IS_EOS(pad))
+    goto eos;
+
+  if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
+    goto wrong_mode;
+
+  if ((peer = OLS_PAD_PEER(pad)) == NULL)
+    goto not_linked;
+
+  /* take ref to peer pad before releasing the lock */
+  ols_mini_object_ref(OLS_MINI_OBJECT_CAST(peer));
+  // pad->priv->using ++;
+  OLS_PAD_UNLOCK(pad);
+
+  ret = ols_pad_chain_data_unchecked(peer, type, data);
+  data = NULL;
+
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(peer));
+
+  return ret;
+
+eos : {
+  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but pad was EOS");
+  // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
+  OLS_PAD_UNLOCK(pad);
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
+  return OLS_FLOW_EOS;
+}
+wrong_mode : {
+  // g_critical("pushing on pad %s:%s but it was not activated in push mode",
+  //            OLS_DEBUG_PAD_NAME(pad));
+  // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
+  OLS_PAD_UNLOCK(pad);
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
+  return OLS_FLOW_ERROR;
+}
+
+not_linked : {
+  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but it was not
+  // linked"); pad->ABI.abi.last_flowret = OLS_FLOW_NOT_LINKED;
+  OLS_PAD_UNLOCK(pad);
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
+  return OLS_FLOW_NOT_LINKED;
+}
 }
 
 /**
@@ -714,60 +772,6 @@ OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer) {
   return res;
 }
 
-static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
-                                       void *data) {
-  ols_pad_t *peer;
-  OlsFlowReturn ret;
-  bool handled = false;
-
-  OLS_PAD_LOCK(pad);
-
-  if (OLS_PAD_IS_EOS(pad))
-    goto eos;
-
-  if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
-    goto wrong_mode;
-
-  if ((peer = OLS_PAD_PEER(pad)) == NULL)
-    goto not_linked;
-
-  /* take ref to peer pad before releasing the lock */
-  ols_object_ref(peer);
-  // pad->priv->using ++;
-  OLS_PAD_UNLOCK(pad);
-
-  ret = ols_pad_chain_data_unchecked(peer, type, data);
-  data = NULL;
-
-  ols_object_unref(peer);
-
-  return ret;
-
-eos : {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but pad was EOS");
-  // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
-  OLS_PAD_UNLOCK(pad);
-  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
-  return OLS_FLOW_EOS;
-}
-wrong_mode : {
-  // g_critical("pushing on pad %s:%s but it was not activated in push mode",
-  //            OLS_DEBUG_PAD_NAME(pad));
-  // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
-  OLS_PAD_UNLOCK(pad);
-  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
-  return OLS_FLOW_ERROR;
-}
-
-not_linked : {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but it was not
-  // linked"); pad->ABI.abi.last_flowret = OLS_FLOW_NOT_LINKED;
-  OLS_PAD_UNLOCK(pad);
-  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
-  return OLS_FLOW_NOT_LINKED;
-}
-}
-
 /**
  * ols_pad_get_peer:
  * @pad: a #OlsPad to get the peer of.
@@ -785,7 +789,7 @@ ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
   OLS_PAD_LOCK(pad);
   result = OLS_PAD_PEER(pad);
   if (result)
-    ols_object_ref(result);
+    ols_mini_object_ref(OLS_MINI_OBJECT_CAST(pad));
   OLS_PAD_UNLOCK(pad);
 
   return result;
@@ -794,6 +798,9 @@ ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
 static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
                                                   ols_event_t *event,
                                                   OlsPadProbeType type) {
+
+  UNUSED_PARAMETER(type);
+
   OlsFlowReturn ret;
   // ols_event_type event_type;
   // bool serialized, need_unlock = false;
@@ -882,7 +889,8 @@ static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
   if (peerpad == NULL)
     goto not_linked;
 
-  ols_object_ref(peerpad);
+  ols_mini_object_ref(OLS_MINI_OBJECT_CAST(peerpad));
+  // ols_object_ref(peerpad);
   // pad->priv->using ++;
   OLS_PAD_UNLOCK(pad);
 
@@ -898,8 +906,8 @@ static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
   //     pad, "sent event %p (%s) to peerpad %" OLS_PTR_FORMAT ", ret %s",
   //     event, ols_event_type_get_name(event_type), peerpad,
   //     ols_flow_get_name(ret));
-
-  ols_object_unref(peerpad);
+  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(peerpad));
+  // ols_object_unref(peerpad);
 
   OLS_PAD_LOCK(pad);
   // pad->priv->using --;
