@@ -9,6 +9,8 @@ typedef struct ols_mini_object ols_mini_object_t;
 #define OLS_MINI_OBJECT_CONST_CAST(obj) ((const ols_mini_object_t *)(obj))
 #define OLS_MINI_OBJECT(obj) (OLS_MINI_OBJECT_CONST_CAST(obj))
 
+typedef uint32_t miniType;
+
 /**
  * OLS_MINI_OBJECT_FLAGS:
  * @obj: MiniObject to return flags for.
@@ -112,6 +114,12 @@ typedef bool (*ols_mini_object_dispose_function)(ols_mini_object_t *obj);
  */
 typedef void (*ols_mini_object_free_function)(ols_mini_object_t *obj);
 
+void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
+                          miniType type,
+                          ols_mini_object_copy_function copy_func,
+                          ols_mini_object_dispose_function dispose_func,
+                          ols_mini_object_free_function free_func);
+
 ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object);
 void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
@@ -125,7 +133,7 @@ ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object);
 //                           ols_mini_object_t *newdata);
 
 struct ols_mini_object {
-  // GType   type;
+  miniType type;
 
   /*< public >*/ /* with COW */
   volatile long refcount;

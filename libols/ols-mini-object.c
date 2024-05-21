@@ -30,10 +30,11 @@ enum {
  * functions.
  */
 void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
+                          miniType type,
                           ols_mini_object_copy_function copy_func,
                           ols_mini_object_dispose_function dispose_func,
                           ols_mini_object_free_function free_func) {
-  // mini_object->type = type;
+  mini_object->type = type;
   mini_object->refcount = 1;
   mini_object->lockstate = 0;
   mini_object->flags = flags;
