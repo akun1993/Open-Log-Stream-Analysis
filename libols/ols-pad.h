@@ -500,6 +500,16 @@ typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 
 OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
+OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer);
+
+bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event);
+
+void ols_pad_set_chain_function_full(ols_pad_t *pad,
+                                     ols_pad_chain_function chain,
+                                     void *user_data);
+
+#define ols_pad_set_chain_function(p, f)                                       \
+  ols_pad_set_chain_function_full((p), (f), NULL)
 /**
  * OlsPad:
  * @element_private: private data owned by the parent element
@@ -522,13 +532,11 @@ struct ols_pad {
 
   uint32_t flags;
   /*< private >*/
-  /* streaming rec_lock */
-  pthread_mutex_t *mutex;
-  // OLSTask *task;
+
+  pthread_mutex_t mutex;
+
   OLSPadDirection direction;
 
-  /*< private >*/
-  /* streaming rec_lock */
   pthread_mutex_t stream_rec_lock;
 
   /* block cond, mutex is from the object */
@@ -536,38 +544,23 @@ struct ols_pad {
 
   OLSPadMode mode;
 
-  /* block cond, mutex is from the object */
-  // GCond block_cond;
-  // GHookList probes;
   /* pad link */
   ols_pad_t *peer;
   ols_pad_link_function linkfunc;
   void *linkdata;
-  // GDestroyNotify linknotify;
+
   ols_pad_unlink_function unlinkfunc;
   void *unlinkdata;
-  // GDestroyNotify unlinknotify;
 
   /* data transport functions */
   ols_pad_chain_function chainfunc;
   void *chaindata;
-  // GDestroyNotify chainnotify;
+
   ols_pad_chain_list_function chainlistfunc;
   void *chainlistdata;
-  // GDestroyNotify chainlistnotify;
 
   ols_pad_event_function eventfunc;
   void *eventdata;
-  // GDestroyNotify eventnotify;
-
-  /* pad offset */
-  int64_t offset;
-
-  /* counts number of probes attached. */
-  int32_t num_probes;
-  int32_t num_blocked;
-
-  // OlsPadPrivate *priv;
 
   OlsFlowReturn last_flowret;
   ols_pad_event_full_function eventfullfunc;

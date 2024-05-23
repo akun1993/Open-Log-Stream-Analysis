@@ -13,6 +13,9 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
                                                 ols_object_t *parent,
                                                 ols_buffer_list_t *list);
 
+static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
+                                  ols_event_t *event);
+
 #define ACQUIRE_PARENT(pad, parent, label)                                     \
   do {                                                                         \
     if ((parent = OLS_PAD_PARENT(pad)))                                        \
@@ -43,23 +46,88 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
  * This macro will obtain a lock on the object, making serialization possible.
  * It blocks until the lock can be obtained.
  */
-#define OLS_PAD_LOCK(obj) pthread_mutex_lock(OLS_PAD_GET_LOCK(obj))
+#define OLS_PAD_LOCK(obj) pthread_mutex_lock(&OLS_PAD_GET_LOCK(obj))
 
-#define OLS_PAD_UNLOCK(obj) pthread_mutex_unlock(OLS_PAD_GET_LOCK(obj))
+#define OLS_PAD_UNLOCK(obj) pthread_mutex_unlock(&OLS_PAD_GET_LOCK(obj))
+
+/**
+ * gst_pad_event_default:
+ * @pad: a #GstPad to call the default event handler on.
+ * @parent: (allow-none): the parent of @pad or %NULL
+ * @event: (transfer full): the #GstEvent to handle.
+ *
+ * Invokes the default event handler for the given pad.
+ *
+ * The EOS event will pause the task associated with @pad before it is forwarded
+ * to all internally linked pads,
+ *
+ * The event is sent to all pads internally linked to @pad. This function
+ * takes ownership of @event.
+ *
+ * Returns: %TRUE if the event was sent successfully.
+ */
+static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
+                                  ols_event_t *event) {
+  bool result = true;
+  UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(parent);
+  UNUSED_PARAMETER(event);
+  // g_return_val_if_fail(GST_IS_PAD(pad), FALSE);
+  // g_return_val_if_fail(event != NULL, FALSE);
+
+  // GST_LOG_OBJECT(pad, "default event handler for event %" GST_PTR_FORMAT,
+  //                event);
+
+  // switch (GST_EVENT_TYPE(event)) {
+  // case GST_EVENT_CAPS:
+  //   forward = GST_PAD_IS_PROXY_CAPS(pad);
+  //   result = TRUE;
+  //   break;
+  // default:
+  //   break;
+  // }
+
+  // if (forward) {
+  //   EventData data;
+
+  //   data.event = event;
+  //   data.dispatched = FALSE;
+  //   data.result = FALSE;
+
+  //   gst_pad_forward(pad, (GstPadForwardFunction)event_forward_func, &data);
+
+  //   /* for sinkpads without a parent element or without internal links,
+  //   nothing
+  //    * will be dispatched but we still want to return TRUE. */
+  //   if (data.dispatched)
+  //     result = data.result;
+  //   else
+  //     result = TRUE;
+  // }
+
+  // gst_event_unref(event);
+
+  return result;
+}
 
 static void ols_pad_init(ols_pad_t *pad) {
   // pad->priv = ols_pad_get_instance_private(pad);
 
   OLS_PAD_DIRECTION(pad) = OLS_PAD_UNKNOWN;
 
-  // OLS_PAD_EVENTFUNC(pad) = ols_pad_event_default;
-  // OLS_PAD_QUERYFUNC(pad) = ols_pad_query_default;
-  // OLS_PAD_ITERINTLINKFUNC(pad) = ols_pad_iterate_internal_links_default;
+  OLS_PAD_EVENTFUNC(pad) = ols_pad_event_default;
+
   OLS_PAD_CHAINLISTFUNC(pad) = ols_pad_chain_list_default;
+
+  // OLS_PAD_LINKFUNC(pad) =
+
+  OLS_PAD_PEER(pad) = NULL;
 
   // g_rec_mutex_init(&pad->stream_rec_lock);
 
   pthread_cond_init(&pad->block_cond, NULL);
+
+  pthread_mutex_init(&pad->mutex, NULL);
 
   pthread_mutex_init_recursive(&pad->stream_rec_lock);
 
@@ -349,7 +417,7 @@ bool ols_pad_is_linked(ols_pad_t *pad) {
  *          what went wrong.
  */
 OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
-  OlsPadLinkReturn result;
+  OlsPadLinkReturn result = OLS_PAD_LINK_OK;
   ols_object_t *parent;
   ols_pad_link_function srcfunc, sinkfunc;
 
@@ -882,7 +950,7 @@ static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
   OlsFlowReturn ret;
   ols_pad_t *peerpad;
   ols_event_type event_type;
-  int64_t old_pad_offset = pad->offset;
+  // int64_t old_pad_offset = pad->offset;
 
   /* now check the peer pad */
   peerpad = OLS_PAD_PEER(pad);

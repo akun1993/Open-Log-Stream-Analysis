@@ -59,17 +59,16 @@ static const char *process_signals[] = {
     NULL,
 };
 
-static OlsFlowReturn chain(ols_pad_t *pad, ols_object_t *parent,
-                           ols_buffer_t *buffer) {
+static OlsFlowReturn process_default_chain(ols_pad_t *pad, ols_object_t *parent,
+                                           ols_buffer_t *buffer) {
   struct ols_process *process = (struct ols_process *)parent;
   UNUSED_PARAMETER(pad);
-  UNUSED_PARAMETER(buffer);
   // process->info.analysis(buffer);
 
   for (int i = 0; i < process->context.numsrcpads; ++i) {
-    // ols_pad *pad = process->context.srcpads[i];
+    ols_pad_t *pad = process->context.srcpads.array + i;
 
-    //
+    ols_pad_push(pad, buffer);
   }
 }
 
@@ -83,7 +82,8 @@ bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
   // process->context.sink =
   //     gst_ghost_pad_new_from_template("sink", scale->sinkpads->data,
   //     template);
-  // ols_pad_set_chain_function(process->sink, (ols_pad_chain_function)chain);
+  ols_pad_set_chain_function(process->sinkpad,
+                             (ols_pad_chain_function)process_default_chain);
   // gst_element_add_pad(GST_ELEMENT(self), process->sink);
   // gst_object_unref(template);
 
