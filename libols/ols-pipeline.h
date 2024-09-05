@@ -4,7 +4,7 @@
 #include "ols.h"
 #include <stdbool.h>
 
-typedef struct OlsPipeline OlsPipeline_t;
+typedef struct ols_pipeline ols_pipeline_t;
 
 /**
  * OLS_PIPELINE_NUMCHILDREN:
@@ -44,7 +44,7 @@ typedef struct OlsPipeline OlsPipeline_t;
  * The OlsBin base class. Subclasses can access these fields provided
  * the LOCK is taken.
  */
-struct OlsPipeline {
+struct ols_pipeline {
   // ols_object_t obj;
 
   int32_t numchildren;
@@ -59,15 +59,12 @@ struct OlsPipeline {
   bool clock_dirty;
   //   OlsClock *provided_clock;
   //   OlsElement *clock_provider;
+  char *name;
 };
 
-OlsPipeline_t *ols_pipeline_new(const char *name);
+ols_pipeline_t *ols_pipeline_new(const char *name,const char *pipe_desc);
 
 /* add and remove elements from the bin */
-
-// bool ols_bin_add(OlsBin *bin, OlsElement *element);
-
-// bool ols_bin_remove(OlsBin *bin, OlsElement *element);
 
 // /* retrieve a single child */
 

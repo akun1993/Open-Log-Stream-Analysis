@@ -60,6 +60,7 @@ static OlsFlowReturn output_default_chain(ols_pad_t *pad, ols_object_t *parent,
                                           ols_buffer_t *buffer) {
   struct ols_process *process = (struct ols_process *)parent;
   UNUSED_PARAMETER(pad);
+  UNUSED_PARAMETER(buffer);
   // process->info.analysis(buffer);
   // for (int i = 0; i < process->context.numsrcpads; ++i) {
   //   ols_pad_t *pad = process->context.srcpads.array + i;
