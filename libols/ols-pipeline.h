@@ -64,6 +64,8 @@ struct ols_pipeline {
 
 ols_pipeline_t *ols_pipeline_new(const char *name,const char *pipe_desc);
 
+
+ols_pipeline_t *ols_pipeline_new_test(const char *name) ;
 /* add and remove elements from the bin */
 
 // /* retrieve a single child */

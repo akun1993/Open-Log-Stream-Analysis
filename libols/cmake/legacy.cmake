@@ -5,6 +5,7 @@ endif()
 project(libols)
 
 # cmake-format: off
+message("OLS:  libols-version: ${OLS_BUILD_NUMBER}")
 add_library(libols-version STATIC EXCLUDE_FROM_ALL)
 add_library(OLS::libols-version ALIAS libols-version)
 # cmake-format: on
@@ -12,6 +13,9 @@ configure_file(olsversion.c.in olsversion.c @ONLY)
 target_sources(libols-version PRIVATE olsversion.c olsversion.h)
 target_include_directories(libols-version PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TARGET libols-version PROPERTY FOLDER core)
+set_target_properties(libols-version PROPERTIES LINKER_LANGUAGE C)
+
+message("OLS:  libols-version end: ${OLS_BUILD_NUMBER}")
 
 find_package(Jansson 2.5 REQUIRED)
 find_package(Threads REQUIRED)
@@ -19,6 +23,8 @@ find_package(ZLIB REQUIRED)
 
 add_library(libols SHARED)
 add_library(OLS::libols ALIAS libols)
+
+message("OLS:  libols")
 
 target_sources(
   libols
@@ -258,7 +264,7 @@ elseif(OS_POSIX)
     target_link_libraries(libols PRIVATE Sysinfo::Sysinfo)
   endif()
 
-  set_target_properties(libols PROPERTIES BUILD_RPATH "$<TARGET_FILE_DIR:OLS::libols-opengl>")
+  #set_target_properties(libols PROPERTIES BUILD_RPATH "$<TARGET_FILE_DIR:OLS::libols-opengl>")
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/olsconfig.h.in ${CMAKE_BINARY_DIR}/config/olsconfig.h)
@@ -296,3 +302,5 @@ setup_binary_target(libols)
 setup_target_resources(libols libols)
 export_target(libols)
 install_headers(libols)
+
+message("legacy done")

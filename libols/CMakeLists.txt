@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.22...3.25)
+cmake_minimum_required(VERSION 3.16...3.25)
+message("in legacy check")
 
 legacy_check()
+
+message("Out legacy check")
 
 include(cmake/ols-version.cmake)
 

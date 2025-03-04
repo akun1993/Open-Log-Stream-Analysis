@@ -1,7 +1,7 @@
 set(OLS_COMPANY_NAME "OLS Project")
 set(OLS_PRODUCT_NAME "OLS Studio")
 set(OLS_WEBSITE "https://www.olsproject.com")
-set(OLS_COMMENTS "Free and open source software for video recording and live streaming")
+set(OLS_COMMENTS "Free and open source software for log streaming analysis")
 set(OLS_LEGAL_COPYRIGHT "(C) Lain Bailey")
 
 # Configure default version strings

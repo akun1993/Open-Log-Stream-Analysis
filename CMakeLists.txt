@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22...3.25)
+cmake_minimum_required(VERSION 3.16...3.25)
 
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "(Darwin)" OR OLS_CMAKE_VERSION VERSION_GREATER_EQUAL 3.0.0)
   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
@@ -28,7 +28,9 @@ if(CMAKE_HOST_SYSTEM_NAME MATCHES "(Darwin)" OR OLS_CMAKE_VERSION VERSION_GREATE
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
+message("Version Config In")
 include(VersionConfig)
+message("Version Config Out")
 
 # Prohibit in-source builds
 if("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
@@ -84,9 +86,18 @@ endif()
 
 # OLS sources and plugins
 add_subdirectory(deps)
+message("lib ols in")
 add_subdirectory(libols)
-#add_subdirectory(plugins)
+message("lib ols out")
+add_subdirectory(plugins)
+message("lib ols ${OLS_VERSION}")
 
+# const char *OLS_VERSION = "@OLS_VERSION@";
+# const char *OLS_VERSION_CANONICAL = "@OLS_VERSION_CANONICAL@";
+# const char *OLS_COMMIT = "@OLS_COMMIT@";
+
+message("lib ols ${OLS_VERSION_CANONICAL}")
+message("lib ols ${OLS_COMMIT}")
 # OLS main app
 #add_subdirectory(UI)
 
