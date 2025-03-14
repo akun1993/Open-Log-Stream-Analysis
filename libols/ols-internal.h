@@ -32,12 +32,13 @@
 #include <stdbool.h>
 
 /* Custom helpers for the UUID hash table */
-#define HASH_FIND_UUID(head, uuid, out)                                        \
+#define HASH_FIND_UUID(head, uuid, out) \
   HASH_FIND(hh_uuid, head, uuid, UUID_STR_LENGTH, out)
-#define HASH_ADD_UUID(head, uuid_field, add)                                   \
+#define HASH_ADD_UUID(head, uuid_field, add) \
   HASH_ADD(hh_uuid, head, uuid_field[0], UUID_STR_LENGTH, add)
 
-struct tick_callback {
+struct tick_callback
+{
   void (*tick)(void *param, float seconds);
   void *param;
 };
@@ -46,8 +47,10 @@ struct tick_callback {
 /* validity checks */
 
 static inline bool ols_object_valid(const void *obj, const char *f,
-                                    const char *t) {
-  if (!obj) {
+                                    const char *t)
+{
+  if (!obj)
+  {
     blog(LOG_DEBUG, "%s: Null '%s' parameter", f, t);
     return false;
   }
@@ -63,7 +66,8 @@ static inline bool ols_object_valid(const void *obj, const char *f,
 /* ------------------------------------------------------------------------- */
 /* modules */
 
-struct ols_module {
+struct ols_module
+{
   char *mod_name;
   const char *file;
   char *bin_path;
@@ -88,20 +92,24 @@ struct ols_module {
 
 extern void free_module(struct ols_module *mod);
 
-struct ols_module_path {
+struct ols_module_path
+{
   char *bin;
   char *data;
 };
 
-static inline void free_module_path(struct ols_module_path *omp) {
-  if (omp) {
+static inline void free_module_path(struct ols_module_path *omp)
+{
+  if (omp)
+  {
     bfree(omp->bin);
     bfree(omp->data);
   }
 }
 
 static inline bool check_path(const char *data, const char *path,
-                              struct dstr *output) {
+                              struct dstr *output)
+{
   dstr_copy(output, path);
   dstr_cat(output, data);
 
@@ -109,75 +117,17 @@ static inline bool check_path(const char *data, const char *path,
 }
 
 /* ------------------------------------------------------------------------- */
-/* hotkeys */
-
-struct ols_hotkey {
-  ols_hotkey_id id;
-  char *name;
-  char *description;
-
-  ols_hotkey_func func;
-  void *data;
-  int pressed;
-
-  ols_hotkey_registerer_t registerer_type;
-  void *registerer;
-
-  ols_hotkey_id pair_partner_id;
-
-  UT_hash_handle hh;
-};
-
-struct ols_hotkey_pair {
-  ols_hotkey_pair_id pair_id;
-  ols_hotkey_id id[2];
-  ols_hotkey_active_func func[2];
-  bool pressed0;
-  bool pressed1;
-  void *data[2];
-
-  UT_hash_handle hh;
-};
-
-typedef struct ols_hotkey_pair ols_hotkey_pair_t;
-
-typedef struct ols_hotkeys_platform ols_hotkeys_platform_t;
-
-void *ols_hotkey_thread(void *param);
-
-struct ols_core_hotkeys;
-bool ols_hotkeys_platform_init(struct ols_core_hotkeys *hotkeys);
-void ols_hotkeys_platform_free(struct ols_core_hotkeys *hotkeys);
-bool ols_hotkeys_platform_is_pressed(ols_hotkeys_platform_t *context,
-                                     ols_key_t key);
-
-struct ols_context_data;
-void ols_hotkeys_context_release(struct ols_context_data *context);
-
-void ols_hotkeys_free(void);
-
-struct ols_hotkey_binding {
-  ols_key_combination_t key;
-  bool pressed;
-  bool modifiers_match;
-
-  ols_hotkey_id hotkey_id;
-  ols_hotkey_t *hotkey;
-};
-
-struct ols_hotkey_name_map_item;
-void ols_hotkey_name_map_free(void);
-
-/* ------------------------------------------------------------------------- */
 /* core */
 
-struct ols_task_info {
+struct ols_task_info
+{
   ols_task_t task;
   void *param;
 };
 
 /* user sources, output channels, and displays */
-struct ols_core_data {
+struct ols_core_data
+{
   /* Hash tables (uthash) */
   struct ols_source *sources;        /* Lookup by UUID (hh_uuid) */
   struct ols_source *public_sources; /* Lookup by name (hh) */
@@ -189,7 +139,8 @@ struct ols_core_data {
   pthread_mutex_t sources_mutex;
   pthread_mutex_t processes_mutex;
   pthread_mutex_t outputs_mutex;
-  DARRAY(struct tick_callback) tick_callbacks;
+  DARRAY(struct tick_callback)
+  tick_callbacks;
 
   // struct ols_view main_view;
 
@@ -199,49 +150,29 @@ struct ols_core_data {
 
   volatile bool valid;
 
-  DARRAY(char *) protocols;
-  DARRAY(ols_source_t *) sources_to_tick;
-};
-
-/* user hotkeys */
-struct ols_core_hotkeys {
-  pthread_mutex_t mutex;
-  ols_hotkey_t *hotkeys;
-  ols_hotkey_id next_id;
-  ols_hotkey_pair_t *hotkey_pairs;
-  ols_hotkey_pair_id next_pair_id;
-
-  pthread_t hotkey_thread;
-  bool hotkey_thread_initialized;
-  os_event_t *stop_event;
-  bool thread_disable_press;
-  bool strict_modifiers;
-  bool reroute_hotkeys;
-  DARRAY(ols_hotkey_binding_t) bindings;
-
-  ols_hotkey_callback_router_func router_func;
-  void *router_func_data;
-
-  ols_hotkeys_platform_t *platform_context;
-
-  pthread_once_t name_map_init_token;
-  struct ols_hotkey_name_map_item *name_map;
-
-  signal_handler_t *signals;
+  DARRAY(char *)
+  protocols;
+  DARRAY(ols_source_t *)
+  sources_to_tick;
 };
 
 typedef DARRAY(struct ols_source_info) ols_source_info_array_t;
 
-struct ols_core {
+struct ols_core
+{
   struct ols_module *first_module;
-  DARRAY(struct ols_module_path) module_paths;
-  DARRAY(char *) safe_modules;
+  DARRAY(struct ols_module_path)
+  module_paths;
+  DARRAY(char *)
+  safe_modules;
 
   ols_source_info_array_t source_types;
   // ols_source_info_array_t input_types;
   // ols_source_info_array_t filter_types;
-  DARRAY(struct ols_process_info) process_types;
-  DARRAY(struct ols_output_info) output_types;
+  DARRAY(struct ols_process_info)
+  process_types;
+  DARRAY(struct ols_output_info)
+  output_types;
 
   signal_handler_t *signals;
   proc_handler_t *procs;
@@ -254,7 +185,6 @@ struct ols_core {
   /* segmented into multiple sub-structures to keep things a bit more
    * clean and organized */
   struct ols_core_data data;
-  struct ols_core_hotkeys hotkeys;
   os_task_queue_t *destruction_task_thread;
   ols_task_handler_t ui_task_handler;
 };
@@ -264,19 +194,22 @@ extern struct ols_core *ols;
 /* ------------------------------------------------------------------------- */
 /* ols shared context data */
 
-struct ols_weak_ref {
+struct ols_weak_ref
+{
   volatile long refs;
   volatile long weak_refs;
 };
 
-struct ols_weak_object {
+struct ols_weak_object
+{
   struct ols_weak_ref ref;
   struct ols_context_data *object;
 };
 
 typedef void (*ols_destroy_cb)(void *obj);
 
-struct ols_context_data {
+struct ols_context_data
+{
   char *name;
   const char *uuid;
   void *data;
@@ -288,20 +221,19 @@ struct ols_context_data {
   struct ols_weak_object *control;
   ols_destroy_cb destroy;
 
-  DARRAY(ols_hotkey_id) hotkeys;
-  DARRAY(ols_hotkey_pair_id) hotkey_pairs;
-  ols_data_t *hotkey_data;
-
   pthread_mutex_t *mutex;
 
   /* element pads, these lists can only be iterated while holding
    * the LOCK or checking the cookie after each LOCK. */
   uint16_t numpads;
-  DARRAY(ols_pad_t) pads;
+  DARRAY(ols_pad_t)
+  pads;
   uint16_t numsrcpads;
-  DARRAY(ols_pad_t) srcpads;
+  DARRAY(ols_pad_t)
+  srcpads;
   uint16_t numsinkpads;
-  DARRAY(ols_pad_t) sinkpads;
+  DARRAY(ols_pad_t)
+  sinkpads;
 
   UT_hash_handle hh;
   UT_hash_handle hh_uuid;
@@ -310,8 +242,7 @@ struct ols_context_data {
 
 extern bool ols_context_data_init(struct ols_context_data *context,
                                   enum ols_obj_type type, ols_data_t *settings,
-                                  const char *name, const char *uuid,
-                                  ols_data_t *hotkey_data, bool private);
+                                  const char *name, const char *uuid, bool private);
 extern void ols_context_init_control(struct ols_context_data *context,
                                      void *object, ols_destroy_cb destroy);
 extern void ols_context_data_free(struct ols_context_data *context);
@@ -333,34 +264,41 @@ extern void ols_context_data_setname_ht(struct ols_context_data *context,
 /* ------------------------------------------------------------------------- */
 /* ref-counting  */
 
-static inline void ols_ref_addref(struct ols_weak_ref *ref) {
+static inline void ols_ref_addref(struct ols_weak_ref *ref)
+{
   os_atomic_inc_long(&ref->refs);
 }
 
-static inline bool ols_ref_release(struct ols_weak_ref *ref) {
+static inline bool ols_ref_release(struct ols_weak_ref *ref)
+{
   return os_atomic_dec_long(&ref->refs) == -1;
 }
 
-static inline void ols_weak_ref_addref(struct ols_weak_ref *ref) {
+static inline void ols_weak_ref_addref(struct ols_weak_ref *ref)
+{
   os_atomic_inc_long(&ref->weak_refs);
 }
 
-static inline bool ols_weak_ref_release(struct ols_weak_ref *ref) {
+static inline bool ols_weak_ref_release(struct ols_weak_ref *ref)
+{
   return os_atomic_dec_long(&ref->weak_refs) == -1;
 }
 
-static inline bool ols_weak_ref_get_ref(struct ols_weak_ref *ref) {
+static inline bool ols_weak_ref_get_ref(struct ols_weak_ref *ref)
+{
   long owners = os_atomic_load_long(&ref->refs);
-  while (owners > -1) {
-    if (os_atomic_compare_exchange_long(&ref->refs, &owners, owners + 1)) {
+  while (owners > -1)
+  {
+    if (os_atomic_compare_exchange_long(&ref->refs, &owners, owners + 1))
+    {
       return true;
     }
   }
-
   return false;
 }
 
-static inline bool ols_weak_ref_expired(struct ols_weak_ref *ref) {
+static inline bool ols_weak_ref_expired(struct ols_weak_ref *ref)
+{
   long owners = os_atomic_load_long(&ref->refs);
   return owners < 0;
 }
@@ -368,12 +306,14 @@ static inline bool ols_weak_ref_expired(struct ols_weak_ref *ref) {
 /* ------------------------------------------------------------------------- */
 /* sources  */
 
-struct ols_weak_source {
+struct ols_weak_source
+{
   struct ols_weak_ref ref;
   struct ols_source *source;
 };
 
-struct ols_source {
+struct ols_source
+{
   struct ols_context_data context;
   struct ols_source_info info;
 
@@ -387,9 +327,6 @@ struct ols_source {
 
   /* signals to call the source update in the video thread */
   long defer_update_count;
-
-  /* ensures show/hide are only called once */
-  volatile long show_refs;
 
   /* ensures activate/deactivate are only called once */
   volatile long activate_refs;
@@ -421,17 +358,18 @@ extern struct ols_source_info *get_source_info(const char *id);
 
 extern bool ols_source_init_context(struct ols_source *source,
                                     ols_data_t *settings, const char *name,
-                                    const char *uuid, ols_data_t *hotkey_data,
+                                    const char *uuid,
                                     bool private);
 
-extern ols_source_t *ols_source_create_set_last_ver(
-    const char *id, const char *name, const char *uuid, ols_data_t *settings,
-    ols_data_t *hotkey_data, uint32_t last_ols_ver, bool is_private);
+extern ols_source_t *ols_source_create_set_last_ver(const char *id, const char *name, const char *uuid,
+                                                    ols_data_t *settings, uint32_t last_ols_ver, bool is_private);
+
 extern void ols_source_destroy(struct ols_source *source);
 
 static inline void ols_source_dosignal(struct ols_source *source,
                                        const char *signal_ols,
-                                       const char *signal_source) {
+                                       const char *signal_source)
+{
   struct calldata data;
   uint8_t stack[128];
 
@@ -446,12 +384,14 @@ static inline void ols_source_dosignal(struct ols_source *source,
 /* ------------------------------------------------------------------------- */
 /* process  */
 
-struct ols_weak_process {
+struct ols_weak_process
+{
   struct ols_weak_ref ref;
   struct ols_process *process;
 };
 
-struct ols_process {
+struct ols_process
+{
   struct ols_context_data context;
   struct ols_process_info info;
 
@@ -495,17 +435,18 @@ extern struct ols_process_info *get_process_info(const char *id);
 
 extern bool ols_process_init_context(struct ols_process *source,
                                      ols_data_t *settings, const char *name,
-                                     const char *uuid, ols_data_t *hotkey_data,
+                                     const char *uuid,
                                      bool private);
 
 extern ols_process_t *ols_process_create_set_last_ver(
-    const char *id, const char *name, const char *uuid, ols_data_t *settings,
-    ols_data_t *hotkey_data, uint32_t last_ols_ver, bool is_private);
+    const char *id, const char *name, const char *uuid, ols_data_t *settings, uint32_t last_ols_ver, bool is_private);
+
 extern void ols_process_destroy(struct ols_process *source);
 
 static inline void ols_process_dosignal(struct ols_process *process,
                                         const char *signal_ols,
-                                        const char *signal_process) {
+                                        const char *signal_process)
+{
   struct calldata data;
   uint8_t stack[128];
 
@@ -520,12 +461,14 @@ static inline void ols_process_dosignal(struct ols_process *process,
 /* ------------------------------------------------------------------------- */
 /* outputs  */
 
-struct ols_weak_output {
+struct ols_weak_output
+{
   struct ols_weak_ref ref;
   struct ols_output *output;
 };
 
-struct ols_output {
+struct ols_output
+{
   struct ols_context_data context;
   struct ols_output_info info;
   /* indicates ownership of the info.id buffer */
@@ -556,7 +499,8 @@ struct ols_output {
 };
 
 static inline void do_output_signal(struct ols_output *output,
-                                    const char *signal) {
+                                    const char *signal)
+{
   struct calldata params = {0};
   calldata_set_ptr(&params, "output", output);
   signal_handler_signal(output->context.signals, signal, &params);

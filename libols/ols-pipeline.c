@@ -1,27 +1,27 @@
 #include "ols-pipeline.h"
 #include <jansson.h>
 
-ols_pipeline_t *ols_pipeline_create() {
+ols_pipeline_t *ols_pipeline_create()
+{
   struct ols_pipeline *data = bzalloc(sizeof(struct ols_pipeline));
 
   return data;
 }
 
-ols_pipeline_t *ols_pipeline_new_test(const char *name) {
-  
+ols_pipeline_t *ols_pipeline_new_test(const char *name)
+{
+
   ols_pipeline_t *data = ols_pipeline_create();
 
-  ols_source_t *src =  ols_source_create("src1","file",,NULL);
-
+  ols_source_t *src = ols_source_create("src1", "file", NULL);
 }
 
-
 ols_pipeline_t *ols_pipeline_new_from_json(const char *name,
-                                           const char *pipe_json_str) {
+                                           const char *pipe_json_str)
+{
   ols_pipeline_t *data = ols_pipeline_create();
-  //json_error_t error;
-  //json_t *root = json_loads(pipe_json_str, JSON_REJECT_DUPLICATES, &error);
-
+  // json_error_t error;
+  // json_t *root = json_loads(pipe_json_str, JSON_REJECT_DUPLICATES, &error);
 
   // if (root && JSON_ARRAY == json_typeof(root)) {
 
@@ -39,13 +39,13 @@ ols_pipeline_t *ols_pipeline_new_from_json(const char *name,
 
   //           printf("JSON Object of %lld pair%s:\n", (long long)size, json_plural(size));
   //           json_object_foreach(element, key, value) {
-                
+
   //               if(strcmp("name",key)){
 
   //               } else if(strcmp("property",key)){
 
   //               } else if(strcmp("link",key)){
-                    
+
   //               }
 
   //           }

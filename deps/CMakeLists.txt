@@ -1,6 +1,10 @@
 if(OS_WINDOWS)
-  add_subdirectory(w32-pthreads)
+  if(NOT MINGW)
+    add_subdirectory(w32-pthreads)
+  endif()
+  add_subdirectory(ipc-util)
 endif()
 
 add_subdirectory(opts-parser)
 add_subdirectory(uthash)
+#add_subdirectory(jansson)

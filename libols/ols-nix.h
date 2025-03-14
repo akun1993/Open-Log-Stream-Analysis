@@ -19,24 +19,11 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "ols-internal.h"
-
-struct ols_nix_hotkeys_vtable {
-  bool (*init)(struct ols_core_hotkeys *hotkeys);
-
-  void (*free)(struct ols_core_hotkeys *hotkeys);
-
-  bool (*is_pressed)(ols_hotkeys_platform_t *context, ols_key_t key);
-
-  void (*key_to_str)(ols_key_t key, struct dstr *dstr);
-
-  ols_key_t (*key_from_virtual_key)(int sym);
-
-  int (*key_to_virtual_key)(ols_key_t key);
-};
 
 #ifdef __cplusplus
 }

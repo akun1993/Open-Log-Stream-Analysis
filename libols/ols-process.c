@@ -74,9 +74,9 @@ static OlsFlowReturn process_default_chain(ols_pad_t *pad, ols_object_t *parent,
 
 bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
                               const char *name, const char *uuid,
-                              ols_data_t *hotkey_data, bool private) {
+                              bool private) {
   if (!ols_context_data_init(&process->context, OLS_OBJ_TYPE_PROCESS, settings,
-                             name, uuid, hotkey_data, private))
+                             name, uuid, private))
     return false;
 
   // process->context.sink =
@@ -115,8 +115,8 @@ static void ols_process_init_finalize(struct ols_process *process) {
 
 static ols_process_t *
 ols_process_create_internal(const char *id, const char *name, const char *uuid,
-                            ols_data_t *settings, ols_data_t *hotkey_data,
-                            bool private, uint32_t last_ols_ver) {
+                            ols_data_t *settings, bool private,
+                            uint32_t last_ols_ver) {
   struct ols_process *process = bzalloc(sizeof(struct ols_process));
 
   const struct ols_process_info *info = get_process_info(id);
@@ -131,8 +131,7 @@ ols_process_create_internal(const char *id, const char *name, const char *uuid,
 
   process->last_ols_ver = last_ols_ver;
 
-  if (!ols_process_init_context(process, settings, name, uuid, hotkey_data,
-                                private))
+  if (!ols_process_init_context(process, settings, name, uuid, private))
     goto fail;
 
   if (info) {
@@ -171,23 +170,24 @@ fail:
 }
 
 ols_process_t *ols_process_create(const char *id, const char *name,
-                                  ols_data_t *settings,
-                                  ols_data_t *hotkey_data) {
-  return ols_process_create_internal(id, name, NULL, settings, hotkey_data,
-                                     false, LIBOLS_API_VER);
+                                  ols_data_t *settings) {
+  return ols_process_create_internal(id, name, NULL, settings, false,
+                                     LIBOLS_API_VER);
 }
 
 ols_process_t *ols_process_create_private(const char *id, const char *name,
                                           ols_data_t *settings) {
-  return ols_process_create_internal(id, name, NULL, settings, NULL, true,
+  return ols_process_create_internal(id, name, NULL, settings, true,
                                      LIBOLS_API_VER);
 }
 
-ols_process_t *ols_process_create_set_last_ver(
-    const char *id, const char *name, const char *uuid, ols_data_t *settings,
-    ols_data_t *hotkey_data, uint32_t last_ols_ver, bool is_private) {
-  return ols_process_create_internal(id, name, uuid, settings, hotkey_data,
-                                     is_private, last_ols_ver);
+ols_process_t *ols_process_create_set_last_ver(const char *id, const char *name,
+                                               const char *uuid,
+                                               ols_data_t *settings,
+                                               uint32_t last_ols_ver,
+                                               bool is_private) {
+  return ols_process_create_internal(id, name, uuid, settings, is_private,
+                                     last_ols_ver);
 }
 
 ols_process_t *ols_process_duplicate(ols_process_t *process,
@@ -209,7 +209,7 @@ ols_process_t *ols_process_duplicate(ols_process_t *process,
   new_process =
       create_private
           ? ols_process_create_private(process->info.id, new_name, settings)
-          : ols_process_create(process->info.id, new_name, settings, NULL);
+          : ols_process_create(process->info.id, new_name, settings);
 
   new_process->flags = process->flags;
 

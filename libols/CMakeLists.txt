@@ -34,11 +34,6 @@ target_sources(
           ols-data.c
           ols-data.h
           ols-defs.h
-          ols-hotkey-name-map.c
-          ols-hotkey.c
-          ols-hotkey.h
-          ols-hotkeys.h
-          ols-interaction.h
           ols-internal.h
           ols-module.c
           ols-module.h
