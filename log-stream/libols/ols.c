@@ -1050,6 +1050,34 @@ not_our_pad: {
 }
 }
 
+ols_pad_t *ols_context_get_static_pad(struct ols_context_data *element,
+                                      const char *name) {
+  GList *find;
+  ols_pad_t *result = NULL;
+
+  // g_return_val_if_fail(GST_IS_ELEMENT(element), NULL);
+  // g_return_val_if_fail(name != NULL, NULL);
+
+  OLS_OBJECT_LOCK(element);
+  find =
+      g_list_find_custom(element->pads, name, (GCompareFunc)pad_compare_name);
+  if (find) {
+    result = GST_PAD_CAST(find->data);
+    // gst_object_ref(result);
+  }
+
+  if (result == NULL) {
+    // GST_CAT_INFO(GST_CAT_ELEMENT_PADS, "no such pad '%s' in element \"%s\"",
+    //              name, GST_ELEMENT_NAME(element));
+  } else {
+    // GST_CAT_INFO(GST_CAT_ELEMENT_PADS, "found pad %s:%s",
+    //              GST_ELEMENT_NAME(element), name);
+  }
+  OLS_OBJECT_UNLOCK(element);
+
+  return result;
+}
+
 bool ols_context_link_pads_full(struct ols_context_data *src,
                                 const char *srcpadname,
                                 struct ols_context_data *dest,
