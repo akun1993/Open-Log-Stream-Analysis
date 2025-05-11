@@ -73,7 +73,6 @@ function(install_headers target)
     PATTERN "*.h"
     PATTERN "*.hpp"
     PATTERN "*-windows.h" EXCLUDE
-    PATTERN "audio-monitoring" EXCLUDE
     PATTERN "util/apple" EXCLUDE
     PATTERN "util/windows" EXCLUDE
     PATTERN "cmake" EXCLUDE

@@ -1,4 +1,4 @@
-SUBDIRS = bin suites ossfuzz
+SUBDIRS = bin suites
 EXTRA_DIST = scripts run-suites
 
 TESTS = run-suites

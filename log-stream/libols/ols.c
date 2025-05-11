@@ -36,10 +36,13 @@ static bool ols_init_data(void) {
 
   if (pthread_mutex_init_recursive(&data->sources_mutex) != 0) goto fail;
 
+  if (pthread_mutex_init_recursive(&data->processes_mutex) != 0) goto fail;
+
   if (pthread_mutex_init_recursive(&data->outputs_mutex) != 0) goto fail;
 
   data->sources = NULL;
   data->public_sources = NULL;
+  data->processes = NULL;
   data->private_data = ols_data_create();
   data->valid = true;
 
@@ -831,7 +834,7 @@ bool ols_context_check_pad_uniqueness(struct ols_context_data *context,
                                       const char *pad_name) {
   bool result = true;
 
-  for (int i = 0; i < context->pads.num; i++) {
+  for (size_t i = 0; i < context->pads.num; i++) {
     ols_pad_t *pad = context->pads.array[i];
     if (pad) {
       OLS_PAD_LOCK(pad);
@@ -884,7 +887,7 @@ bool ols_context_add_pad(struct ols_context_data *context,
 
   /* then check to see if there's already a pad by that name here */
   OLS_OBJECT_LOCK(context);
-  if ((!ols_object_check_pad_uniqueness(context, pad_name))) goto name_exists;
+  if ((!ols_context_check_pad_uniqueness(context, pad_name))) goto name_exists;
 
   /* try to set the pad's parent */
   if ((!ols_pad_set_parent(OLS_PAD_CAST(pad), OLS_OBJECT_CAST(context))))
@@ -1050,30 +1053,22 @@ not_our_pad: {
 }
 }
 
-ols_pad_t *ols_context_get_static_pad(struct ols_context_data *element,
+ols_pad_t *ols_context_get_static_pad(struct ols_context_data *context,
                                       const char *name) {
-  GList *find;
   ols_pad_t *result = NULL;
+  OLS_OBJECT_LOCK(context);
+  for (size_t i = 0; i < context->pads.num; i++) {
+    ols_pad_t *pad = context->pads.array[i];
+    if (pad) {
+      bool eq = strcmp(OLS_PAD_NAME(pad), name) == 0;
 
-  // g_return_val_if_fail(GST_IS_ELEMENT(element), NULL);
-  // g_return_val_if_fail(name != NULL, NULL);
-
-  OLS_OBJECT_LOCK(element);
-  find =
-      g_list_find_custom(element->pads, name, (GCompareFunc)pad_compare_name);
-  if (find) {
-    result = GST_PAD_CAST(find->data);
-    // gst_object_ref(result);
+      if (eq) {
+        result = pad;
+        break;
+      }
+    }
   }
-
-  if (result == NULL) {
-    // GST_CAT_INFO(GST_CAT_ELEMENT_PADS, "no such pad '%s' in element \"%s\"",
-    //              name, GST_ELEMENT_NAME(element));
-  } else {
-    // GST_CAT_INFO(GST_CAT_ELEMENT_PADS, "found pad %s:%s",
-    //              GST_ELEMENT_NAME(element), name);
-  }
-  OLS_OBJECT_UNLOCK(element);
+  OLS_OBJECT_UNLOCK(context);
 
   return result;
 }
@@ -1120,8 +1115,11 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(src);
-    srcpads = OLS_OBJECT_PADS(src);
-    srcpad = srcpads ? OLS_PAD_CAST(srcpads->data) : NULL;
+    // for (int i = 0; i < context->pads.num; i++) {
+    //   ols_pad_t *pad = context->pads.array[i];
+    //   if (pad) {
+
+    srcpad = src->pads.num > 0 ? src->pads.array[0] : NULL;
     // if (srcpad)
     //   gst_object_ref (srcpad);
     OLS_OBJECT_UNLOCK(src);
@@ -1163,8 +1161,10 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(dest);
-    destpads = OLS_OBJECT_PADS(dest);
-    destpad = destpads ? OLS_PAD_CAST(destpads->data) : NULL;
+
+    destpads = dest->pads.num > 0 ? dest->pads.array[0] : NULL;
+    // destpads = OLS_OBJECT_PADS(dest);
+    // destpad = destpads ? OLS_PAD_CAST(destpads->data) : NULL;
     // if (destpad)
     //   gst_object_ref (destpad);
     OLS_OBJECT_UNLOCK(dest);
@@ -1189,40 +1189,42 @@ bool ols_context_link_pads(struct ols_context_data *src, const char *srcpadname,
   return ols_context_link_pads_full(src, srcpadname, dest, destpadname);
 }
 
-void ols_object_link(struct ols_context_data *src,
+bool ols_object_link(struct ols_context_data *src,
                      struct ols_context_data *dest) {
   return ols_context_link_pads(src, NULL, dest, NULL);
 }
 
-static ols_pad_t *_ols_context_request_pad(struct ols_context_data *element,
-                                           const char *name, const char *caps) {
-  ols_pad_t *newpad = NULL;
-  // GstElementClass *oclass;
+// static ols_pad_t *_ols_context_request_pad(struct ols_context_data *element,
+//                                            const char *name, const char
+//                                            *caps) {
+//   ols_pad_t *newpad = NULL;
+//   // GstElementClass *oclass;
 
-  oclass = GST_ELEMENT_GET_CLASS(element);
+//   oclass = GST_ELEMENT_GET_CLASS(element);
 
-  /* Some sanity checking here */
-  if (name) {
-    ols_pad_t *pad;
+//   /* Some sanity checking here */
+//   if (name) {
+//     ols_pad_t *pad;
 
-    pad = ols_context_get_static_pad(element, name);
-    if (pad) {
-      // gst_object_unref(pad);
-      /* FIXME 2.0: Change this to g_return_val_if_fail() */
-      // g_critical(
-      //     "Element %s already has a pad named %s, the behaviour of "
-      //     " gst_element_get_request_pad() for existing pads is undefined!",
-      //     GST_ELEMENT_NAME(element), name);
-    }
-  }
+//     pad = ols_context_get_static_pad(element, name);
+//     if (pad) {
+//       // gst_object_unref(pad);
+//       /* FIXME 2.0: Change this to g_return_val_if_fail() */
+//       // g_critical(
+//       //     "Element %s already has a pad named %s, the behaviour of "
+//       //     " gst_element_get_request_pad() for existing pads is
+//       undefined!",
+//       //     GST_ELEMENT_NAME(element), name);
+//     }
+//   }
 
-  if (oclass->request_new_pad)
-    newpad = (oclass->request_new_pad)(element, name, caps);
+//   if (oclass->request_new_pad)
+//     newpad = (oclass->request_new_pad)(element, name, caps);
 
-  // if (newpad) gst_object_ref(newpad);
+//   // if (newpad) gst_object_ref(newpad);
 
-  return newpad;
-}
+//   return newpad;
+// }
 
 /**
  * ols_object_request_pad: (virtual request_new_pad)
@@ -1242,10 +1244,10 @@ static ols_pad_t *_ols_context_request_pad(struct ols_context_data *element,
  * Returns: (transfer full) (nullable): requested #GstPad if found,
  *     otherwise %NULL.  Release after usage.
  */
-ols_pad_t *ols_object_request_pad(struct ols_context_data *context,
-                                  const char *name, const char *caps) {
-  return _ols_context_request_pad(context, name, caps);
-}
+// ols_pad_t *ols_object_request_pad(struct ols_context_data *context,
+//                                   const char *name, const char *caps) {
+//   return _ols_context_request_pad(context, name, caps);
+// }
 
 profiler_name_store_t *ols_get_profiler_name_store(void) {
   return ols->name_store;

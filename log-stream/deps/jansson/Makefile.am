@@ -1,4 +1,4 @@
-EXTRA_DIST = CHANGES LICENSE README.rst CMakeLists.txt cmake android examples scripts
+EXTRA_DIST = CHANGES LICENSE README.rst CMakeLists.txt cmake android examples
 SUBDIRS = doc src test
 
 # "make distcheck" builds the dvi target, so use it to check that the
@@ -8,5 +8,3 @@ dvi:
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = jansson.pc
-
-TESTS = scripts/clang-format-check

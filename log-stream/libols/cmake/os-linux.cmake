@@ -1,17 +1,22 @@
-find_package(LibUUID REQUIRED)
-# cmake-format: off
-# cmake-format: on
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+target_compile_definitions(libols PRIVATE ENABLE_DARRAY_TYPE_TEST)
+endif()
+
+
 
 target_sources(
-  libols
-  PRIVATE # cmake-format: sortable
-          util/pipe-posix.c
-          util/platform-nix.c
-          util/threading-posix.c
-          util/threading-posix.h)
-
-target_compile_definitions(libols PRIVATE USE_XDG $<$<COMPILE_LANG_AND_ID:C,GNU>:ENABLE_DARRAY_TYPE_TEST>
-                                          $<$<COMPILE_LANG_AND_ID:CXX,GNU>:ENABLE_DARRAY_TYPE_TEST>)
+libols
+PRIVATE ols-nix.c
+        ols-nix.h
+        util/threading-posix.c
+        util/threading-posix.h
+        util/pipe-posix.c
+        util/platform-nix.c)
 
 
-set_target_properties(libols PROPERTIES OUTPUT_NAME ols)
+
+if(OS_FREEBSD)
+find_package(Sysinfo REQUIRED)
+target_link_libraries(libobs PRIVATE Sysinfo::Sysinfo)
+endif()
+

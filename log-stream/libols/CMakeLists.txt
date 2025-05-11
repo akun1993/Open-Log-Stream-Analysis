@@ -1,11 +1,8 @@
-cmake_minimum_required(VERSION 3.16...3.25)
-message("in legacy check")
+if(POLICY CMP0090)
+  cmake_policy(SET CMP0090 NEW)
+endif()
 
-legacy_check()
-
-message("Out legacy check")
-
-include(cmake/ols-version.cmake)
+project(libols)
 
 find_package(Threads REQUIRED)
 
@@ -16,10 +13,10 @@ find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
 
 if(ENABLE_UI)
-  find_package(Qt6 REQUIRED Core)
+  find_qt(COMPONENTS Core)
+else()
+  set(_QT_VERSION 0)
 endif()
-
-find_package(jansson REQUIRED)
 
 if(NOT TARGET OLS::uthash)
   add_subdirectory("${CMAKE_SOURCE_DIR}/deps/uthash" "${CMAKE_BINARY_DIR}/deps/uthash")
@@ -133,11 +130,23 @@ target_compile_definitions(
 
 target_link_libraries(
   libols
-  PRIVATE OLS::uthash
-          OLS::libols-version
-          jansson::jansson
+  PRIVATE Jansson::Jansson
           ZLIB::ZLIB
+          OLS::uthash
   PUBLIC Threads::Threads)
+
+set_target_properties(
+  libols
+  PROPERTIES OUTPUT_NAME ols
+              FOLDER "core"
+              VERSION "${OLS_VERSION_MAJOR}"
+              SOVERSION "0")
+
+target_compile_features(libols PRIVATE cxx_alias_templates)
+
+target_include_directories(
+  libols PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>)
 
 if(OS_WINDOWS)
   include(cmake/os-windows.cmake)
@@ -149,7 +158,7 @@ elseif(OS_FREEBSD OR OS_OPENBSD)
   include(cmake/os-freebsd.cmake)
 endif()
 
-configure_file(olsconfig.h.in "${CMAKE_BINARY_DIR}/config/olsconfig.h" @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/olsconfig.h.in "${CMAKE_BINARY_DIR}/config/olsconfig.h" @ONLY)
 
 target_include_directories(libols PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
                                          "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
@@ -217,11 +226,23 @@ set(public_headers
 # cmake-format: off
 set_property(TARGET libols APPEND PROPERTY OLS_PUBLIC_HEADERS ${public_headers})
 
-set_target_properties_ols(
-  libols
-  PROPERTIES FOLDER core
-             VERSION 0
-             SOVERSION "${OLS_VERSION_MAJOR}")
-# cmake-format: on
+get_target_property(_OLS_SOURCES libols SOURCES)
+set(_OLS_HEADERS ${_OLS_SOURCES})
 
-target_export(libols)
+list(FILTER _OLS_HEADERS INCLUDE REGEX ".*\\.h(pp)?")
+list(FILTER _OLS_SOURCES INCLUDE REGEX ".*\\.(m|c[cp]?p?)")
+
+source_group(
+  TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  PREFIX "Source Files"
+  FILES ${_OLS_SOURCES})
+source_group(
+  TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  PREFIX "Header Files"
+  FILES ${_OLS_HEADERS})
+
+
+setup_binary_target(libols)
+setup_target_resources(libols libols)
+export_target(libols)
+install_headers(libols)
