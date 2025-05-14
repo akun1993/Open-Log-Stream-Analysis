@@ -98,7 +98,7 @@ struct ols_cmdline_args {
  *
  * Acquire a reference to the mutex of this object.
  */
-#define OLS_OBJECT_GET_LOCK(obj) (OLS_OBJECT_CAST(obj)->mutex)
+#define OLS_OBJECT_GET_LOCK(obj) (&OLS_OBJECT_CAST(obj)->mutex)
 /**
  * OLS_OBJECT_LOCK:
  * @obj: a #ols_object_t to lock
@@ -542,11 +542,11 @@ EXPORT void ols_source_remove(ols_source_t *source);
 /** Returns true if the source should be released */
 EXPORT bool ols_source_removed(const ols_source_t *source);
 
-/** Returns capability flags of a source */
-EXPORT uint32_t ols_source_get_output_flags(const ols_source_t *source);
+// /** Returns capability flags of a source */
+// EXPORT uint32_t ols_source_get_output_flags(const ols_source_t *source);
 
-/** Returns capability flags of a source type */
-EXPORT uint32_t ols_get_source_output_flags(const char *id);
+// /** Returns capability flags of a source type */
+// EXPORT uint32_t ols_get_source_output_flags(const char *id);
 
 /** Gets the default settings for a source type */
 EXPORT ols_data_t *ols_get_source_defaults(const char *id);
@@ -589,8 +589,8 @@ EXPORT enum ols_source_type ols_source_get_type(const ols_source_t *source);
 EXPORT const char *ols_source_get_id(const ols_source_t *source);
 
 /** Returns the signal handler for a source */
-EXPORT signal_handler_t *ols_source_get_signal_handler(
-    const ols_source_t *source);
+EXPORT signal_handler_t *
+ols_source_get_signal_handler(const ols_source_t *source);
 
 /** Returns the procedure handler for a source */
 EXPORT proc_handler_t *ols_source_get_proc_handler(const ols_source_t *source);
@@ -702,12 +702,12 @@ EXPORT enum ols_process_type ols_process_get_type(const ols_process_t *process);
 EXPORT const char *ols_process_get_id(const ols_process_t *process);
 
 /** Returns the signal handler for a source */
-EXPORT signal_handler_t *ols_process_get_signal_handler(
-    const ols_process_t *process);
+EXPORT signal_handler_t *
+ols_process_get_signal_handler(const ols_process_t *process);
 
 /** Returns the procedure handler for a source */
-EXPORT proc_handler_t *ols_process_get_proc_handler(
-    const ols_process_t *process);
+EXPORT proc_handler_t *
+ols_process_get_proc_handler(const ols_process_t *process);
 
 /** Returns true if active, false if not */
 EXPORT bool ols_process_active(const ols_process_t *source);
@@ -788,8 +788,8 @@ EXPORT ols_properties_t *ols_output_properties(const ols_output_t *output);
 EXPORT ols_data_t *ols_output_get_settings(const ols_output_t *output);
 
 /** Returns the signal handler for an output  */
-EXPORT signal_handler_t *ols_output_get_signal_handler(
-    const ols_output_t *output);
+EXPORT signal_handler_t *
+ols_output_get_signal_handler(const ols_output_t *output);
 
 /** Returns the procedure handler for an output */
 EXPORT proc_handler_t *ols_output_get_proc_handler(const ols_output_t *output);

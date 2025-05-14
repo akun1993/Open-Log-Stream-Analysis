@@ -687,9 +687,15 @@ cleanup:
 
 void ols_register_source_s(const struct ols_source_info *info, size_t size) {
   struct ols_source_info data = {0};
-  ols_source_info_array_t *array = NULL;
+  //ols_source_info_array_t *array = NULL;
+  //array = &ols->source_types;
 
-  array = &ols->source_types;
+  if (get_source_info(info->id)) {
+		source_warn("Source '%s' already exists!  "
+			    "Duplicate library?",
+			    info->id);
+		goto error;
+	}
 
   if (size > sizeof(data)) {
     source_warn(
@@ -711,7 +717,8 @@ void ols_register_source_s(const struct ols_source_info *info, size_t size) {
     data.id = bstrdup(data.id);
   }
 
-  if (array) da_push_back(*array, &data);
+  //if (array) da_push_back(*array, &data);
+
   da_push_back(ols->source_types, &data);
   return;
 

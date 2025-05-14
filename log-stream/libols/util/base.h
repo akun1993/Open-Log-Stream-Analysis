@@ -37,34 +37,58 @@ extern "C" {
 
 #define OLS_COUNTOF(x) (sizeof(x) / sizeof(x[0]))
 
+#ifdef __GNUC__
+#define MUST_USE_RESULT __attribute__((warn_unused_result))
+#else
+#define MUST_USE_RESULT
+#endif
+
+#ifndef UNUSED
+#if __GNUC__
+#define UNUSED __attribute__((unused))
+#else
+#define UNUSED
+#endif
+#endif
+
+#ifdef __GNUC__
+#define LIKELY(expr) __builtin_expect(!!(expr), 1)
+#define UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#define PRETTY_FUNCTION_NAME __PRETTY_FUNCTION__
+#else
+#define LIKELY(expr) expr
+#define UNLIKELY(expr) expr
+#define PRETTY_FUNCTION_NAME ""
+#endif
+
 enum {
-	/**
-	 * Use if there's a problem that can potentially affect the program,
-	 * but isn't enough to require termination of the program.
-	 *
-	 * Use in creation functions and core subsystem functions.  Places that
-	 * should definitely not fail.
-	 */
-	LOG_ERROR = 100,
+  /**
+   * Use if there's a problem that can potentially affect the program,
+   * but isn't enough to require termination of the program.
+   *
+   * Use in creation functions and core subsystem functions.  Places that
+   * should definitely not fail.
+   */
+  LOG_ERROR = 100,
 
-	/**
-	 * Use if a problem occurs that doesn't affect the program and is
-	 * recoverable.
-	 *
-	 * Use in places where failure isn't entirely unexpected, and can
-	 * be handled safely.
-	 */
-	LOG_WARNING = 200,
+  /**
+   * Use if a problem occurs that doesn't affect the program and is
+   * recoverable.
+   *
+   * Use in places where failure isn't entirely unexpected, and can
+   * be handled safely.
+   */
+  LOG_WARNING = 200,
 
-	/**
-	 * Informative message to be displayed in the log.
-	 */
-	LOG_INFO = 300,
+  /**
+   * Informative message to be displayed in the log.
+   */
+  LOG_INFO = 300,
 
-	/**
-	 * Debug message to be used mostly by developers.
-	 */
-	LOG_DEBUG = 400
+  /**
+   * Debug message to be used mostly by developers.
+   */
+  LOG_DEBUG = 400
 };
 
 typedef void (*log_handler_t)(int lvl, const char *msg, va_list args, void *p);
@@ -73,8 +97,8 @@ EXPORT void base_get_log_handler(log_handler_t *handler, void **param);
 EXPORT void base_set_log_handler(log_handler_t handler, void *param);
 
 EXPORT void base_set_crash_handler(void (*handler)(const char *, va_list,
-						   void *),
-				   void *param);
+                                                   void *),
+                                   void *param);
 
 EXPORT void blogva(int log_level, const char *format, va_list args);
 

@@ -17,7 +17,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 
 # Use target folders for MSVC/Xcode/etc.
-include(DeprecationHelpers)
 include(OlsHelpers)
 # Set default compiler flags
 include(CompilerConfig)
@@ -74,7 +73,7 @@ message("lib ols ${OLS_VERSION}")
 message("lib ols ${OLS_VERSION_CANONICAL}")
 message("lib ols ${OLS_COMMIT}")
 # OLS main app
-#add_subdirectory(UI)
+add_subdirectory(example)
 
 # Tests
 if(ENABLE_UNIT_TESTS)

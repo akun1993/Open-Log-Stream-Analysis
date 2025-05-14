@@ -16,11 +16,10 @@
 ******************************************************************************/
 
 #include "ols.h"
-
-#include <inttypes.h>
-
 #include "callback/calldata.h"
 #include "ols-internal.h"
+#include "util/uthash.h"
+#include <inttypes.h>
 
 struct ols_core *ols = NULL;
 
@@ -34,11 +33,14 @@ static bool ols_init_data(void) {
 
   assert(data != NULL);
 
-  if (pthread_mutex_init_recursive(&data->sources_mutex) != 0) goto fail;
+  if (pthread_mutex_init_recursive(&data->sources_mutex) != 0)
+    goto fail;
 
-  if (pthread_mutex_init_recursive(&data->processes_mutex) != 0) goto fail;
+  if (pthread_mutex_init_recursive(&data->processes_mutex) != 0)
+    goto fail;
 
-  if (pthread_mutex_init_recursive(&data->outputs_mutex) != 0) goto fail;
+  if (pthread_mutex_init_recursive(&data->outputs_mutex) != 0)
+    goto fail;
 
   data->sources = NULL;
   data->public_sources = NULL;
@@ -50,25 +52,27 @@ fail:
   return data->valid;
 }
 
-#define FREE_OLS_HASH_TABLE(handle, table, type)                              \
-  do {                                                                        \
-    struct ols_context_data *ctx, *tmp;                                       \
-    int unfreed = 0;                                                          \
-    HASH_ITER(handle, *(struct ols_context_data **)table, ctx, tmp) {         \
-      ols_##type##_destroy((ols_##type##_t *)ctx);                            \
-      unfreed++;                                                              \
-    }                                                                         \
-    if (unfreed) blog(LOG_INFO, "\t%d " #type "(s) were remaining", unfreed); \
+#define FREE_OLS_HASH_TABLE(handle, table, type)                               \
+  do {                                                                         \
+    struct ols_context_data *ctx, *tmp;                                        \
+    int unfreed = 0;                                                           \
+    HASH_ITER(handle, *(struct ols_context_data **)table, ctx, tmp) {          \
+      ols_##type##_destroy((ols_##type##_t *)ctx);                             \
+      unfreed++;                                                               \
+    }                                                                          \
+    if (unfreed)                                                               \
+      blog(LOG_INFO, "\t%d " #type "(s) were remaining", unfreed);             \
   } while (false)
 
-#define FREE_OLS_LINKED_LIST(type)                                            \
-  do {                                                                        \
-    int unfreed = 0;                                                          \
-    while (data->first_##type) {                                              \
-      ols_##type##_destroy(data->first_##type);                               \
-      unfreed++;                                                              \
-    }                                                                         \
-    if (unfreed) blog(LOG_INFO, "\t%d " #type "(s) were remaining", unfreed); \
+#define FREE_OLS_LINKED_LIST(type)                                             \
+  do {                                                                         \
+    int unfreed = 0;                                                           \
+    while (data->first_##type) {                                               \
+      ols_##type##_destroy(data->first_##type);                                \
+      unfreed++;                                                               \
+    }                                                                          \
+    if (unfreed)                                                               \
+      blog(LOG_INFO, "\t%d " #type "(s) were remaining", unfreed);             \
   } while (false)
 
 static void ols_free_data(void) {
@@ -114,10 +118,12 @@ static const char *ols_signals[] = {
 
 static inline bool ols_init_handlers(void) {
   ols->signals = signal_handler_create();
-  if (!ols->signals) return false;
+  if (!ols->signals)
+    return false;
 
   ols->procs = proc_handler_create();
-  if (!ols->procs) return false;
+  if (!ols->procs)
+    return false;
 
   return signal_handler_add_array(ols->signals, ols_signals);
 }
@@ -139,13 +145,17 @@ static bool ols_init(const char *locale, const char *module_config_path,
 
   log_system_info();
 
-  if (!ols_init_data()) return false;
-  if (!ols_init_handlers()) return false;
+  if (!ols_init_data())
+    return false;
+  if (!ols_init_handlers())
+    return false;
 
   ols->destruction_task_thread = os_task_queue_create();
-  if (!ols->destruction_task_thread) return false;
+  if (!ols->destruction_task_thread)
+    return false;
 
-  if (module_config_path) ols->module_config_path = bstrdup(module_config_path);
+  if (module_config_path)
+    ols->module_config_path = bstrdup(module_config_path);
   ols->locale = bstrdup(locale);
 
   add_default_module_paths();
@@ -167,7 +177,8 @@ char *ols_find_data_file(const char *file) {
   struct dstr path = {0};
 
   char *result = find_libols_data_file(file);
-  if (result) return result;
+  if (result)
+    return result;
 
   for (size_t i = 0; i < core_module_paths.num; ++i) {
     if (check_path(file, core_module_paths.array[i].array, &path))
@@ -217,7 +228,8 @@ bool ols_startup(const char *locale, const char *module_config_path,
 
   success = ols_init(locale, module_config_path, store);
   profile_end(ols_startup_name);
-  if (!success) ols_shutdown();
+  if (!success)
+    ols_shutdown();
 
   return success;
 }
@@ -229,13 +241,15 @@ void ols_set_cmdline_args(int argc, const char *const *argv) {
   int i;
 
   /* Once argc is set (non-zero) we shouldn't call again */
-  if (cmdline_args.argc) return;
+  if (cmdline_args.argc)
+    return;
 
   cmdline_args.argc = argc;
 
   /* Safely copy over argv */
   len = 0;
-  for (i = 0; i < argc; i++) len += strlen(argv[i]) + 1;
+  for (i = 0; i < argc; i++)
+    len += strlen(argv[i]) + 1;
 
   cmdline_args.argv = bmalloc(sizeof(char *) * (argc + 1) + len);
   data = (char *)cmdline_args.argv + sizeof(char *) * (argc + 1);
@@ -261,18 +275,19 @@ void ols_shutdown(void) {
     struct ols_source_info *item = &ols->source_types.array[i];
     if (item->type_data && item->free_type_data)
       item->free_type_data(item->type_data);
-    if (item->id) bfree((void *)item->id);
+    if (item->id)
+      bfree((void *)item->id);
   }
   da_free(ols->source_types);
 
-#define FREE_REGISTERED_TYPES(structure, list)     \
-  do {                                             \
-    for (size_t i = 0; i < list.num; i++) {        \
-      struct structure *item = &list.array[i];     \
-      if (item->type_data && item->free_type_data) \
-        item->free_type_data(item->type_data);     \
-    }                                              \
-    da_free(list);                                 \
+#define FREE_REGISTERED_TYPES(structure, list)                                 \
+  do {                                                                         \
+    for (size_t i = 0; i < list.num; i++) {                                    \
+      struct structure *item = &list.array[i];                                 \
+      if (item->type_data && item->free_type_data)                             \
+        item->free_type_data(item->type_data);                                 \
+    }                                                                          \
+    da_free(list);                                                             \
   } while (false)
 
   FREE_REGISTERED_TYPES(ols_output_info, ols->output_types);
@@ -304,7 +319,8 @@ void ols_shutdown(void) {
     bfree(ols->safe_modules.array[i]);
   da_free(ols->safe_modules);
 
-  if (ols->name_store_owned) profiler_name_store_free(ols->name_store);
+  if (ols->name_store_owned)
+    profiler_name_store_free(ols->name_store);
 
   bfree(ols->module_config_path);
   bfree(ols->locale);
@@ -313,7 +329,8 @@ void ols_shutdown(void) {
   bfree(cmdline_args.argv);
 
 #ifdef _WIN32
-  if (com_initialized) uninitialize_com();
+  if (com_initialized)
+    uninitialize_com();
 #endif
 }
 
@@ -326,12 +343,14 @@ const char *ols_get_version_string(void) { return OLS_VERSION; }
 void ols_set_locale(const char *locale) {
   struct ols_module *module;
 
-  if (ols->locale) bfree(ols->locale);
+  if (ols->locale)
+    bfree(ols->locale);
   ols->locale = bstrdup(locale);
 
   module = ols->first_module;
   while (module) {
-    if (module->set_locale) module->set_locale(locale);
+    if (module->set_locale)
+      module->set_locale(locale);
 
     module = module->next;
   }
@@ -340,13 +359,15 @@ void ols_set_locale(const char *locale) {
 const char *ols_get_locale(void) { return ols->locale; }
 
 bool ols_enum_source_types(size_t idx, const char **id) {
-  if (idx >= ols->source_types.num) return false;
+  if (idx >= ols->source_types.num)
+    return false;
   *id = ols->source_types.array[idx].id;
   return true;
 }
 
 bool ols_enum_output_types(size_t idx, const char **id) {
-  if (idx >= ols->output_types.num) return false;
+  if (idx >= ols->output_types.num)
+    return false;
   *id = ols->output_types.array[idx].id;
   return true;
 }
@@ -404,7 +425,8 @@ static inline void ols_enum_uuid(void *pstart, pthread_mutex_t *mutex,
   pthread_mutex_lock(mutex);
 
   HASH_ITER(hh_uuid, *start, context, tmp) {
-    if (!enum_proc(param, context)) break;
+    if (!enum_proc(param, context))
+      break;
   }
 
   pthread_mutex_unlock(mutex);
@@ -428,7 +450,8 @@ static void *get_context_by_uuid(void *ptable, const char *uuid,
   pthread_mutex_lock(mutex);
 
   HASH_FIND_UUID(*ht, uuid, context);
-  if (context) addref(context);
+  if (context)
+    addref(context);
 
   pthread_mutex_unlock(mutex);
   return context;
@@ -467,7 +490,8 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 
   prev_ver = (uint32_t)ols_data_get_int(source_data, "prev_ver");
 
-  if (!*v_id) v_id = id;
+  if (!*v_id)
+    v_id = id;
 
   source = ols_source_create_set_last_ver(v_id, name, uuid, settings, prev_ver,
                                           is_private);
@@ -478,7 +502,8 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 
   ols_data_release(source->private_settings);
   source->private_settings = ols_data_get_obj(source_data, "private_settings");
-  if (!source->private_settings) source->private_settings = ols_data_create();
+  if (!source->private_settings)
+    source->private_settings = ols_data_create();
 
   ols_data_release(settings);
 
@@ -522,12 +547,14 @@ void ols_load_sources(ols_data_array_t *array, ols_load_source_cb cb,
     ols_source_t *source = sources.array[i];
     ols_data_t *source_data = ols_data_array_item(array, i);
     if (source) {
-      if (cb) cb(private_data, source);
+      if (cb)
+        cb(private_data, source);
     }
     ols_data_release(source_data);
   }
 
-  for (i = 0; i < sources.num; i++) ols_source_release(sources.array[i]);
+  for (i = 0; i < sources.num; i++)
+    ols_source_release(sources.array[i]);
 
   pthread_mutex_unlock(&data->sources_mutex);
 
@@ -625,7 +652,8 @@ void ols_reset_source_uuids() {
 
 /* ensures that names are never blank */
 static inline char *dup_name(const char *name, bool private) {
-  if (private && !name) return NULL;
+  if (private && !name)
+    return NULL;
 
   if (!name || !*name) {
     struct dstr unnamed = {0};
@@ -647,13 +675,19 @@ static inline bool ols_context_data_init_wrap(struct ols_context_data *context,
   context->private = private;
   context->type = type;
 
+  if (pthread_mutex_init_recursive(&context->mutex) != 0)
+    return false;
+
   context->signals = signal_handler_create();
-  if (!context->signals) return false;
+  if (!context->signals)
+    return false;
 
   context->procs = proc_handler_create();
-  if (!context->procs) return false;
+  if (!context->procs)
+    return false;
 
-  if (uuid && strlen(uuid) == UUID_STR_LENGTH) context->uuid = bstrdup(uuid);
+  if (uuid && strlen(uuid) == UUID_STR_LENGTH)
+    context->uuid = bstrdup(uuid);
   /* Only automatically generate UUIDs for sources */
   else if (type == OLS_OBJ_TYPE_SOURCE)
     context->uuid = os_generate_uuid();
@@ -676,6 +710,9 @@ bool ols_context_data_init(struct ols_context_data *context,
 }
 
 void ols_context_data_free(struct ols_context_data *context) {
+
+  pthread_mutex_destroy(&context->mutex);
+
   signal_handler_destroy(context->signals);
   proc_handler_destroy(context->procs);
   ols_data_release(context->settings);
@@ -700,7 +737,8 @@ static inline char *ols_context_deduplicate_name(void *phash,
   struct ols_context_data *item = NULL;
 
   HASH_FIND_STR(head, name, item);
-  if (!item) return NULL;
+  if (!item)
+    return NULL;
 
   struct dstr new_name = {0};
   int suffix = 2;
@@ -713,6 +751,37 @@ static inline char *ols_context_deduplicate_name(void *phash,
   return new_name.array;
 }
 
+void ols_context_data_insert_name(struct ols_context_data *context,
+                                  pthread_mutex_t *mutex, void *pfirst) {
+  struct ols_context_data **first = pfirst;
+  char *new_name;
+
+  assert(context);
+  assert(mutex);
+  assert(first);
+
+  context->hh_mutex = mutex;
+
+  pthread_mutex_lock(mutex);
+
+  /* Ensure name is not a duplicate. */
+  new_name = ols_context_deduplicate_name(*first, context->name);
+  if (new_name) {
+    blog(LOG_WARNING,
+         "Attempted to insert context with duplicate name \"%s\"!"
+         " Name has been changed to \"%s\"",
+         context->name, new_name);
+    /* Since this happens before the context creation finishes,
+     * do not bother to add it to the rename cache. */
+    bfree(context->name);
+    context->name = new_name;
+  }
+
+  HASH_ADD_STR(*first, name, context);
+
+  pthread_mutex_unlock(mutex);
+}
+
 void ols_context_data_insert_uuid(struct ols_context_data *context,
                                   pthread_mutex_t *mutex, void *pfirst_uuid) {
   struct ols_context_data **first_uuid = pfirst_uuid;
@@ -722,7 +791,7 @@ void ols_context_data_insert_uuid(struct ols_context_data *context,
   assert(mutex);
   assert(first_uuid);
 
-  context->mutex = mutex;
+  context->hh_mutex = mutex;
 
   pthread_mutex_lock(mutex);
 
@@ -762,11 +831,12 @@ void ols_context_data_remove_name(struct ols_context_data *context,
 
   assert(head);
 
-  if (!context) return;
+  if (!context)
+    return;
 
-  pthread_mutex_lock(context->mutex);
+  pthread_mutex_lock(context->hh_mutex);
   HASH_DELETE(hh, *head, context);
-  pthread_mutex_unlock(context->mutex);
+  pthread_mutex_unlock(context->hh_mutex);
 }
 
 void ols_context_data_remove_uuid(struct ols_context_data *context,
@@ -775,16 +845,17 @@ void ols_context_data_remove_uuid(struct ols_context_data *context,
 
   assert(uuid_head);
 
-  if (!context || !context->uuid || !uuid_head) return;
+  if (!context || !context->uuid || !uuid_head)
+    return;
 
-  pthread_mutex_lock(context->mutex);
+  pthread_mutex_lock(context->hh_mutex);
   HASH_DELETE(hh_uuid, *uuid_head, context);
-  pthread_mutex_unlock(context->mutex);
+  pthread_mutex_unlock(context->hh_mutex);
 }
 
 void ols_context_wait(struct ols_context_data *context) {
-  pthread_mutex_lock(context->mutex);
-  pthread_mutex_unlock(context->mutex);
+  pthread_mutex_lock(context->hh_mutex);
+  pthread_mutex_unlock(context->hh_mutex);
 }
 
 void ols_context_data_setname_ht(struct ols_context_data *context,
@@ -792,7 +863,7 @@ void ols_context_data_setname_ht(struct ols_context_data *context,
   struct ols_context_data **head = phead;
   char *new_name;
 
-  pthread_mutex_lock(context->mutex);
+  pthread_mutex_lock(context->hh_mutex);
 
   HASH_DEL(*head, context);
 
@@ -810,7 +881,7 @@ void ols_context_data_setname_ht(struct ols_context_data *context,
 
   HASH_ADD_STR(*head, name, context);
 
-  pthread_mutex_unlock(context->mutex);
+  pthread_mutex_unlock(context->hh_mutex);
 }
 
 /**
@@ -887,7 +958,8 @@ bool ols_context_add_pad(struct ols_context_data *context,
 
   /* then check to see if there's already a pad by that name here */
   OLS_OBJECT_LOCK(context);
-  if ((!ols_context_check_pad_uniqueness(context, pad_name))) goto name_exists;
+  if ((!ols_context_check_pad_uniqueness(context, pad_name)))
+    goto name_exists;
 
   /* try to set the pad's parent */
   if ((!ols_pad_set_parent(OLS_PAD_CAST(pad), OLS_OBJECT_CAST(context))))
@@ -909,16 +981,16 @@ bool ols_context_add_pad(struct ols_context_data *context,
 
   /* add it to the list */
   switch (OLS_PAD_DIRECTION(pad)) {
-    case OLS_PAD_SRC:
-      da_push_back(context->srcpads, &pad);
-      context->numsrcpads++;
-      break;
-    case OLS_PAD_SINK:
-      da_push_back(context->sinkpads, &pad);
-      context->numsinkpads++;
-      break;
-    default:
-      goto no_direction;
+  case OLS_PAD_SRC:
+    da_push_back(context->srcpads, &pad);
+    context->numsrcpads++;
+    break;
+  case OLS_PAD_SINK:
+    da_push_back(context->sinkpads, &pad);
+    context->numsinkpads++;
+    break;
+  default:
+    goto no_direction;
   }
   da_push_back(context->pads, &pad);
   context->numpads++;
@@ -926,33 +998,28 @@ bool ols_context_add_pad(struct ols_context_data *context,
   OLS_OBJECT_UNLOCK(context);
 
   /* emit the PAD_ADDED signal */
-
-  // GST_TRACER_ELEMENT_ADD_PAD (element, pad);
   return true;
 
   /* ERROR cases */
 name_exists: {
-  // g_critical ("Padname %s is not unique in element %s, not adding",
-  //     pad_name, GST_ELEMENT_NAME (element));
+  blog(LOG_ERROR, "Padname %s is not unique in element %s, not adding",
+       pad_name, context->name);
   OLS_OBJECT_UNLOCK(context);
   bfree(pad_name);
   return false;
 }
 had_parent: {
-  // g_critical
-  //     ("Pad %s already has parent when trying to add to element %s",
-  //     pad_name, GST_ELEMENT_NAME (element));
+  blog(LOG_ERROR, "Pad %s already has parent when trying to add to element %s",
+       pad_name, context->name);
   OLS_OBJECT_UNLOCK(context);
   bfree(pad_name);
   return false;
 }
 no_direction: {
-  // GST_OBJECT_LOCK (pad);
-  //  g_critical
-  //      ("Trying to add pad %s to element %s, but it has no direction",
-  //      GST_OBJECT_NAME (pad), GST_ELEMENT_NAME (element));
-  // GST_OBJECT_UNLOCK (pad);
-  OLS_OBJECT_UNLOCK(context);
+  OLS_PAD_LOCK(pad);
+  blog(LOG_ERROR, "Trying to add pad %s to element %s, but it has no direction",
+       OLS_PAD_NAME(pad), context->name);
+  OLS_PAD_UNLOCK(pad);
   return false;
 }
 }
@@ -996,7 +1063,8 @@ bool ols_context_remove_pad(struct ols_context_data *context,
   // GST_CAT_INFO_OBJECT (GST_CAT_ELEMENT_PADS, element, "removing pad '%s'",
   //     GST_STR_NULL (GST_PAD_NAME (pad)));
 
-  if ((OLS_PAD_PARENT(pad) != context)) goto not_our_pad;
+  if ((OLS_PAD_PARENT(pad) != context))
+    goto not_our_pad;
   OLS_PAD_UNLOCK(pad);
 
   /* unlink */
@@ -1015,17 +1083,17 @@ bool ols_context_remove_pad(struct ols_context_data *context,
   OLS_OBJECT_LOCK(context);
   /* remove it from the list */
   switch (OLS_PAD_DIRECTION(pad)) {
-    case OLS_PAD_SRC:
-      da_erase_item(context->srcpads, &pad);
-      context->numsrcpads--;
-      break;
-    case OLS_PAD_SINK:
-      da_erase_item(context->sinkpads, &pad);
-      context->numsinkpads--;
-      break;
-    default:
-      // g_critical ("Removing pad without direction???");
-      break;
+  case OLS_PAD_SRC:
+    da_erase_item(context->srcpads, &pad);
+    context->numsrcpads--;
+    break;
+  case OLS_PAD_SINK:
+    da_erase_item(context->sinkpads, &pad);
+    context->numsinkpads--;
+    break;
+  default:
+    // g_critical ("Removing pad without direction???");
+    break;
   }
   da_erase_item(context->pads, &pad);
   context->numpads--;
@@ -1260,16 +1328,17 @@ enum ols_obj_type ols_obj_get_type(void *obj) {
 
 const char *ols_obj_get_id(void *obj) {
   struct ols_context_data *context = obj;
-  if (!context) return NULL;
+  if (!context)
+    return NULL;
 
   switch (context->type) {
-    case OLS_OBJ_TYPE_SOURCE:
-      return ((ols_source_t *)obj)->info.id;
-    case OLS_OBJ_TYPE_PROCESS:
-      return ((ols_process_t *)obj)->info.id;
-    case OLS_OBJ_TYPE_OUTPUT:
-      return ((ols_output_t *)obj)->info.id;
-    default:;
+  case OLS_OBJ_TYPE_SOURCE:
+    return ((ols_source_t *)obj)->info.id;
+  case OLS_OBJ_TYPE_PROCESS:
+    return ((ols_process_t *)obj)->info.id;
+  case OLS_OBJ_TYPE_OUTPUT:
+    return ((ols_output_t *)obj)->info.id;
+  default:;
   }
 
   return NULL;
@@ -1277,34 +1346,39 @@ const char *ols_obj_get_id(void *obj) {
 
 bool ols_obj_invalid(void *obj) {
   struct ols_context_data *context = obj;
-  if (!context) return true;
+  if (!context)
+    return true;
 
   return !context->data;
 }
 
 void *ols_obj_get_data(void *obj) {
   struct ols_context_data *context = obj;
-  if (!context) return NULL;
+  if (!context)
+    return NULL;
 
   return context->data;
 }
 
 bool ols_obj_is_private(void *obj) {
   struct ols_context_data *context = obj;
-  if (!context) return false;
+  if (!context)
+    return false;
 
   return context->private;
 }
 
 void ols_apply_private_data(ols_data_t *settings) {
-  if (!settings) return;
+  if (!settings)
+    return;
 
   ols_data_apply(ols->data.private_data, settings);
 }
 
 void ols_set_private_data(ols_data_t *settings) {
   ols_data_clear(ols->data.private_data);
-  if (settings) ols_data_apply(ols->data.private_data, settings);
+  if (settings)
+    ols_data_apply(ols->data.private_data, settings);
 }
 
 ols_data_t *ols_get_private_data(void) {
@@ -1324,7 +1398,8 @@ struct task_wait_info {
 
 static void task_wait_callback(void *param) {
   struct task_wait_info *info = param;
-  if (info->task) info->task(info->param);
+  if (info->task)
+    info->task(info->param);
   os_event_signal(info->event);
 }
 
@@ -1344,9 +1419,8 @@ void ols_queue_task(enum ols_ev_task_type type, ols_ev_task_t task, void *param,
     if (ols->ui_task_handler) {
       ols->ui_task_handler(task, param, wait);
     } else {
-      blog(LOG_ERROR,
-           "UI task could not be queued, "
-           "there's no UI task handler!");
+      blog(LOG_ERROR, "UI task could not be queued, "
+                      "there's no UI task handler!");
     }
   } else {
     if (ols_in_task_thread(type)) {
@@ -1384,20 +1458,21 @@ void ols_set_ui_task_handler(ols_ev_task_handler_t handler) {
 }
 
 ols_object_t *ols_object_get_ref(ols_object_t *object) {
-  if (!object) return NULL;
+  if (!object)
+    return NULL;
 
   return ols_weak_object_get_object(object->control);
 }
 
 void ols_object_release(ols_object_t *object) {
   if (!ols) {
-    blog(LOG_WARNING,
-         "Tried to release an object when the OLS "
-         "core is shut down!");
+    blog(LOG_WARNING, "Tried to release an object when the OLS "
+                      "core is shut down!");
     return;
   }
 
-  if (!object) return;
+  if (!object)
+    return;
 
   ols_weak_object_t *control = object->control;
   if (ols_ref_release(&control->ref)) {
@@ -1407,19 +1482,23 @@ void ols_object_release(ols_object_t *object) {
 }
 
 void ols_weak_object_addref(ols_weak_object_t *weak) {
-  if (!weak) return;
+  if (!weak)
+    return;
 
   ols_weak_ref_addref(&weak->ref);
 }
 
 void ols_weak_object_release(ols_weak_object_t *weak) {
-  if (!weak) return;
+  if (!weak)
+    return;
 
-  if (ols_weak_ref_release(&weak->ref)) bfree(weak);
+  if (ols_weak_ref_release(&weak->ref))
+    bfree(weak);
 }
 
 ols_weak_object_t *ols_object_get_weak_object(ols_object_t *object) {
-  if (!object) return NULL;
+  if (!object)
+    return NULL;
 
   ols_weak_object_t *weak = object->control;
   ols_weak_object_addref(weak);
@@ -1427,9 +1506,11 @@ ols_weak_object_t *ols_object_get_weak_object(ols_object_t *object) {
 }
 
 ols_object_t *ols_weak_object_get_object(ols_weak_object_t *weak) {
-  if (!weak) return NULL;
+  if (!weak)
+    return NULL;
 
-  if (ols_weak_ref_get_ref(&weak->ref)) return weak->object;
+  if (ols_weak_ref_get_ref(&weak->ref))
+    return weak->object;
 
   return NULL;
 }
@@ -1445,14 +1526,16 @@ bool ols_weak_object_references_object(ols_weak_object_t *weak,
 
 bool ols_is_output_protocol_registered(const char *protocol) {
   for (size_t i = 0; i < ols->data.protocols.num; i++) {
-    if (strcmp(protocol, ols->data.protocols.array[i]) == 0) return true;
+    if (strcmp(protocol, ols->data.protocols.array[i]) == 0)
+      return true;
   }
 
   return false;
 }
 
 bool ols_enum_output_protocols(size_t idx, char **protocol) {
-  if (idx >= ols->data.protocols.num) return false;
+  if (idx >= ols->data.protocols.num)
+    return false;
 
   *protocol = ols->data.protocols.array[idx];
   return true;

@@ -1,9 +1,7 @@
+#include "ols-module.h"
 #include <stdio.h>
-#include <util/platform.h>
-
 #include <string>
-
-#include "ols.h"
+#include <util/platform.h>
 
 int GetConfigPath(char *path, size_t size, const char *name) {
 #if ALLOW_PORTABLE_MODE
@@ -26,10 +24,12 @@ static void AddExtraModulePaths() {
   char *s;
 
   s = getenv("OLS_PLUGINS_PATH");
-  if (s) plugins_path = s;
+  if (s)
+    plugins_path = s;
 
   s = getenv("OLS_PLUGINS_DATA_PATH");
-  if (s) plugins_data_path = s;
+  if (s)
+    plugins_data_path = s;
 
   if (!plugins_path.empty() && !plugins_data_path.empty()) {
     std::string data_path_with_module_suffix;
@@ -51,7 +51,8 @@ static void AddExtraModulePaths() {
                           "ols-studio/plugins/%module%");
 #endif
 
-  if (ret <= 0) return;
+  if (ret <= 0)
+    return;
 
   std::string path = base_module_dir;
   printf("base module dir %s\n", path.c_str());
@@ -88,16 +89,35 @@ static void AddExtraModulePaths() {
 }
 
 int main(int argc, char **argv) {
-  if (!ols_startup("en-US", NULL, NULL)) printf("Couldn't create OBS");
+
+  if (!ols_startup("en-US", NULL, NULL))
+    printf("Couldn't create OBS");
   struct ols_module_failure_info mfi;
 
   AddExtraModulePaths();
-  printf("---------------------------------");
+  printf("---------------------------------\n");
   ols_load_all_modules2(&mfi);
-  printf("---------------------------------");
+  printf("---------------------------------\n");
   ols_log_loaded_modules();
-  printf("---------------------------------");
+  printf("---------------------------------\n");
   ols_post_load_modules();
+
+  ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
+
+  printf("source create at address %p\n", source);
+
+  ols_source_set_active(source, true);
+
+  int c;
+  printf("Enter characters, I shall repeat them.\n");
+  printf("Press Ctrl+D (Unix/Linux) or Ctrl+Z (Windows) to exit.\n");
+  while ((c = getchar()) != EOF) {
+    putchar(c);
+  }
+
+  ols_shutdown();
+
+  printf("\nProgram exited.\n");
 
   return 0;
 }

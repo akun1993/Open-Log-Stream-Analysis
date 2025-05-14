@@ -60,9 +60,9 @@
 
 #define OLS_TASK_LOCK(t) (pthread_mutex_lock(OLS_TASK_GET_LOCK(t)))
 #define OLS_TASK_UNLOCK(t) (pthread_mutex_unlock(OLS_TASK_GET_LOCK(t)))
-#define SET_TASK_STATE(t, s) \
+#define SET_TASK_STATE(t, s)                                                   \
   (os_atomic_set_long((volatile long *)&OLS_TASK_STATE(t), (s)))
-#define GET_TASK_STATE(t) \
+#define GET_TASK_STATE(t)                                                      \
   ((OlsTaskState)os_atomic_load_long((volatile long *)&OLS_TASK_STATE(t)))
 
 static void ols_task_func(ols_task_t *task);
@@ -102,10 +102,12 @@ static void ols_task_func(ols_task_t *task) {
    * the mutex. */
 
   OLS_TASK_LOCK(task);
-  if (GET_TASK_STATE(task) == OLS_TASK_STOPPED) goto exit;
+  if (GET_TASK_STATE(task) == OLS_TASK_STOPPED)
+    goto exit;
   lock = OLS_TASK_GET_REC_LOCK(task);
 
-  if (lock == NULL) goto no_lock;
+  if (lock == NULL)
+    goto no_lock;
 
   OLS_TASK_UNLOCK(task);
 
@@ -228,7 +230,8 @@ void ols_task_set_lock(ols_task_t *task, pthread_mutex_t *mutex) {
   // g_return_if_fail (OLS_IS_TASK (task));
 
   OLS_TASK_LOCK(task);
-  if (task->running) goto is_running;
+  if (task->running)
+    goto is_running;
   // OLS_INFO ("setting stream lock %p on task %p", mutex, task);
   OLS_TASK_GET_REC_LOCK(task) = mutex;
   OLS_TASK_UNLOCK(task);
@@ -316,26 +319,28 @@ bool ols_task_set_state(ols_task_t *task, OlsTaskState state) {
 
   OLS_TASK_LOCK(task);
   if (state != OLS_TASK_STOPPED)
-    if ((OLS_TASK_GET_REC_LOCK(task) == NULL)) goto no_lock;
+    if ((OLS_TASK_GET_REC_LOCK(task) == NULL))
+      goto no_lock;
 
   /* if the state changed, do our thing */
   old = GET_TASK_STATE(task);
   if (old != state) {
     SET_TASK_STATE(task, state);
     switch (old) {
-      case OLS_TASK_STOPPED:
-        /* If the task already has a thread scheduled we don't have to do
-         * anything. */
-        if ((!task->running)) res = start_task(task);
-        break;
-      case OLS_TASK_PAUSED:
-        /* when we are paused, signal to go to the new state */
-        OLS_TASK_SIGNAL(task);
-        break;
-      case OLS_TASK_STARTED:
-        /* if we were started, we'll go to the new state after the next
-         * iteration. */
-        break;
+    case OLS_TASK_STOPPED:
+      /* If the task already has a thread scheduled we don't have to do
+       * anything. */
+      if ((!task->running))
+        res = start_task(task);
+      break;
+    case OLS_TASK_PAUSED:
+      /* when we are paused, signal to go to the new state */
+      OLS_TASK_SIGNAL(task);
+      break;
+    case OLS_TASK_STARTED:
+      /* if we were started, we'll go to the new state after the next
+       * iteration. */
+      break;
     }
   }
   OLS_TASK_UNLOCK(task);
@@ -344,7 +349,8 @@ bool ols_task_set_state(ols_task_t *task, OlsTaskState state) {
 
   /* ERRORS */
 no_lock: {
-  // OLS_WARNING_OBJECT (task, "state %d set on task without a lock", state);
+  blog(LOG_WARNING, "task[%p] state %d set on task without a lock", task,
+       state);
   OLS_TASK_UNLOCK(task);
   // g_warning ("task without a lock can't be set to state %d", state);
   return false;
@@ -429,7 +435,8 @@ bool ols_task_join(ols_task_t *task) {
   /* we set the running flag when pushing the task on the thread pool.
    * This means that the task function might not be called when we try
    * to join it here. */
-  while (task->running) OLS_TASK_WAIT(task);
+  while (task->running)
+    OLS_TASK_WAIT(task);
   /* clean the thread */
   // task->thread = NULL;
   /* get the id and pool to join */
