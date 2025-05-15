@@ -5,11 +5,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+typedef void (*os_task_t)(void *param);
+
+
 
 struct os_task_queue;
 typedef struct os_task_queue os_task_queue_t;
 
-typedef void (*os_task_t)(void *param);
 
 EXPORT os_task_queue_t *os_task_queue_create(void);
 EXPORT bool os_task_queue_queue_task(os_task_queue_t *tt, os_task_t task,

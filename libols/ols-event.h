@@ -150,6 +150,9 @@ static inline ols_event_t *ols_event_copy(const ols_event_t *event) {
   return OLS_EVENT_CAST(
       ols_mini_object_copy(OLS_MINI_OBJECT_CONST_CAST(event)));
 }
+
+ols_event_t *ols_event_new_eos();
+
 #else  /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
 ols_event_t *ols_event_ref(ols_event_t *event);

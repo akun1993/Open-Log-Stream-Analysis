@@ -58,30 +58,6 @@ the library:
       /* Code specific to version 1.3 and above */
       #endif
 
-Additionally, there are functions to determine the version of Jansson at
-runtime:
-
-.. function:: const char *jansson_version_str()
-
-   Return the version of the Jansson library, in the same format as
-   the ``JANSSON_VERSION`` preprocessor constant.
-
-   .. versionadded:: 2.13
-
-.. function:: int jansson_version_cmp(int major, int minor, int micro)
-
-   Returns an integer less than, equal to, or greater than zero if
-   the runtime version of Jansson is found, respectively, to be less
-   than, to match, or be greater than the provided *major*, *minor*, and
-   *micro*.
-
-   .. versionadded:: 2.13
-
-``JANSSON_THREAD_SAFE_REFCOUNT``
-  If this value is defined all read-only operations and reference counting in
-  Jansson are thread safe.  This value is not defined for versions older than
-  ``2.11`` or when the compiler does not provide built-in atomic functions.
-
 
 Value Representation
 ====================
@@ -114,7 +90,7 @@ also cause errors.
 Type
 ----
 
-.. c:enum:: json_type
+.. type:: enum json_type
 
    The type of a JSON value. The following members are defined:
 
@@ -145,33 +121,33 @@ Type
 .. function:: int json_typeof(const json_t *json)
 
    Return the type of the JSON value (a :type:`json_type` cast to
-   ``int``). *json* MUST NOT be *NULL*. This function is actually
+   :type:`int`). *json* MUST NOT be *NULL*. This function is actually
    implemented as a macro for speed.
 
-.. function:: int json_is_object(const json_t *json)
-              int json_is_array(const json_t *json)
-              int json_is_string(const json_t *json)
-              int json_is_integer(const json_t *json)
-              int json_is_real(const json_t *json)
-              int json_is_true(const json_t *json)
-              int json_is_false(const json_t *json)
-              int json_is_null(const json_t *json)
+.. function:: json_is_object(const json_t *json)
+               json_is_array(const json_t *json)
+               json_is_string(const json_t *json)
+               json_is_integer(const json_t *json)
+               json_is_real(const json_t *json)
+               json_is_true(const json_t *json)
+               json_is_false(const json_t *json)
+               json_is_null(const json_t *json)
 
    These functions (actually macros) return true (non-zero) for values
    of the given type, and false (zero) for values of other types and
    for *NULL*.
 
-.. function:: int json_is_number(const json_t *json)
+.. function:: json_is_number(const json_t *json)
 
    Returns true for values of types ``JSON_INTEGER`` and
    ``JSON_REAL``, and false for other types and for *NULL*.
 
-.. function:: int json_is_boolean(const json_t *json)
+.. function:: json_is_boolean(const json_t *json)
 
    Returns true for types ``JSON_TRUE`` and ``JSON_FALSE``, and false
    for values of other types and for *NULL*.
 
-.. function:: int json_boolean_value(const json_t *json)
+.. function:: json_boolean_value(const json_t *json)
 
    Alias of :func:`json_is_true()`, i.e. returns 1 for ``JSON_TRUE``
    and 0 otherwise.
@@ -356,8 +332,6 @@ length-aware functions if you wish to embed null bytes in strings.
    Like :func:`json_string`, but with explicit length, so *value* may
    contain null characters or not be null terminated.
 
-   .. versionadded:: 2.7
-
 .. function:: json_t *json_string_nocheck(const char *value)
 
    .. refcounting:: new
@@ -373,8 +347,6 @@ length-aware functions if you wish to embed null bytes in strings.
    Like :func:`json_string_nocheck`, but with explicit length, so
    *value* may contain null characters or not be null terminated.
 
-   .. versionadded:: 2.7
-
 .. function:: const char *json_string_value(const json_t *string)
 
    Returns the associated value of *string* as a null terminated UTF-8
@@ -389,8 +361,6 @@ length-aware functions if you wish to embed null bytes in strings.
    Returns the length of *string* in its UTF-8 presentation, or zero
    if *string* is not a JSON string.
 
-   .. versionadded:: 2.7
-
 .. function:: int json_string_set(json_t *string, const char *value)
 
    Sets the associated value of *string* to *value*. *value* must be a
@@ -401,8 +371,6 @@ length-aware functions if you wish to embed null bytes in strings.
 
    Like :func:`json_string_set`, but with explicit length, so *value*
    may contain null characters or not be null terminated.
-
-   .. versionadded:: 2.7
 
 .. function:: int json_string_set_nocheck(json_t *string, const char *value)
 
@@ -415,18 +383,6 @@ length-aware functions if you wish to embed null bytes in strings.
 
    Like :func:`json_string_set_nocheck`, but with explicit length,
    so *value* may contain null characters or not be null terminated.
-
-   .. versionadded:: 2.7
-
-.. function:: json_t *json_sprintf(const char *format, ...)
-              json_t *json_vsprintf(const char *format, va_list ap)
-
-   .. refcounting:: new
-
-   Construct a JSON string from a format string and varargs, just like
-   :func:`printf()`.
-
-   .. versionadded:: 2.11
 
 
 Number
@@ -594,12 +550,12 @@ A JSON array is an ordered collection of other JSON values.
    Appends all elements in *other_array* to the end of *array*.
    Returns 0 on success and -1 on error.
 
-.. function:: void json_array_foreach(array, index, value)
+.. function:: json_array_foreach(array, index, value)
 
    Iterate over every element of ``array``, running the block
    of code that follows each time with the proper values set to
    variables ``index`` and ``value``, of types :type:`size_t` and
-   :type:`json_t` pointer respectively. Example::
+   :type:`json_t *` respectively. Example::
 
        /* array is a JSON array */
        size_t index;
@@ -648,28 +604,12 @@ allowed in object keys.
    Get a value corresponding to *key* from *object*. Returns *NULL* if
    *key* is not found and on error.
 
-.. function:: json_t *json_object_getn(const json_t *object, const char *key, size_t key_len)
-
-   .. refcounting:: borrow
-
-   Like :func:`json_object_get`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
-
 .. function:: int json_object_set(json_t *object, const char *key, json_t *value)
 
    Set the value of *key* to *value* in *object*. *key* must be a
    valid null terminated UTF-8 encoded Unicode string. If there
    already is a value for *key*, it is replaced by the new value.
    Returns 0 on success and -1 on error.
-
-.. function:: int json_object_setn(json_t *object, const char *key, size_t key_len, json_t *value)
-
-   Like :func:`json_object_set`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
 
 .. function:: int json_object_set_nocheck(json_t *object, const char *key, json_t *value)
 
@@ -678,25 +618,11 @@ allowed in object keys.
    really is the case (e.g. you have already checked it by other
    means).
 
-.. function:: int json_object_setn_nocheck(json_t *object, const char *key, size_t key_len, json_t *value)
-
-   Like :func:`json_object_set_nocheck`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
-
 .. function:: int json_object_set_new(json_t *object, const char *key, json_t *value)
 
    Like :func:`json_object_set()` but steals the reference to
    *value*. This is useful when *value* is newly created and not used
    after the call.
-
-.. function:: int json_object_setn_new(json_t *object, const char *key, size_t key_len, json_t *value)
-
-   Like :func:`json_object_set_new`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
 
 .. function:: int json_object_set_new_nocheck(json_t *object, const char *key, json_t *value)
 
@@ -705,25 +631,11 @@ allowed in object keys.
    really is the case (e.g. you have already checked it by other
    means).
 
-.. function:: int json_object_setn_new_nocheck(json_t *object, const char *key, size_t key_len, json_t *value)
-
-   Like :func:`json_object_set_new_nocheck`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
-
 .. function:: int json_object_del(json_t *object, const char *key)
 
    Delete *key* from *object* if it exists. Returns 0 on success, or
    -1 if *key* was not found. The reference count of the removed value
    is decremented.
-
-.. function:: int json_object_deln(json_t *object, const char *key, size_t key_len)
-
-   Like :func:`json_object_del`, but give the fixed-length *key* with length *key_len*.
-   See :ref:`fixed_length_keys` for details.
-
-   .. versionadded:: 2.14
 
 .. function:: int json_object_clear(json_t *object)
 
@@ -752,36 +664,12 @@ allowed in object keys.
 
    .. versionadded:: 2.3
 
-.. function:: int json_object_update_new(json_t *object, json_t *other)
-
-   Like :func:`json_object_update()`, but steals the reference to
-   *other*. This is useful when *other* is newly created and not used
-   after the call.
-
-.. function:: int json_object_update_existing_new(json_t *object, json_t *other)
-
-   Like :func:`json_object_update_new()`, but only the values of existing
-   keys are updated. No new keys are created. Returns 0 on success or
-   -1 on error.
-
-.. function:: int json_object_update_missing_new(json_t *object, json_t *other)
-
-   Like :func:`json_object_update_new()`, but only new keys are created.
-   The value of any existing key is not changed. Returns 0 on success
-   or -1 on error.
-
-.. function:: int json_object_update_recursive(json_t *object, json_t *other)
-
-   Like :func:`json_object_update()`, but object values in *other* are
-   recursively merged with the corresponding values in *object* if they are also
-   objects, instead of overwriting them. Returns 0 on success or -1 on error.
-
-.. function:: void json_object_foreach(object, key, value)
+.. function:: json_object_foreach(object, key, value)
 
    Iterate over every key-value pair of ``object``, running the block
    of code that follows each time with the proper values set to
-   variables ``key`` and ``value``, of types ``const char *`` and
-   :type:`json_t` pointer respectively. Example::
+   variables ``key`` and ``value``, of types :type:`const char *` and
+   :type:`json_t *` respectively. Example::
 
        /* obj is a JSON object */
        const char *key;
@@ -794,7 +682,7 @@ allowed in object keys.
    The items are returned in the order they were inserted to the
    object.
 
-   **Note:** It's not safe to call ``json_object_del(object, key)`` or ``json_object_deln(object, key, key_len)``
+   **Note:** It's not safe to call ``json_object_del(object, key)``
    during iteration. If you need to, use
    :func:`json_object_foreach_safe` instead.
 
@@ -808,42 +696,14 @@ allowed in object keys.
    .. versionadded:: 2.3
 
 
-.. function:: void json_object_foreach_safe(object, tmp, key, value)
+.. function:: json_object_foreach_safe(object, tmp, key, value)
 
    Like :func:`json_object_foreach()`, but it's safe to call
-   ``json_object_del(object, key)`` or ``json_object_deln(object, key, key_len)`` during iteration.
-   You need to pass an extra ``void *`` parameter ``tmp`` that is used for temporary storage.
+   ``json_object_del(object, key)`` during iteration. You need to pass
+   an extra ``void *`` parameter ``tmp`` that is used for temporary storage.
 
    .. versionadded:: 2.8
 
-.. function:: void json_object_keylen_foreach(object, key, key_len, value)
-
-   Like :c:func:`json_object_foreach`, but in *key_len* stored length of the *key*.
-   Example::
-
-       /* obj is a JSON object */
-       const char *key;
-       json_t *value;
-       size_t len;
-
-       json_object_keylen_foreach(obj, key, len, value) {
-            printf("got key %s with length %zu\n", key, len);
-       }
-
-   **Note:** It's not safe to call ``json_object_deln(object, key, key_len)``
-   during iteration. If you need to, use
-   :func:`json_object_keylen_foreach_safe` instead.
-
-   .. versionadded:: 2.14
-
-
-.. function:: void json_object_keylen_foreach_safe(object, tmp, key, key_len, value)
-
-   Like :func:`json_object_keylen_foreach()`, but it's safe to call
-   ``json_object_deln(object, key, key_len)`` during iteration.
-   You need to pass an extra ``void *`` parameter ``tmp`` that is used for temporary storage.
-
-   .. versionadded:: 2.14
 
 The following functions can be used to iterate through all key-value
 pairs in an object. The items are returned in the order they were
@@ -871,12 +731,6 @@ inserted to the object.
 .. function:: const char *json_object_iter_key(void *iter)
 
    Extract the associated key from *iter*.
-
-.. function:: size_t json_object_iter_key_len(void *iter)
-
-   Extract the associated key length from *iter*.
-
-   .. versionadded:: 2.14
 
 .. function:: json_t *json_object_iter_value(void *iter)
 
@@ -933,7 +787,8 @@ inserted to the object.
     :func:`json_object()`, either explicit or implicit. If this
     function is not called by the user, the first call to
     :func:`json_object()` (either explicit or implicit) seeds the hash
-    function. See :ref:`thread-safety` for notes on thread safety.
+    function. See :ref:`portability-thread-safety` for notes on thread
+    safety.
 
     If repeatable results are required, for e.g. unit tests, the hash
     function can be "unrandomized" by calling :func:`json_object_seed`
@@ -957,9 +812,6 @@ this struct.
 
       The error message (in UTF-8), or an empty string if a message is
       not available.
-
-      The last byte of this array contains a numeric error code.  Use
-      :func:`json_error_code()` to extract this code.
 
    .. member:: char source[]
 
@@ -1003,102 +855,11 @@ success. See :ref:`apiref-decoding` for more info.
 All functions also accept *NULL* as the :type:`json_error_t` pointer,
 in which case no error information is returned to the caller.
 
-.. c:enum:: json_error_code
-
-   An enumeration containing numeric error codes.  The following errors are
-   currently defined:
-
-   ``json_error_unknown``
-
-       Unknown error.  This should only be returned for non-errorneous
-       :type:`json_error_t` structures.
-
-   ``json_error_out_of_memory``
-
-       The library couldn’t allocate any heap memory.
-
-   ``json_error_stack_overflow``
-
-       Nesting too deep.
-
-   ``json_error_cannot_open_file``
-
-       Couldn’t open input file.
-
-   ``json_error_invalid_argument``
-
-       A function argument was invalid.
-
-   ``json_error_invalid_utf8``
-
-       The input string isn’t valid UTF-8.
-
-   ``json_error_premature_end_of_input``
-
-       The input ended in the middle of a JSON value.
-
-   ``json_error_end_of_input_expected``
-
-       There was some text after the end of a JSON value.  See the
-       ``JSON_DISABLE_EOF_CHECK`` flag.
-
-   ``json_error_invalid_syntax``
-
-       JSON syntax error.
-
-   ``json_error_invalid_format``
-
-       Invalid format string for packing or unpacking.
-
-   ``json_error_wrong_type``
-
-       When packing or unpacking, the actual type of a value differed from the
-       one specified in the format string.
-
-   ``json_error_null_character``
-
-       A null character was detected in a JSON string.  See the
-       ``JSON_ALLOW_NUL`` flag.
-
-   ``json_error_null_value``
-
-       When packing or unpacking, some key or value was ``NULL``.
-
-   ``json_error_null_byte_in_key``
-
-       An object key would contain a null byte.  Jansson can’t represent such
-       keys; see :ref:`rfc-conformance`.
-
-   ``json_error_duplicate_key``
-
-       Duplicate key in object.  See the ``JSON_REJECT_DUPLICATES`` flag.
-
-   ``json_error_numeric_overflow``
-
-       When converting a JSON number to a C numeric type, a numeric overflow
-       was detected.
-
-   ``json_error_item_not_found``
-
-       Key in object not found.
-
-   ``json_error_index_out_of_range``
-
-       Array index is out of range.
-
-   .. versionadded:: 2.11
-
-.. function:: enum json_error_code json_error_code(const json_error_t *error)
-
-   Returns the error code embedded in ``error->text``.
-
-   .. versionadded:: 2.11
-
 
 Encoding
 ========
 
-This section describes the functions that can be used to encode
+This sections describes the functions that can be used to encode
 values to JSON. By default, only objects and arrays can be encoded
 directly, since they are the only valid *root* values of a JSON text.
 To encode any JSON value, use the ``JSON_ENCODE_ANY`` flag (see
@@ -1179,44 +940,13 @@ can be ORed together to obtain *flags*.
 
    .. versionadded:: 2.7
 
-``JSON_EMBED``
-   If this flag is used, the opening and closing characters of the top-level
-   array ('[', ']') or object ('{', '}') are omitted during encoding. This
-   flag is useful when concatenating multiple arrays or objects into a stream.
-
-   .. versionadded:: 2.10
-
 These functions output UTF-8:
 
 .. function:: char *json_dumps(const json_t *json, size_t flags)
 
    Returns the JSON representation of *json* as a string, or *NULL* on
    error. *flags* is described above. The return value must be freed
-   by the caller using :func:`free()`. Note that if you have called
-   :func:`json_set_alloc_funcs()` to override :func:`free()`, you should
-   call your custom free function instead to free the return value.
-
-.. function:: size_t json_dumpb(const json_t *json, char *buffer, size_t size, size_t flags)
-
-   Writes the JSON representation of *json* to the *buffer* of
-   *size* bytes. Returns the number of bytes that would be written
-   or 0 on error. *flags* is described above. *buffer* is not
-   null-terminated.
-
-   This function never writes more than *size* bytes. If the return
-   value is greater than *size*, the contents of the *buffer* are
-   undefined. This behavior enables you to specify a NULL *buffer*
-   to determine the length of the encoding. For example::
-
-       size_t size = json_dumpb(json, NULL, 0, 0);
-       if (size == 0)
-           return -1;
-
-       char *buf = alloca(size);
-
-       size = json_dumpb(json, buf, size, 0);
-
-   .. versionadded:: 2.10
+   by the caller using :func:`free()`.
 
 .. function:: int json_dumpf(const json_t *json, FILE *output, size_t flags)
 
@@ -1225,23 +955,6 @@ These functions output UTF-8:
    If an error occurs, something may have already been written to
    *output*. In this case, the output is undefined and most likely not
    valid JSON.
-
-.. function:: int json_dumpfd(const json_t *json, int output, size_t flags)
-
-   Write the JSON representation of *json* to the stream *output*.
-   *flags* is described above. Returns 0 on success and -1 on error.
-   If an error occurs, something may have already been written to
-   *output*. In this case, the output is undefined and most likely not
-   valid JSON.
-
-   It is important to note that this function can only succeed on stream
-   file descriptors (such as SOCK_STREAM). Using this function on a
-   non-stream file descriptor will result in undefined behavior. For
-   non-stream file descriptors, see instead :func:`json_dumpb()`.
-
-   This function requires POSIX and fails on all non-POSIX systems.
-
-   .. versionadded:: 2.10
 
 .. function:: int json_dump_file(const json_t *json, const char *path, size_t flags)
 
@@ -1259,10 +972,6 @@ These functions output UTF-8:
    *buffer* points to a buffer containing a chunk of output, *size* is
    the length of the buffer, and *data* is the corresponding
    :func:`json_dump_callback()` argument passed through.
-
-   *buffer* is guaranteed to be a valid UTF-8 string (i.e. multi-byte
-   code unit sequences are preserved). *buffer* never contains
-   embedded null bytes.
 
    On error, the function should return -1 to stop the encoding
    process. On success, it should return 0.
@@ -1283,7 +992,7 @@ These functions output UTF-8:
 Decoding
 ========
 
-This section describes the functions that can be used to decode JSON
+This sections describes the functions that can be used to decode JSON
 text to the Jansson representation of JSON data. The JSON
 specification requires that a JSON text is either a serialized array
 or object, and this requirement is also enforced with the following
@@ -1402,7 +1111,7 @@ If no error or position information is needed, you can pass *NULL*.
    above.
 
    This function will start reading the input from whatever position
-   the input file was in, without attempting to seek first. If an error
+   the input file was, without attempting to seek first. If an error
    occurs, the file position will be left indeterminate. On success,
    the file position will be at EOF, unless ``JSON_DISABLE_EOF_CHECK``
    flag was used. In this case, the file position will be at the first
@@ -1410,39 +1119,6 @@ If no error or position information is needed, you can pass *NULL*.
    allows calling :func:`json_loadf()` on the same ``FILE`` object
    multiple times, if the input consists of consecutive JSON texts,
    possibly separated by whitespace.
-
-.. function:: json_t *json_loadfd(int input, size_t flags, json_error_t *error)
-
-   .. refcounting:: new
-
-   Decodes the JSON text in stream *input* and returns the array or
-   object it contains, or *NULL* on error, in which case *error* is
-   filled with information about the error. *flags* is described
-   above.
-
-   This function will start reading the input from whatever position
-   the input file descriptor was in, without attempting to seek first.
-   If an error occurs, the file position will be left indeterminate.
-   On success, the file position will be at EOF, unless
-   ``JSON_DISABLE_EOF_CHECK`` flag was used. In this case, the file
-   descriptor's position will be at the first character after the last
-   ``]`` or ``}`` in the JSON input. This allows calling
-   :func:`json_loadfd()` on the same file descriptor multiple times,
-   if the input consists of consecutive JSON texts, possibly separated
-   by whitespace.
-
-   It is important to note that this function can only succeed on stream
-   file descriptors (such as SOCK_STREAM). Using this function on a
-   non-stream file descriptor will result in undefined behavior. For
-   non-stream file descriptors, see instead :func:`json_loadb()`. In
-   addition, please note that this function cannot be used on non-blocking 
-   file descriptors (such as a non-blocking socket). Using this function 
-   on non-blocking file descriptors has a high risk of data loss because 
-   it does not support resuming.
-
-   This function requires POSIX and fails on all non-POSIX systems.
-
-   .. versionadded:: 2.10
 
 .. function:: json_t *json_load_file(const char *path, size_t flags, json_error_t *error)
 
@@ -1463,18 +1139,10 @@ If no error or position information is needed, you can pass *NULL*.
    *buffer* points to a buffer of *buflen* bytes, and *data* is the
    corresponding :func:`json_load_callback()` argument passed through.
 
-   On success, the function should write at most *buflen* bytes to
-   *buffer*, and return the number of bytes written; a returned value
-   of 0 indicates that no data was produced and that the end of file
-   has been reached. On error, the function should return
+   On success, the function should return the number of bytes read; a
+   returned value of 0 indicates that no data was read and that the
+   end of file has been reached. On error, the function should return
    ``(size_t)-1`` to abort the decoding process.
-
-   In UTF-8, some code points are encoded as multi-byte sequences. The
-   callback function doesn't need to worry about this, as Jansson
-   handles it at a higher level. For example, you can safely read a
-   fixed number of bytes from a network connection without having to
-   care about code unit sequences broken apart by the chunk
-   boundaries.
 
    .. versionadded:: 2.4
 
@@ -1526,14 +1194,6 @@ arguments.
 
     .. versionadded:: 2.8
 
-``s*`` (string) [const char \*]
-    Like ``s``, but if the argument is *NULL*, do not output any value.
-    This format can only be used inside an object or an array. If used
-    inside an object, the corresponding key is additionally suppressed
-    when the value is omitted. See below for an example.
-
-    .. versionadded:: 2.11
-
 ``s#`` (string) [const char \*, int]
     Convert a UTF-8 buffer of a given length to a JSON string.
 
@@ -1565,17 +1225,17 @@ arguments.
     Output a JSON null value. No argument is consumed.
 
 ``b`` (boolean) [int]
-    Convert a C ``int`` to JSON boolean value. Zero is converted
+    Convert a C :type:`int` to JSON boolean value. Zero is converted
     to ``false`` and non-zero to ``true``.
 
 ``i`` (integer) [int]
-    Convert a C ``int`` to JSON integer.
+    Convert a C :type:`int` to JSON integer.
 
 ``I`` (integer) [json_int_t]
     Convert a C :type:`json_int_t` to JSON integer.
 
 ``f`` (real) [double]
-    Convert a C ``double`` to JSON real.
+    Convert a C :type:`double` to JSON real.
 
 ``o`` (any value) [json_t \*]
     Output any given JSON value as-is. If the value is added to an
@@ -1589,19 +1249,10 @@ arguments.
     yourself.
 
 ``o?``, ``O?`` (any value) [json_t \*]
-    Like ``o`` and ``O``, respectively, but if the argument is
+    Like ``o`` and ``O?``, respectively, but if the argument is
     *NULL*, output a JSON null value.
 
     .. versionadded:: 2.8
-
-``o*``, ``O*`` (any value) [json_t \*]
-    Like ``o`` and ``O``, respectively, but if the argument is
-    *NULL*, do not output any value. This format can only be used
-    inside an object or an array. If used inside an object, the
-    corresponding key is additionally suppressed. See below for an
-    example.
-
-    .. versionadded:: 2.11
 
 ``[fmt]`` (array)
     Build an array with contents from the inner format string. ``fmt``
@@ -1661,10 +1312,6 @@ More examples::
   /* Concatenate strings together to build the JSON string "foobarbaz" */
   json_pack("s++", "foo", "bar", "baz");
 
-  /* Create an empty object or array when optional members are missing */
-  json_pack("{s:s*,s:o*,s:O*}", "foo", NULL, "bar", NULL, "baz", NULL);
-  json_pack("[s*,o*,O*]", NULL, NULL, NULL);
-
 
 .. _apiref-unpack:
 
@@ -1702,29 +1349,26 @@ type whose address should be passed.
     Expect a JSON null value. Nothing is extracted.
 
 ``b`` (boolean) [int]
-    Convert a JSON boolean value to a C ``int``, so that ``true``
+    Convert a JSON boolean value to a C :type:`int`, so that ``true``
     is converted to 1 and ``false`` to 0.
 
 ``i`` (integer) [int]
-    Convert a JSON integer to C ``int``.
+    Convert a JSON integer to C :type:`int`.
 
 ``I`` (integer) [json_int_t]
     Convert a JSON integer to C :type:`json_int_t`.
 
 ``f`` (real) [double]
-    Convert a JSON real to C ``double``.
+    Convert a JSON real to C :type:`double`.
 
 ``F`` (integer or real) [double]
-    Convert a JSON number (integer or real) to C ``double``.
+    Convert a JSON number (integer or real) to C :type:`double`.
 
 ``o`` (any value) [json_t \*]
     Store a JSON value with no conversion to a :type:`json_t` pointer.
 
 ``O`` (any value) [json_t \*]
-    Like ``o``, but the JSON value's reference count is incremented.
-    Storage pointers should be initialized NULL before using unpack.
-    The caller is responsible for releasing all references incremented
-    by unpack, even when an error occurs.
+    Like ``O``, but the JSON value's reference count is incremented.
 
 ``[fmt]`` (array)
     Convert each item in the JSON array according to the inner format
@@ -1735,7 +1379,7 @@ type whose address should be passed.
     Convert each item in the JSON object according to the inner format
     string ``fmt``. The first, third, etc. format specifier represent
     a key, and must be ``s``. The corresponding argument to unpack
-    functions is read as the object key. The second, fourth, etc.
+    functions is read as the object key. The second fourth, etc.
     format specifier represent a value and is written to the address
     given as the corresponding argument. **Note** that every other
     argument is read from and every other is written to.
@@ -1986,79 +1630,3 @@ memory, see
 http://www.dwheeler.com/secure-programs/Secure-Programs-HOWTO/protect-secrets.html.
 The page also explains the :func:`guaranteed_memset()` function used
 in the example and gives a sample implementation for it.
-
-.. _fixed_length_keys:
-
-Fixed-Length keys
-=================
-
-The Jansson API allows work with fixed-length keys. This can be useful in the following cases:
-
-* The key is contained inside a buffer and is not null-terminated. In this case creating a new temporary buffer is not needed.
-* The key contains U+0000 inside it.
-
-List of API for fixed-length keys:
-
-* :c:func:`json_object_getn`
-* :c:func:`json_object_setn`
-* :c:func:`json_object_setn_nocheck`
-* :c:func:`json_object_setn_new`
-* :c:func:`json_object_setn_new_nocheck`
-* :c:func:`json_object_deln`
-* :c:func:`json_object_iter_key_len`
-* :c:func:`json_object_keylen_foreach`
-* :c:func:`json_object_keylen_foreach_safe`
-
-**Examples:**
-
-Try to write a new function to get :c:struct:`json_t` by path separated by ``.``
-
-This requires:
-
-* string iterator (no need to modify the input for better performance)
-* API for working with fixed-size keys
-
-The iterator::
-
-    struct string {
-        const char *string;
-        size_t length;
-    };
-
-    size_t string_try_next(struct string *str, const char *delimiter) {
-        str->string += strspn(str->string, delimiter);
-        str->length = strcspn(str->string, delimiter);
-        return str->length;
-    }
-
-    #define string_foreach(_string, _delimiter) \
-            for (; string_try_next(&(_string), _delimiter); (_string).string += (_string).length)
-
-
-The function::
-
-    json_t *json_object_get_by_path(json_t *object, const char *path) {
-        struct string str;
-        json_t *out = object;
-
-        str.string = path;
-
-        string_foreach(str, ".") {
-            out = json_object_getn(out, str.string, str.length);
-            if (out == NULL)
-                return NULL;
-        }
-
-        return out;
-    }
-
-And usage::
-
-    int main(void) {
-        json_t *obj = json_pack("{s:{s:{s:b}}}", "a", "b", "c", 1);
-
-        json_t *c = json_object_get_by_path(obj, "a.b.c");
-        assert(json_is_true(c));
-
-        json_decref(obj);
-    }

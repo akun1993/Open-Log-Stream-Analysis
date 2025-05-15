@@ -1,66 +1,43 @@
-if(NOT TARGET OLS::w32-pthreads)
-  add_subdirectory("${CMAKE_SOURCE_DIR}/deps/w32-pthreads" "${CMAKE_BINARY_DIR}/deps/w32-pthreads")
-endif()
+set(MODULE_DESCRIPTION "OLS Library")
+set(UI_VERSION "${OLS_VERSION_CANONICAL}")
 
-configure_file(cmake/windows/ols-module.rc.in libols.rc)
-
-add_library(ols-obfuscate INTERFACE)
-add_library(OLS::obfuscate ALIAS ols-obfuscate)
-target_sources(ols-obfuscate INTERFACE util/windows/obfuscate.c util/windows/obfuscate.h)
-target_include_directories(ols-obfuscate INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_library(ols-comutils INTERFACE)
-add_library(OLS::COMutils ALIAS ols-comutils)
-target_sources(ols-comutils INTERFACE util/windows/ComPtr.hpp)
-target_include_directories(ols-comutils INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_library(ols-winhandle INTERFACE)
-add_library(OLS::winhandle ALIAS ols-winhandle)
-target_sources(ols-winhandle INTERFACE util/windows/WinHandle.hpp)
-target_include_directories(ols-winhandle INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in
+               libols.rc)
 
 target_sources(
   libols
-  PRIVATE # cmake-format: sortable
-          audio-monitoring/win32/wasapi-enum-devices.c
-          audio-monitoring/win32/wasapi-monitoring-available.c
-          audio-monitoring/win32/wasapi-output.c
-          audio-monitoring/win32/wasapi-output.h
-          libols.rc
-          ols-win-crash-handler.c
+  PRIVATE obs-win-crash-handler.c
           ols-windows.c
-          util/pipe-windows.c
-          util/platform-windows.c
           util/threading-windows.c
           util/threading-windows.h
-          util/windows/CoTaskMemPtr.hpp
+          util/pipe-windows.c
+          util/platform-windows.c
           util/windows/device-enum.c
           util/windows/device-enum.h
-          util/windows/HRError.hpp
           util/windows/obfuscate.c
           util/windows/obfuscate.h
           util/windows/win-registry.h
           util/windows/win-version.h
           util/windows/window-helpers.c
-          util/windows/window-helpers.h)
+          util/windows/window-helpers.h
+          util/windows/ComPtr.hpp
+          util/windows/CoTaskMemPtr.hpp
+          util/windows/HRError.hpp
+          util/windows/WinHandle.hpp
+          libobs.rc)
 
-target_compile_options(libols PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:/EHc->)
+target_compile_definitions(
+  libols PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS
+                 _CRT_NONSTDC_NO_WARNINGS)
 
-set_source_files_properties(ols-win-crash-handler.c PROPERTIES COMPILE_DEFINITIONS
-                                                               OLS_VERSION="${OLS_VERSION_CANONICAL}")
+target_link_libraries(libols PRIVATE dxgi Avrt Dwmapi winmm)
 
-target_link_libraries(
-  libols
-  PRIVATE Avrt
-          Dwmapi
-          Dxgi
-          winmm
-          Rpcrt4
-          OLS::obfuscate
-          OLS::winhandle
-          OLS::COMutils
-  PUBLIC OLS::w32-pthreads)
+if(MSVC)
+  target_link_libraries(libols PUBLIC OBS::w32-pthreads)
 
-target_link_options(libols PRIVATE /IGNORE:4098 /SAFESEH:NO)
+  target_compile_options(libols PRIVATE "$<$<COMPILE_LANGUAGE:C>:/EHc->"
+                                        "$<$<COMPILE_LANGUAGE:CXX>:/EHc->")
 
-set_target_properties(libols PROPERTIES PREFIX "" OUTPUT_NAME "ols")
+  target_link_options(libols PRIVATE "LINKER:/IGNORE:4098"
+                      "LINKER:/SAFESEH:NO")
+endif()

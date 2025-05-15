@@ -3,8 +3,6 @@ EXPORTS
     json_true
     json_false
     json_null
-    json_sprintf
-    json_vsprintf
     json_string
     json_stringn
     json_string_nocheck
@@ -34,37 +32,28 @@ EXPORTS
     json_object
     json_object_size
     json_object_get
-    json_object_getn
     json_object_set_new
-    json_object_setn_new
     json_object_set_new_nocheck
-    json_object_setn_new_nocheck
     json_object_del
-    json_object_deln
     json_object_clear
     json_object_update
     json_object_update_existing
     json_object_update_missing
-    json_object_update_recursive
     json_object_iter
     json_object_iter_at
     json_object_iter_next
     json_object_iter_key
-    json_object_iter_key_len
     json_object_iter_value
     json_object_iter_set_new
     json_object_key_to_iter
     json_object_seed
     json_dumps
-    json_dumpb
     json_dumpf
-    json_dumpfd
     json_dump_file
     json_dump_callback
     json_loads
     json_loadb
     json_loadf
-    json_loadfd
     json_load_file
     json_load_callback
     json_equal
@@ -78,6 +67,4 @@ EXPORTS
     json_vunpack_ex
     json_set_alloc_funcs
     json_get_alloc_funcs
-    jansson_version_str
-    jansson_version_cmp
 

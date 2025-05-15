@@ -1,3 +1,0 @@
-/home/akun/OpenLogStream/test_cpp_py/test_hello/build/CMakeFiles/rebuild_cache.dir
-/home/akun/OpenLogStream/test_cpp_py/test_hello/build/CMakeFiles/edit_cache.dir
-/home/akun/OpenLogStream/test_cpp_py/test_hello/build/CMakeFiles/hello.dir

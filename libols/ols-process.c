@@ -15,14 +15,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
+#include <inttypes.h>
+#include <math.h>
+
 #include "callback/calldata.h"
 #include "ols-internal.h"
 #include "ols.h"
 #include "util/platform.h"
 #include "util/threading.h"
 #include "util/util_uint64.h"
-#include <inttypes.h>
-#include <math.h>
 
 #define get_weak(process) ((ols_weak_process_t *)process->context.control)
 
@@ -38,8 +39,7 @@ static inline bool destroying(const struct ols_process *process) {
 struct ols_process_info *get_process_info(const char *id) {
   for (size_t i = 0; i < ols->process_types.num; i++) {
     struct ols_process_info *info = &ols->process_types.array[i];
-    if (strcmp(info->id, id) == 0)
-      return info;
+    if (strcmp(info->id, id) == 0) return info;
   }
 
   return NULL;
@@ -66,7 +66,7 @@ static OlsFlowReturn process_default_chain(ols_pad_t *pad, ols_object_t *parent,
   // process->info.analysis(buffer);
 
   for (int i = 0; i < process->context.numsrcpads; ++i) {
-    ols_pad_t *pad = process->context.srcpads.array + i;
+    ols_pad_t *pad = process->context.srcpads.array[i];
 
     ols_pad_push(pad, buffer);
   }
@@ -99,7 +99,6 @@ const char *ols_process_get_display_name(const char *id) {
 
 /* internal initialization */
 static bool ols_process_init(struct ols_process *process) {
-
   ols_context_init_control(&process->context, process,
                            (ols_destroy_cb)ols_process_destroy);
 
@@ -108,15 +107,13 @@ static bool ols_process_init(struct ols_process *process) {
 }
 
 static void ols_process_init_finalize(struct ols_process *process) {
-
   ols_context_data_insert_uuid(&process->context, &ols->data.processes_mutex,
                                &ols->data.processes);
 }
 
-static ols_process_t *
-ols_process_create_internal(const char *id, const char *name, const char *uuid,
-                            ols_data_t *settings, bool private,
-                            uint32_t last_ols_ver) {
+static ols_process_t *ols_process_create_internal(
+    const char *id, const char *name, const char *uuid, ols_data_t *settings,
+    bool private, uint32_t last_ols_ver) {
   struct ols_process *process = bzalloc(sizeof(struct ols_process));
 
   const struct ols_process_info *info = get_process_info(id);
@@ -140,8 +137,7 @@ ols_process_create_internal(const char *id, const char *name, const char *uuid,
     }
   }
 
-  if (!ols_process_init(process))
-    goto fail;
+  if (!ols_process_init(process)) goto fail;
 
   /* allow the process to be created even if creation fails so that the
    * user's data doesn't become lost */
@@ -196,8 +192,7 @@ ols_process_t *ols_process_duplicate(ols_process_t *process,
   ols_process_t *new_process;
   ols_data_t *settings;
 
-  if (!ols_process_valid(process, "ols_process_duplicate"))
-    return NULL;
+  if (!ols_process_valid(process, "ols_process_duplicate")) return NULL;
 
   if ((process->info.output_flags & OLS_PROCESS_DO_NOT_DUPLICATE) != 0) {
     return ols_process_get_ref(process);
@@ -222,14 +217,14 @@ ols_process_t *ols_process_duplicate(ols_process_t *process,
 static void ols_process_destroy_defer(struct ols_process *process);
 
 void ols_process_destroy(struct ols_process *process) {
-  if (!ols_process_valid(process, "ols_process_destroy"))
-    return;
+  if (!ols_process_valid(process, "ols_process_destroy")) return;
 
   if (os_atomic_set_long(&process->destroying, true) == true) {
-    blog(LOG_ERROR, "Double destroy just occurred. "
-                    "Something called addref on a process "
-                    "after it was already fully released, "
-                    "I guess.");
+    blog(LOG_ERROR,
+         "Double destroy just occurred. "
+         "Something called addref on a process "
+         "after it was already fully released, "
+         "I guess.");
     return;
   }
 
@@ -271,21 +266,20 @@ void ols_process_destroy_defer(struct ols_process *process) {
 }
 
 void ols_process_addref(ols_process_t *process) {
-  if (!process)
-    return;
+  if (!process) return;
 
   ols_ref_addref(&process->context.control->ref);
 }
 
 void ols_process_release(ols_process_t *process) {
   if (!ols && process) {
-    blog(LOG_WARNING, "Tried to release a process when the OLS "
-                      "core is shut down!");
+    blog(LOG_WARNING,
+         "Tried to release a process when the OLS "
+         "core is shut down!");
     return;
   }
 
-  if (!process)
-    return;
+  if (!process) return;
 
   ols_weak_process_t *control = get_weak(process);
   if (ols_ref_release(&control->ref)) {
@@ -295,30 +289,25 @@ void ols_process_release(ols_process_t *process) {
 }
 
 void ols_weak_process_addref(ols_weak_process_t *weak) {
-  if (!weak)
-    return;
+  if (!weak) return;
 
   ols_weak_ref_addref(&weak->ref);
 }
 
 void ols_weak_process_release(ols_weak_process_t *weak) {
-  if (!weak)
-    return;
+  if (!weak) return;
 
-  if (ols_weak_ref_release(&weak->ref))
-    bfree(weak);
+  if (ols_weak_ref_release(&weak->ref)) bfree(weak);
 }
 
 ols_process_t *ols_process_get_ref(ols_process_t *process) {
-  if (!process)
-    return NULL;
+  if (!process) return NULL;
 
   return ols_weak_process_get_process(get_weak(process));
 }
 
 ols_weak_process_t *ols_process_get_weak_process(ols_process_t *process) {
-  if (!process)
-    return NULL;
+  if (!process) return NULL;
 
   ols_weak_process_t *weak = get_weak(process);
   ols_weak_process_addref(weak);
@@ -326,11 +315,9 @@ ols_weak_process_t *ols_process_get_weak_process(ols_process_t *process) {
 }
 
 ols_process_t *ols_weak_process_get_process(ols_weak_process_t *weak) {
-  if (!weak)
-    return NULL;
+  if (!weak) return NULL;
 
-  if (ols_weak_ref_get_ref(&weak->ref))
-    return weak->process;
+  if (ols_weak_ref_get_ref(&weak->ref)) return weak->process;
 
   return NULL;
 }
@@ -345,8 +332,7 @@ bool ols_weak_process_references_process(ols_weak_process_t *weak,
 }
 
 void ols_process_remove(ols_process_t *process) {
-  if (!ols_process_valid(process, "ols_process_remove"))
-    return;
+  if (!ols_process_valid(process, "ols_process_remove")) return;
 
   if (!process->removed) {
     ols_process_t *s = ols_process_get_ref(process);
@@ -365,8 +351,7 @@ bool ols_process_removed(const ols_process_t *process) {
 
 static inline ols_data_t *get_defaults(const struct ols_process_info *info) {
   ols_data_t *settings = ols_data_create();
-  if (info->get_defaults)
-    info->get_defaults(settings);
+  if (info->get_defaults) info->get_defaults(settings);
   return settings;
 }
 
@@ -406,8 +391,7 @@ bool ols_process_configurable(const ols_process_t *process) {
 }
 
 ols_properties_t *ols_process_properties(const ols_process_t *process) {
-  if (!data_valid(process, "ols_process_properties"))
-    return NULL;
+  if (!data_valid(process, "ols_process_properties")) return NULL;
 
   if (process->info.get_properties) {
     ols_properties_t *props;
@@ -420,8 +404,7 @@ ols_properties_t *ols_process_properties(const ols_process_t *process) {
 }
 
 void ols_process_update(ols_process_t *process, ols_data_t *settings) {
-  if (!ols_process_valid(process, "ols_process_update"))
-    return;
+  if (!ols_process_valid(process, "ols_process_update")) return;
 
   if (settings) {
     ols_data_apply(process->context.settings, settings);
@@ -434,16 +417,14 @@ void ols_process_update(ols_process_t *process, ols_data_t *settings) {
 }
 
 void ols_process_reset_settings(ols_process_t *process, ols_data_t *settings) {
-  if (!ols_process_valid(process, "ols_process_reset_settings"))
-    return;
+  if (!ols_process_valid(process, "ols_process_reset_settings")) return;
 
   ols_data_clear(process->context.settings);
   ols_process_update(process, settings);
 }
 
 void ols_process_update_properties(ols_process_t *process) {
-  if (!ols_process_valid(process, "ols_process_update_properties"))
-    return;
+  if (!ols_process_valid(process, "ols_process_update_properties")) return;
 
   ols_process_dosignal(process, NULL, "update_properties");
 }
@@ -465,8 +446,7 @@ static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2) {
 }
 
 ols_data_t *ols_process_get_settings(const ols_process_t *process) {
-  if (!ols_process_valid(process, "ols_process_get_settings"))
-    return NULL;
+  if (!ols_process_valid(process, "ols_process_get_settings")) return NULL;
 
   ols_data_addref(process->context.settings);
   return process->context.settings;
@@ -485,8 +465,7 @@ const char *ols_process_get_uuid(const ols_process_t *process) {
 }
 
 void ols_process_set_name(ols_process_t *process, const char *name) {
-  if (!ols_process_valid(process, "ols_process_set_name"))
-    return;
+  if (!ols_process_valid(process, "ols_process_set_name")) return;
 
   if (!name || !*name || !process->context.name ||
       strcmp(name, process->context.name) != 0) {
@@ -533,8 +512,7 @@ proc_handler_t *ols_process_get_proc_handler(const ols_process_t *process) {
 }
 
 void ols_process_save(ols_process_t *process) {
-  if (!data_valid(process, "ols_process_save"))
-    return;
+  if (!data_valid(process, "ols_process_save")) return;
 
   ols_process_dosignal(process, "process_save", "save");
 
@@ -543,8 +521,7 @@ void ols_process_save(ols_process_t *process) {
 }
 
 void ols_process_load(ols_process_t *process) {
-  if (!data_valid(process, "ols_process_load"))
-    return;
+  if (!data_valid(process, "ols_process_load")) return;
   if (process->info.load)
     process->info.load(process->context.data, process->context.settings);
 
@@ -575,8 +552,7 @@ static inline void signal_flags_updated(ols_process_t *process) {
 }
 
 void ols_process_set_flags(ols_process_t *process, uint32_t flags) {
-  if (!ols_process_valid(process, "ols_process_set_flags"))
-    return;
+  if (!ols_process_valid(process, "ols_process_set_flags")) return;
 
   if (flags != process->flags) {
     process->flags = flags;
@@ -585,8 +561,7 @@ void ols_process_set_flags(ols_process_t *process, uint32_t flags) {
 }
 
 void ols_process_set_default_flags(ols_process_t *process, uint32_t flags) {
-  if (!ols_process_valid(process, "ols_process_set_default_flags"))
-    return;
+  if (!ols_process_valid(process, "ols_process_set_default_flags")) return;
 
   process->default_flags = flags;
 }
@@ -597,8 +572,7 @@ uint32_t ols_process_get_flags(const ols_process_t *process) {
 }
 
 ols_data_t *ols_process_get_private_settings(ols_process_t *process) {
-  if (!ols_ptr_valid(process, "ols_process_get_private_settings"))
-    return NULL;
+  if (!ols_ptr_valid(process, "ols_process_get_private_settings")) return NULL;
 
   ols_data_addref(process->private_settings);
   return process->private_settings;

@@ -41,7 +41,7 @@ Contents
    upgrading
    tutorial
    conformance
-   threadsafety
+   portability
    apiref
    changes
 

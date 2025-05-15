@@ -1,10 +1,14 @@
 Jansson README
 ==============
 
-.. |tests|  image:: https://github.com/akheron/jansson/workflows/tests/badge.svg
-.. |appveyor|  image::  https://ci.appveyor.com/api/projects/status/lmhkkc4q8cwc65ko
+.. image:: https://travis-ci.org/akheron/jansson.png
+  :target: https://travis-ci.org/akheron/jansson
+  
+.. image:: https://ci.appveyor.com/api/projects/status/lmhkkc4q8cwc65ko
+  :target: https://ci.appveyor.com/project/akheron/jansson
 
-|tests| |appveyor|
+.. image:: https://coveralls.io/repos/akheron/jansson/badge.png?branch=master
+  :target: https://coveralls.io/r/akheron/jansson?branch=master
 
 Jansson_ is a C library for encoding, decoding and manipulating JSON
 data. Its main features and design principles are:
@@ -22,11 +26,12 @@ data. Its main features and design principles are:
 Jansson is licensed under the `MIT license`_; see LICENSE in the
 source distribution for details.
 
+
 Compilation and Installation
 ----------------------------
 
-If you obtained a ``jansson-X.Y.tar.*`` tarball from GitHub Releases, just use
-the standard autotools commands::
+If you obtained a source tarball, just use the standard autotools
+commands::
 
    $ ./configure
    $ make
@@ -36,8 +41,9 @@ To run the test suite, invoke::
 
    $ make check
 
-If the source has been checked out from a Git repository, the ``configure``
-script has to be generated first. The easiest way is to use autoreconf::
+If the source has been checked out from a Git repository, the
+./configure script has to be generated first. The easiest way is to
+use autoreconf::
 
    $ autoreconf -i
 
@@ -55,14 +61,6 @@ HTML documentation, invoke::
 Then, point your browser to ``doc/_build/html/index.html``. Sphinx_
 1.0 or newer is required to generate the documentation.
 
-
-Community
----------
-
-* `Documentation <http://jansson.readthedocs.io/en/latest/>`_
-* `Issue tracker <https://github.com/akheron/jansson/issues>`_
-* `Mailing list <http://groups.google.com/group/jansson-users>`_
-* `Wiki <https://github.com/akheron/jansson/wiki>`_ contains some development documentation
 
 .. _Jansson: http://www.digip.org/jansson/
 .. _`Comprehensive documentation`: http://jansson.readthedocs.io/en/latest/

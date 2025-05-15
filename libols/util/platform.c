@@ -203,6 +203,10 @@ size_t os_fread_utf8(FILE *file, char **pstr) {
   return len;
 }
 
+EXPORT char *os_fgets(FILE *file, char *pstr, size_t len) {
+  return fgets(pstr, len, file);
+}
+
 char *os_quick_read_mbs_file(const char *path) {
   FILE *f = os_fopen(path, "rb");
   char *file_string = NULL;

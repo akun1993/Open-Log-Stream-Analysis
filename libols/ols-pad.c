@@ -1,6 +1,8 @@
 #include "ols-pad.h"
-#include "ols-internal.h"
+
 #include <stdbool.h>
+
+#include "ols-internal.h"
 
 static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
                                                   ols_event_t *event,
@@ -16,44 +18,24 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
 static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
                                   ols_event_t *event);
 
-#define ACQUIRE_PARENT(pad, parent, label) \
-  do                                       \
-  {                                        \
-    if ((parent = OLS_PAD_PARENT(pad)))    \
-      ols_object_get_ref(parent);          \
-    else                                   \
-      goto label;                          \
+#define ACQUIRE_PARENT(pad, parent, label)                                     \
+  do {                                                                         \
+    if ((parent = OLS_PAD_PARENT(pad)))                                        \
+      ols_object_get_ref(parent);                                              \
+    else                                                                       \
+      goto label;                                                              \
   } while (0)
 
-#define RELEASE_PARENT(parent)    \
-  do                              \
-  {                               \
-    if (parent)                   \
-      ols_object_release(parent); \
+#define RELEASE_PARENT(parent)                                                 \
+  do {                                                                         \
+    if (parent)                                                                \
+      ols_object_release(parent);                                              \
   } while (0)
 
 #define OLS_PAD_CAST(obj) ((ols_pad_t *)(obj))
 
 /**
- * OLS_OBJECT_GET_LOCK:
- * @obj: a #ols_object
- *
- * Acquire a reference to the mutex of this object.
- */
-#define OLS_PAD_GET_LOCK(obj) (OLS_PAD_CAST(obj)->mutex)
-/**
- * OLS_PAD_LOCK:
- * @obj: a #ols_object_t to lock
- *
- * This macro will obtain a lock on the object, making serialization possible.
- * It blocks until the lock can be obtained.
- */
-#define OLS_PAD_LOCK(obj) pthread_mutex_lock(&OLS_PAD_GET_LOCK(obj))
-
-#define OLS_PAD_UNLOCK(obj) pthread_mutex_unlock(&OLS_PAD_GET_LOCK(obj))
-
-/**
- * gst_pad_event_default:
+ * ols_pad_event_default:
  * @pad: a #GstPad to call the default event handler on.
  * @parent: (allow-none): the parent of @pad or %NULL
  * @event: (transfer full): the #GstEvent to handle.
@@ -69,8 +51,7 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
  * Returns: %TRUE if the event was sent successfully.
  */
 static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
-                                  ols_event_t *event)
-{
+                                  ols_event_t *event) {
   bool result = true;
   UNUSED_PARAMETER(pad);
   UNUSED_PARAMETER(parent);
@@ -113,8 +94,7 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
   return result;
 }
 
-static void ols_pad_init(ols_pad_t *pad)
-{
+static void ols_pad_init(ols_pad_t *pad) {
   // pad->priv = ols_pad_get_instance_private(pad);
 
   OLS_PAD_DIRECTION(pad) = OLS_PAD_UNKNOWN;
@@ -126,6 +106,8 @@ static void ols_pad_init(ols_pad_t *pad)
   // OLS_PAD_LINKFUNC(pad) =
 
   OLS_PAD_PEER(pad) = NULL;
+
+  OLS_PAD_TASK(pad) = NULL;
 
   // g_rec_mutex_init(&pad->stream_rec_lock);
 
@@ -141,6 +123,192 @@ static void ols_pad_init(ols_pad_t *pad)
   // pad->priv->events_cookie = 0;
   // pad->priv->last_cookie = -1;
   // g_cond_init(&pad->priv->activation_cond);
+}
+
+bool ols_pad_set_parent(ols_pad_t *pad, ols_object_t *parent) {
+  OLS_PAD_LOCK(pad);
+  if ((pad->parent != NULL))
+    goto had_parent;
+
+  pad->parent = parent;
+
+  blog(LOG_DEBUG, "pad's  parent is set to %p", parent);
+
+  OLS_PAD_UNLOCK(pad);
+
+  return true;
+
+  /* ERROR handling */
+had_parent: {
+  blog(LOG_ERROR, "pad has parent already");
+  OLS_PAD_UNLOCK(pad);
+  return false;
+}
+}
+
+ols_object_t *ols_pad_get_parent(ols_pad_t *pad) {
+  ols_object_t *result = NULL;
+  OLS_PAD_LOCK(pad);
+  result = pad->parent;
+  // if (G_LIKELY (result))
+  //   gst_object_ref (result);
+  OLS_PAD_UNLOCK(pad);
+
+  return result;
+}
+
+/**
+ * ols_pad_new:
+ * @name: (allow-none): the name of the new pad.
+ * @direction: the #GstPadDirection of the pad.
+ *
+ * Creates a new pad with the given name in the given direction.
+ * If name is %NULL, a guaranteed unique name (across all pads)
+ * will be assigned.
+ * This function makes a copy of the name so you can safely free the name.
+ *
+ * Returns: (transfer floating) (nullable): a new #GstPad, or %NULL in
+ * case of an error.
+ *
+ * MT safe.
+ */
+ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction) {
+  ols_pad_t *pad = (ols_pad_t *)bmalloc(sizeof(ols_pad_t));
+  if (pad) {
+    ols_pad_init(pad);
+    pad->direction = direction;
+  }
+
+  return pad;
+}
+
+bool ols_pad_start_task(ols_pad_t *pad, os_task_t func, void *user_data) {
+  ols_task_t *task;
+  bool res;
+
+  OLS_PAD_LOCK(pad);
+  task = OLS_PAD_TASK(pad);
+  if (task == NULL) {
+    task = ols_task_new(func, user_data);
+    ols_task_set_lock(task, OLS_PAD_GET_STREAM_LOCK(pad));
+
+    OLS_PAD_TASK(pad) = task;
+
+    /* release lock to post the message */
+    OLS_PAD_UNLOCK(pad);
+
+    OLS_PAD_LOCK(pad);
+    /* nobody else is supposed to have changed the pad now */
+    if (OLS_PAD_TASK(pad) != task)
+      goto concurrent_stop;
+  }
+
+  res = ols_task_set_state(task, OLS_TASK_STARTED);
+
+  OLS_PAD_UNLOCK(pad);
+
+  return res;
+  /* ERRORS */
+concurrent_stop: {
+  OLS_PAD_UNLOCK(pad);
+  return true;
+}
+}
+
+bool ols_pad_pause_task(ols_pad_t *pad) {
+  ols_task_t *task;
+  bool res;
+
+  OLS_PAD_LOCK(pad);
+  task = OLS_PAD_TASK(pad);
+  if (task == NULL)
+    goto no_task;
+
+  res = ols_task_set_state(task, OLS_TASK_PAUSED);
+  /* unblock activation waits if any */
+  // pad->priv->in_activation = FALSE;
+  // g_cond_broadcast (&pad->priv->activation_cond);
+  OLS_PAD_UNLOCK(pad);
+
+  /* wait for task function to finish, this lock is recursive so it does nothing
+   * when the pause is called from the task itself */
+
+  OLS_PAD_STREAM_LOCK(pad);
+  OLS_PAD_STREAM_UNLOCK(pad);
+
+  return res;
+
+no_task: {
+  blog(LOG_DEBUG, "pad[%p] pad has no task", pad);
+  OLS_PAD_UNLOCK(pad);
+  return false;
+}
+}
+
+bool ols_pad_stop_task(ols_pad_t *pad) {
+  ols_task_t *task;
+  bool res;
+
+  OLS_PAD_LOCK(pad);
+  task = OLS_PAD_TASK(pad);
+  if (task == NULL)
+    goto no_task;
+  OLS_PAD_TASK(pad) = NULL;
+  res = ols_task_set_state(task, OLS_TASK_STOPPED);
+  /* unblock activation waits if any */
+  // pad->priv->in_activation = false;
+  // g_cond_broadcast (&pad->priv->activation_cond);
+  OLS_PAD_UNLOCK(pad);
+  OLS_PAD_STREAM_LOCK(pad);
+  OLS_PAD_STREAM_UNLOCK(pad);
+
+  if (!ols_task_join(task))
+    goto join_failed;
+
+  // gst_object_unref (task);
+
+  return res;
+
+no_task: {
+  // GST_DEBUG_OBJECT (pad, "no task");
+  OLS_PAD_UNLOCK(pad);
+
+  OLS_PAD_STREAM_LOCK(pad);
+  OLS_PAD_STREAM_UNLOCK(pad);
+
+  /* this is not an error */
+  return true;
+}
+join_failed: {
+  /* this is bad, possibly the application tried to join the task from
+   * the task's thread. We install the task again so that it will be stopped
+   * again from the right thread next time hopefully. */
+  OLS_PAD_LOCK(pad);
+  // GST_DEBUG_OBJECT (pad, "join failed");
+  /* we can only install this task if there was no other task */
+  if (OLS_PAD_TASK(pad) == NULL)
+    OLS_PAD_TASK(pad) = task;
+  OLS_PAD_UNLOCK(pad);
+
+  return false;
+}
+}
+
+bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
+  // GSList *pads_created = NULL;
+  bool ret;
+
+  // if (!prepare_link_maybe_ghosting(&src, &sink, &pads_created)) {
+  //   ret = false;
+  // } else {
+  ret = (ols_pad_link_full(src, sink) == OLS_PAD_LINK_OK);
+
+  // if (!ret) {
+  //   g_slist_foreach(pads_created, remove_pad, NULL);
+  // }
+  // g_slist_free(pads_created);
+
+  return ret;
 }
 
 /**
@@ -163,9 +331,7 @@ static void ols_pad_init(ols_pad_t *pad)
  */
 void ols_pad_set_chain_function_full(ols_pad_t *pad,
                                      ols_pad_chain_function chain,
-                                     void *user_data)
-{
-
+                                     void *user_data) {
   OLS_PAD_CHAINFUNC(pad) = chain;
   pad->chaindata = user_data;
 
@@ -194,9 +360,7 @@ void ols_pad_set_chain_function_full(ols_pad_t *pad,
  */
 void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
                                           ols_pad_chain_list_function chainlist,
-                                          void *user_data)
-{
-
+                                          void *user_data) {
   OLS_PAD_CHAINLISTFUNC(pad) = chainlist;
   pad->chaindata = user_data;
 
@@ -232,8 +396,7 @@ void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
  * of the peer sink pad, if present.
  */
 void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
-                                    void *user_data)
-{
+                                    void *user_data) {
   //   g_return_if_fail(OLS_IS_PAD(pad));
 
   //   if (pad->linknotify)
@@ -269,8 +432,7 @@ void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
  */
 void ols_pad_set_unlink_function_full(ols_pad_t *pad,
                                       ols_pad_unlink_function unlink,
-                                      void *user_data)
-{
+                                      void *user_data) {
   // g_return_if_fail(OLS_IS_PAD(pad));
 
   // if (pad->unlinknotify)
@@ -296,8 +458,7 @@ void ols_pad_set_unlink_function_full(ols_pad_t *pad,
  *
  * MT safe.
  */
-bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad)
-{
+bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   bool result = false;
   // OLSElement *parent = NULL;
 
@@ -328,8 +489,7 @@ bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad)
   if (OLS_PAD_PEER(srcpad) != sinkpad)
     goto not_linked_together;
 
-  if (OLS_PAD_UNLINKFUNC(srcpad))
-  {
+  if (OLS_PAD_UNLINKFUNC(srcpad)) {
     ols_object_t *tmpparent;
 
     ACQUIRE_PARENT(srcpad, tmpparent, no_src_parent);
@@ -338,8 +498,7 @@ bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad)
     RELEASE_PARENT(tmpparent);
   }
 no_src_parent:
-  if (OLS_PAD_UNLINKFUNC(sinkpad))
-  {
+  if (OLS_PAD_UNLINKFUNC(sinkpad)) {
     ols_object_t *tmpparent;
 
     ACQUIRE_PARENT(sinkpad, tmpparent, no_sink_parent);
@@ -378,8 +537,7 @@ done:
   return result;
 
   /* ERRORS */
-not_linked_together:
-{
+not_linked_together: {
   /* we do not emit a warning in this case because unlinking cannot
    * be made MT safe.*/
   OLS_PAD_UNLOCK(sinkpad);
@@ -398,8 +556,7 @@ not_linked_together:
  *
  * MT safe.
  */
-bool ols_pad_is_linked(ols_pad_t *pad)
-{
+bool ols_pad_is_linked(ols_pad_t *pad) {
   bool result = false;
   // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
 
@@ -429,8 +586,7 @@ bool ols_pad_is_linked(ols_pad_t *pad)
  * Returns: A result code indicating if the connection worked or
  *          what went wrong.
  */
-OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad)
-{
+OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   OlsPadLinkReturn result = OLS_PAD_LINK_OK;
   ols_object_t *parent;
   ols_pad_link_function srcfunc, sinkfunc;
@@ -441,13 +597,11 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad)
   // g_return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),
   // OLS_PAD_LINK_WRONG_DIRECTION);
 
-  if (!OLS_PAD_IS_SRC(srcpad))
-  {
+  if (!OLS_PAD_IS_SRC(srcpad)) {
     return OLS_PAD_LINK_WRONG_DIRECTION;
   }
 
-  if (!OLS_PAD_IS_SINK(sinkpad))
-  {
+  if (!OLS_PAD_IS_SINK(sinkpad)) {
     return OLS_PAD_LINK_WRONG_DIRECTION;
   }
 
@@ -482,23 +636,19 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad)
   srcfunc = OLS_PAD_LINKFUNC(srcpad);
   sinkfunc = OLS_PAD_LINKFUNC(sinkpad);
 
-  if (srcfunc || sinkfunc)
-  {
+  if (srcfunc || sinkfunc) {
     /* custom link functions, execute them */
     OLS_PAD_UNLOCK(sinkpad);
     OLS_PAD_UNLOCK(srcpad);
 
-    if (srcfunc)
-    {
+    if (srcfunc) {
       ols_object_t *tmpparent;
 
       ACQUIRE_PARENT(srcpad, tmpparent, no_parent);
       /* this one will call the peer link function */
       result = srcfunc(srcpad, tmpparent, sinkpad);
       RELEASE_PARENT(tmpparent);
-    }
-    else if (sinkfunc)
-    {
+    } else if (sinkfunc) {
       ols_object_t *tmpparent;
 
       ACQUIRE_PARENT(sinkpad, tmpparent, no_parent);
@@ -546,8 +696,7 @@ done:
   return result;
 
   /* ERRORS */
-concurrent_link:
-{
+concurrent_link: {
   // OLS_CAT_INFO(OLS_CAT_PADS, "concurrent link between %s:%s and %s:%s",
   //              OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
   OLS_PAD_UNLOCK(sinkpad);
@@ -557,8 +706,7 @@ concurrent_link:
   result = OLS_PAD_LINK_WAS_LINKED;
   goto done;
 }
-link_failed:
-{
+link_failed: {
   // OLS_CAT_INFO(OLS_CAT_PADS, "link between %s:%s and %s:%s failed: %s",
   //              OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad),
   //              ols_pad_link_get_name(result));
@@ -585,8 +733,7 @@ link_failed:
  *
  * MT Safe.
  */
-OlsPadLinkReturn ols_pad_link(ols_pad_t *srcpad, ols_pad_t *sinkpad)
-{
+OlsPadLinkReturn ols_pad_link(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   return ols_pad_link_full(srcpad, sinkpad);
 }
 
@@ -598,8 +745,7 @@ OlsPadLinkReturn ols_pad_link(ols_pad_t *srcpad, ols_pad_t *sinkpad)
  * checking for that little extra speed.
  */
 static inline OlsFlowReturn
-ols_pad_chain_data_unchecked(ols_pad_t *pad, OlsPadProbeType type, void *data)
-{
+ols_pad_chain_data_unchecked(ols_pad_t *pad, OlsPadProbeType type, void *data) {
   OlsFlowReturn ret;
   ols_object_t *parent;
   bool handled = false;
@@ -628,8 +774,7 @@ ols_pad_chain_data_unchecked(ols_pad_t *pad, OlsPadProbeType type, void *data)
    * the data to the wrong function. This is not really a
    * problem since functions are assigned at creation time
    * and don't change that often... */
-  if (type & OLS_PAD_PROBE_TYPE_BUFFER)
-  {
+  if (type & OLS_PAD_PROBE_TYPE_BUFFER) {
     ols_pad_chain_function chainfunc;
 
     if ((chainfunc = OLS_PAD_CHAINFUNC(pad)) == NULL)
@@ -646,9 +791,7 @@ ols_pad_chain_data_unchecked(ols_pad_t *pad, OlsPadProbeType type, void *data)
     //                      "called chainfunction &%s with buffer %p, returned
     //                      %s", OLS_DEBUG_FUNCPTR_NAME(chainfunc), data,
     //                      ols_flow_get_name(ret));
-  }
-  else
-  {
+  } else {
     ols_pad_chain_list_function chainlistfunc;
 
     if ((chainlistfunc = OLS_PAD_CHAINLISTFUNC(pad)) == NULL)
@@ -681,8 +824,7 @@ out:
   return ret;
 
   /* ERRORS */
-flushing:
-{
+flushing: {
   // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "chaining, but pad was
   // flushing"); pad->ABI.abi.last_flowret = OLS_FLOW_FLUSHING;
   OLS_PAD_UNLOCK(pad);
@@ -691,8 +833,7 @@ flushing:
   ret = OLS_FLOW_FLUSHING;
   goto out;
 }
-eos:
-{
+eos: {
   // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "chaining, but pad was EOS");
   // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
   OLS_PAD_UNLOCK(pad);
@@ -701,8 +842,7 @@ eos:
   ret = OLS_FLOW_EOS;
   goto out;
 }
-wrong_mode:
-{
+wrong_mode: {
   // g_critical("chain on pad %s:%s but it was not in push mode",
   //            OLS_DEBUG_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
@@ -712,14 +852,12 @@ wrong_mode:
   ret = OLS_FLOW_ERROR;
   goto out;
 }
-probe_stopped:
-{
+probe_stopped: {
   /* We unref the buffer, except if the probe handled it (CUSTOM_SUCCESS_1) */
   if (!handled)
     ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
 
-  switch (ret)
-  {
+  switch (ret) {
   case OLS_FLOW_CUSTOM_SUCCESS:
   case OLS_FLOW_CUSTOM_SUCCESS_1:
     // OLS_DEBUG_OBJECT(pad, "dropped or handled buffer");
@@ -734,8 +872,7 @@ probe_stopped:
   // OLS_PAD_STREAM_UNLOCK(pad);
   goto out;
 }
-no_parent:
-{
+no_parent: {
   // OLS_DEBUG_OBJECT(pad, "No parent when chaining %" OLS_PTR_FORMAT, data);
   // pad->ABI.abi.last_flowret = OLS_FLOW_FLUSHING;
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
@@ -744,8 +881,7 @@ no_parent:
   ret = OLS_FLOW_FLUSHING;
   goto out;
 }
-no_function:
-{
+no_function: {
   // pad->ABI.abi.last_flowret = OLS_FLOW_NOT_SUPPORTED;
   RELEASE_PARENT(parent);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
@@ -759,9 +895,7 @@ no_function:
 
 static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
                                                 ols_object_t *parent,
-                                                ols_buffer_list_t *list)
-{
-
+                                                ols_buffer_list_t *list) {
   UNUSED_PARAMETER(parent);
   uint32_t i, len;
   ols_buffer_t *buffer;
@@ -772,8 +906,7 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
   len = ols_buffer_list_length(list);
 
   ret = OLS_FLOW_OK;
-  for (i = 0; i < len; i++)
-  {
+  for (i = 0; i < len; i++) {
     buffer = ols_buffer_list_get(list, i);
     ret = ols_pad_chain_data_unchecked(
         pad, OLS_PAD_PROBE_TYPE_BUFFER | OLS_PAD_PROBE_TYPE_PUSH,
@@ -787,8 +920,7 @@ static OlsFlowReturn ols_pad_chain_list_default(ols_pad_t *pad,
 }
 
 static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
-                                       void *data)
-{
+                                       void *data) {
   ols_pad_t *peer;
   OlsFlowReturn ret;
   bool handled = false;
@@ -816,16 +948,14 @@ static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
 
   return ret;
 
-eos:
-{
+eos: {
   // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but pad was EOS");
   // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
   OLS_PAD_UNLOCK(pad);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
   return OLS_FLOW_EOS;
 }
-wrong_mode:
-{
+wrong_mode: {
   // g_critical("pushing on pad %s:%s but it was not activated in push mode",
   //            OLS_DEBUG_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
@@ -834,8 +964,7 @@ wrong_mode:
   return OLS_FLOW_ERROR;
 }
 
-not_linked:
-{
+not_linked: {
   // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but it was not
   // linked"); pad->ABI.abi.last_flowret = OLS_FLOW_NOT_LINKED;
   OLS_PAD_UNLOCK(pad);
@@ -866,8 +995,7 @@ not_linked:
  *
  * MT safe.
  */
-OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer)
-{
+OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer) {
   OlsFlowReturn res;
 
   // g_return_val_if_fail(OLS_IS_PAD(pad), OLS_FLOW_ERROR);
@@ -892,8 +1020,7 @@ OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer)
  *
  * MT safe.
  */
-ols_pad_t *ols_pad_get_peer(ols_pad_t *pad)
-{
+ols_pad_t *ols_pad_get_peer(ols_pad_t *pad) {
   ols_pad_t *result = NULL;
 
   OLS_PAD_LOCK(pad);
@@ -907,9 +1034,7 @@ ols_pad_t *ols_pad_get_peer(ols_pad_t *pad)
 
 static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
                                                   ols_event_t *event,
-                                                  OlsPadProbeType type)
-{
-
+                                                  OlsPadProbeType type) {
   UNUSED_PARAMETER(type);
 
   OlsFlowReturn ret;
@@ -953,12 +1078,9 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
   ACQUIRE_PARENT(pad, parent, no_parent);
   OLS_PAD_UNLOCK(pad);
 
-  if (eventfunc(pad, parent, event))
-  {
+  if (eventfunc(pad, parent, event)) {
     ret = OLS_FLOW_OK;
-  }
-  else
-  {
+  } else {
     /* something went wrong */
     ret = OLS_FLOW_ERROR;
   }
@@ -969,22 +1091,19 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
   return ret;
 
   /* ERROR handling */
-eos:
-{
+eos: {
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);
   return OLS_FLOW_EOS;
 }
-no_function:
-{
+no_function: {
   // g_warning("pad %s:%s has no event handler, file a bug.",
   //           OLS_DEBUG_PAD_NAME(pad));
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);
   return OLS_FLOW_NOT_SUPPORTED;
 }
-no_parent:
-{
+no_parent: {
   // OLS_DEBUG_OBJECT(pad, "no parent");
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);
@@ -995,8 +1114,7 @@ no_parent:
 /* should be called with pad LOCK */
 static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
                                                   ols_event_t *event,
-                                                  OlsPadProbeType type)
-{
+                                                  OlsPadProbeType type) {
   OlsFlowReturn ret;
   ols_pad_t *peerpad;
   ols_event_type event_type;
@@ -1037,21 +1155,18 @@ static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
   return ret;
 
   /* ERROR handling */
-flushed:
-{
+flushed: {
   // OLS_DEBUG_OBJECT(pad, "We're flushing");
   ols_event_unref(event);
   return OLS_FLOW_FLUSHING;
 }
-inactive:
-{
+inactive: {
   // OLS_DEBUG_OBJECT(pad, "flush-stop on inactive pad");
   ols_event_unref(event);
   return OLS_FLOW_FLUSHING;
 }
 
-not_linked:
-{
+not_linked: {
   // OLS_DEBUG_OBJECT(pad, "Dropping event %s because pad is not linked",
   //                  ols_event_type_get_name(OLS_EVENT_TYPE(event)));
   // OLS_OBJECT_FLAG_SET(pad, OLS_PAD_FLAG_PENDING_EVENTS);
@@ -1077,8 +1192,7 @@ not_linked:
  *
  * MT safe.
  */
-bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event)
-{
+bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   bool res = false;
 
   OlsPadProbeType type;
@@ -1089,28 +1203,23 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event)
 
   // OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
 
-  if (OLS_PAD_IS_SRC(pad))
-  {
+  if (OLS_PAD_IS_SRC(pad)) {
     if (!OLS_EVENT_IS_DOWNSTREAM(event))
       goto wrong_direction;
     type = OLS_PAD_PROBE_TYPE_EVENT_DOWNSTREAM;
-  }
-  else if (OLS_PAD_IS_SINK(pad))
-  {
+  } else if (OLS_PAD_IS_SINK(pad)) {
     if (!OLS_EVENT_IS_UPSTREAM(event))
       goto wrong_direction;
     /* events pushed on sinkpad never are sticky */
     type = OLS_PAD_PROBE_TYPE_EVENT_UPSTREAM;
-  }
-  else
+  } else
     goto unknown_direction;
 
   OLS_PAD_LOCK(pad);
 
   serialized = OLS_EVENT_IS_SERIALIZED(event);
 
-  if (!serialized)
-  {
+  if (!serialized) {
     OlsFlowReturn ret;
 
     /* non-serialized and non-sticky events are pushed right away. */
@@ -1118,9 +1227,7 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event)
     /* dropped events by a probe are not an error */
     res = (ret == OLS_FLOW_OK || ret == OLS_FLOW_CUSTOM_SUCCESS ||
            ret == OLS_FLOW_CUSTOM_SUCCESS_1);
-  }
-  else
-  {
+  } else {
     /* Errors in sticky event pushing are no problem and ignored here
      * as they will cause more meaningful errors during data flow.
      * For EOS events, that are not followed by data flow, we still
@@ -1135,28 +1242,24 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event)
   return res;
 
   /* ERROR handling */
-wrong_direction:
-{
+wrong_direction: {
   // g_warning("pad %s:%s pushing %s event in wrong direction",
   //           OLS_DEBUG_PAD_NAME(pad), OLS_EVENT_TYPE_NAME(event));
   ols_event_unref(event);
   goto done;
 }
-unknown_direction:
-{
+unknown_direction: {
   // g_warning("pad %s:%s has invalid direction", OLS_DEBUG_PAD_NAME(pad));
   ols_event_unref(event);
   goto done;
 }
-flushed:
-{
+flushed: {
   // OLS_DEBUG_OBJECT(pad, "We're flushing");
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);
   goto done;
 }
-eos:
-{
+eos: {
   // OLS_DEBUG_OBJECT(pad, "We're EOS");
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);

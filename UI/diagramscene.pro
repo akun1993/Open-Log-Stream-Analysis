@@ -34,11 +34,11 @@ RESOURCES   =	diagramscene.qrc
 
 
 
-INCLUDEPATH += /home/akun/Open-Log-Stream-Analysis/libols
+INCLUDEPATH += $$PWD/../libols
 
 
 #Lib Path
-LIBS += -L /home/akun/Open-Log-Stream-Analysis/build/libols -lols
+LIBS += -L $$PWD/../build/libols -lols
 
 
 # install

@@ -3,9 +3,9 @@
 #include "vertical-scroll-area.h"
 #include <QPointer>
 #include <memory>
-#include <ols-data.h>
-#include <ols-properties.h>
-#include <ols.hpp>
+#include "ols-data.h"
+#include "ols-properties.h"
+#include "ols.hpp"
 #include <qtimer.h>
 #include <vector>
 

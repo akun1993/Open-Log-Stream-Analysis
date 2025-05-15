@@ -35,11 +35,7 @@ enum ols_source_type {
 	OLS_SOURCE_TYPE_FILTER,
 };
 
-enum ols_icon_type {
-	OLS_ICON_TYPE_UNKNOWN,
-	OLS_ICON_TYPE_TEXT,
-	OLS_ICON_TYPE_CUSTOM,
-};
+
 /**
  * Source should not be fully duplicated
  *
@@ -95,24 +91,39 @@ struct ols_source_info {
 	void (*destroy)(void *data);
 
 
+		/**
+	 * Destroys the private data for the source
+	 *
+	 * Async sources must not call ols_source_output_video after returning
+	 * from destroy
+	 */
+	int (*get_data)(void *data,ols_buffer_t *buf);
+
+
 	/* ----------------------------------------------------------------- */
 	/* Optional implementation */
 
 	/**
 	 * Gets the default settings for this source
 	 *
-	 * @param[out]  settings  Data to assign default settings to
-	 * @deprecated            Use get_defaults2 if type_data is needed
+	 * @param[out]  settings  Data to assign default settings to           
 	 */
 	void (*get_defaults)(ols_data_t *settings);
 
 	/**
 	 * Gets the property information of this source
 	 *
-	 * @return         The properties data
-	 * @deprecated     Use get_properties2 if type_data is needed
+	 * @return         The properties data 
 	 */
 	ols_properties_t *(*get_properties)(void *data);
+
+
+	/**
+	 * Gets a  pad  of this source
+	 *
+	 * @return         a new pad 
+	 */
+	ols_pad_t *(*get_new_pad)(void *data);
 
 
 	/**
@@ -122,6 +133,8 @@ struct ols_source_info {
 	 * @param settings  New settings for this source
 	 */
 	void (*update)(void *data, ols_data_t *settings);
+
+
 
 	/** Called when the source has been activated in the main view */
 	void (*activate)(void *data);
@@ -162,6 +175,8 @@ struct ols_source_info {
 	/**
 	 * Private data associated with this entry
 	 */
+
+
 	void *type_data;
 	/** Icon type for the source */
 	enum ols_icon_type icon_type;

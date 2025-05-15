@@ -15,12 +15,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 
-#include "util/dstr.h"
-#include "util/platform.h"
+#include "ols-module.h"
 
 #include "ols-defs.h"
 #include "ols-internal.h"
-#include "ols-module.h"
+#include "util/dstr.h"
+#include "util/platform.h"
 
 extern const char *get_module_extension(void);
 
@@ -34,16 +34,14 @@ static inline int req_func_not_found(const char *name, const char *path) {
 
 static int load_module_exports(struct ols_module *mod, const char *path) {
   mod->load = os_dlsym(mod->module, "ols_module_load");
-  if (!mod->load)
-    return req_func_not_found("ols_module_load", path);
+  if (!mod->load) return req_func_not_found("ols_module_load", path);
 
   mod->set_pointer = os_dlsym(mod->module, "ols_module_set_pointer");
   if (!mod->set_pointer)
     return req_func_not_found("ols_module_set_pointer", path);
 
   mod->ver = os_dlsym(mod->module, "ols_module_ver");
-  if (!mod->ver)
-    return req_func_not_found("ols_module_ver", path);
+  if (!mod->ver) return req_func_not_found("ols_module_ver", path);
 
   /* optional exports */
   mod->unload = os_dlsym(mod->module, "ols_module_unload");
@@ -97,8 +95,7 @@ int ols_open_module(ols_module_t **module, const char *path,
   struct ols_module mod = {0};
   int errorcode;
 
-  if (!module || !path || !ols)
-    return MODULE_ERROR;
+  if (!module || !path || !ols) return MODULE_ERROR;
 
 #ifdef __APPLE__
   /* HACK: Do not load olsolete ols-browser build on macOS; the
@@ -120,8 +117,7 @@ int ols_open_module(ols_module_t **module, const char *path,
   }
 
   errorcode = load_module_exports(&mod, path);
-  if (errorcode != MODULE_SUCCESS)
-    return errorcode;
+  if (errorcode != MODULE_SUCCESS) return errorcode;
 
   mod.bin_path = bstrdup(path);
   mod.file = strrchr(mod.bin_path, '/');
@@ -138,17 +134,14 @@ int ols_open_module(ols_module_t **module, const char *path,
   ols->first_module = (*module);
   mod.set_pointer(*module);
 
-  if (mod.set_locale)
-    mod.set_locale(ols->locale);
+  if (mod.set_locale) mod.set_locale(ols->locale);
 
   return MODULE_SUCCESS;
 }
 
 bool ols_init_module(ols_module_t *module) {
-  if (!module || !ols)
-    return false;
-  if (module->loaded)
-    return true;
+  if (!module || !ols) return false;
+  if (module->loaded) return true;
 
   const char *profile_name = profile_store_name(
       ols_get_profiler_name_store(), "ols_init_module(%s)", module->file);
@@ -213,19 +206,16 @@ void *ols_get_module_lib(ols_module_t *module) {
 char *ols_find_module_file(ols_module_t *module, const char *file) {
   struct dstr output = {0};
 
-  if (!file)
-    file = "";
+  if (!file) file = "";
 
-  if (!module)
-    return NULL;
+  if (!module) return NULL;
 
   dstr_copy(&output, module->data_path);
   if (!dstr_is_empty(&output) && dstr_end(&output) != '/' && *file)
     dstr_cat_ch(&output, '/');
   dstr_cat(&output, file);
 
-  if (!os_file_exists(output.array))
-    dstr_free(&output);
+  if (!os_file_exists(output.array)) dstr_free(&output);
   return output.array;
 }
 
@@ -245,8 +235,7 @@ char *ols_module_get_config_path(ols_module_t *module, const char *file) {
 void ols_add_module_path(const char *bin, const char *data) {
   struct ols_module_path omp;
 
-  if (!ols || !bin || !data)
-    return;
+  if (!ols || !bin || !data) return;
 
   omp.bin = bstrdup(bin);
   omp.data = bstrdup(data);
@@ -254,8 +243,7 @@ void ols_add_module_path(const char *bin, const char *data) {
 }
 
 void ols_add_safe_module(const char *name) {
-  if (!ols || !name)
-    return;
+  if (!ols || !name) return;
 
   char *item = bstrdup(name);
   da_push_back(ols->safe_modules, &item);
@@ -270,12 +258,10 @@ struct fail_info {
 };
 
 static bool is_safe_module(const char *name) {
-  if (!ols->safe_modules.num)
-    return true;
+  if (!ols->safe_modules.num) return true;
 
   for (size_t i = 0; i < ols->safe_modules.num; i++) {
-    if (strcmp(name, ols->safe_modules.array[i]) == 0)
-      return true;
+    if (strcmp(name, ols->safe_modules.array[i]) == 0) return true;
   }
 
   return false;
@@ -312,27 +298,26 @@ static void load_all_callback(void *param,
 
   int code = ols_open_module(&module, info->bin_path, info->data_path);
   switch (code) {
-  case MODULE_MISSING_EXPORTS:
-    blog(LOG_DEBUG, "Failed to load module file '%s', not an OLS plugin",
-         info->bin_path);
-    return;
-  case MODULE_FILE_NOT_FOUND:
-    blog(LOG_DEBUG, "Failed to load module file '%s', file not found",
-         info->bin_path);
-    return;
-  case MODULE_ERROR:
-    blog(LOG_DEBUG, "Failed to load module file '%s'", info->bin_path);
-    goto load_failure;
-  case MODULE_INCOMPATIBLE_VER:
-    blog(LOG_DEBUG, "Failed to load module file '%s', incompatible version",
-         info->bin_path);
-    goto load_failure;
-  case MODULE_HARDCODED_SKIP:
-    return;
+    case MODULE_MISSING_EXPORTS:
+      blog(LOG_DEBUG, "Failed to load module file '%s', not an OLS plugin",
+           info->bin_path);
+      return;
+    case MODULE_FILE_NOT_FOUND:
+      blog(LOG_DEBUG, "Failed to load module file '%s', file not found",
+           info->bin_path);
+      return;
+    case MODULE_ERROR:
+      blog(LOG_DEBUG, "Failed to load module file '%s'", info->bin_path);
+      goto load_failure;
+    case MODULE_INCOMPATIBLE_VER:
+      blog(LOG_DEBUG, "Failed to load module file '%s', incompatible version",
+           info->bin_path);
+      goto load_failure;
+    case MODULE_HARDCODED_SKIP:
+      return;
   }
 
-  if (!ols_init_module(module))
-    free_module(module);
+  if (!ols_init_module(module)) free_module(module);
 
   UNUSED_PARAMETER(param);
   return;
@@ -390,8 +375,7 @@ void ols_module_failure_info_free(struct ols_module_failure_info *mfi) {
 
 void ols_post_load_modules(void) {
   for (ols_module_t *mod = ols->first_module; !!mod; mod = mod->next)
-    if (mod->post_load)
-      mod->post_load();
+    if (mod->post_load) mod->post_load();
 }
 
 static inline void make_data_dir(struct dstr *parsed_data_dir,
@@ -425,8 +409,7 @@ static bool parse_binary_from_directory(struct dstr *parsed_bin_path,
 
   dstr_copy(&directory, bin_path);
   dstr_replace(&directory, "%module%", file);
-  if (dstr_end(&directory) != '/')
-    dstr_cat_ch(&directory, '/');
+  if (dstr_end(&directory) != '/') dstr_cat_ch(&directory, '/');
 
   dstr_copy_dstr(parsed_bin_path, &directory);
   dstr_cat(parsed_bin_path, file);
@@ -472,13 +455,11 @@ static void process_found_module(struct ols_module_path *omp, const char *path,
   file = strrchr(path, '/');
   file = file ? (file + 1) : path;
 
-  if (strcmp(file, ".") == 0 || strcmp(file, "..") == 0)
-    return;
+  if (strcmp(file, ".") == 0 || strcmp(file, "..") == 0) return;
 
   dstr_copy(&name, file);
   char *ext = strrchr(name.array, '.');
-  if (ext)
-    dstr_resize(&name, ext - name.array);
+  if (ext) dstr_resize(&name, ext - name.array);
 
   if (!directory) {
     dstr_copy(&parsed_bin_path, path);
@@ -486,7 +467,7 @@ static void process_found_module(struct ols_module_path *omp, const char *path,
     bin_found =
         parse_binary_from_directory(&parsed_bin_path, omp->bin, name.array);
   }
-
+  printf("path %s name %s\n", path, name.array);
   parsed_data_dir = make_data_directory(name.array, omp->data);
 
   if (parsed_data_dir && bin_found) {
@@ -521,9 +502,9 @@ static void find_modules_in_path(struct ols_module_path *omp,
     dstr_cat_ch(&search_path, '/');
 
   dstr_cat_ch(&search_path, '*');
-  if (!search_directories)
-    dstr_cat(&search_path, get_module_extension());
+  if (!search_directories) dstr_cat(&search_path, get_module_extension());
 
+  printf("search path %s\n", search_path.array);
   if (os_glob(search_path.array, 0, &gi) == 0) {
     for (size_t i = 0; i < gi->gl_pathc; i++) {
       if (search_directories == gi->gl_pathv[i].directory)
@@ -538,8 +519,7 @@ static void find_modules_in_path(struct ols_module_path *omp,
 }
 
 void ols_find_modules2(ols_find_module_callback2_t callback, void *param) {
-  if (!ols)
-    return;
+  if (!ols) return;
 
   for (size_t i = 0; i < ols->module_paths.num; i++) {
     struct ols_module_path *omp = ols->module_paths.array + i;
@@ -554,8 +534,7 @@ void ols_find_modules(ols_find_module_callback_t callback, void *param) {
 
 void ols_enum_modules(ols_enum_module_callback_t callback, void *param) {
   struct ols_module *module;
-  if (!ols)
-    return;
+  if (!ols) return;
 
   module = ols->first_module;
   while (module) {
@@ -565,15 +544,12 @@ void ols_enum_modules(ols_enum_module_callback_t callback, void *param) {
 }
 
 void free_module(struct ols_module *mod) {
-  if (!mod)
-    return;
+  if (!mod) return;
 
   if (mod->module) {
-    if (mod->free_locale)
-      mod->free_locale();
+    if (mod->free_locale) mod->free_locale();
 
-    if (mod->loaded && mod->unload)
-      mod->unload();
+    if (mod->loaded && mod->unload) mod->unload();
 
     /* there is no real reason to close the dynamic libraries,
      * and sometimes this can cause issues. */
@@ -587,8 +563,7 @@ void free_module(struct ols_module *mod) {
     }
   }
 
-  if (ols->first_module == mod)
-    ols->first_module = mod->next;
+  if (ols->first_module == mod) ols->first_module = mod->next;
 
   bfree(mod->mod_name);
   bfree(mod->bin_path);
@@ -612,8 +587,7 @@ lookup_t *ols_module_load_locale(ols_module_t *module,
   dstr_cat(&str, ".ini");
 
   char *file = ols_find_module_file(module, str.array);
-  if (file)
-    lookup = text_lookup_create(file);
+  if (file) lookup = text_lookup_create(file);
 
   bfree(file);
 
@@ -623,8 +597,7 @@ lookup_t *ols_module_load_locale(ols_module_t *module,
     goto cleanup;
   }
 
-  if (astrcmpi(locale, default_locale) == 0)
-    goto cleanup;
+  if (astrcmpi(locale, default_locale) == 0) goto cleanup;
 
   dstr_copy(&str, "/locale/");
   dstr_cat(&str, locale);
@@ -642,85 +615,94 @@ cleanup:
   return lookup;
 }
 
-#define REGISTER_OLS_DEF(size_var, structure, dest, info)                      \
-  do {                                                                         \
-    struct structure data = {0};                                               \
-    if (!size_var) {                                                           \
-      blog(LOG_ERROR,                                                          \
-           "Tried to register " #structure " outside of ols_module_load");     \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    if (size_var > sizeof(data)) {                                             \
-      blog(LOG_ERROR,                                                          \
-           "Tried to register " #structure " with size %llu which is more "    \
-           "than libols currently supports "                                   \
-           "(%llu)",                                                           \
-           (long long unsigned)size_var, (long long unsigned)sizeof(data));    \
-      goto error;                                                              \
-    }                                                                          \
-                                                                               \
-    memcpy(&data, info, size_var);                                             \
-    da_push_back(dest, &data);                                                 \
+#define REGISTER_OLS_DEF(size_var, structure, dest, info)                   \
+  do {                                                                      \
+    struct structure data = {0};                                            \
+    if (!size_var) {                                                        \
+      blog(LOG_ERROR,                                                       \
+           "Tried to register " #structure " outside of ols_module_load");  \
+      return;                                                               \
+    }                                                                       \
+                                                                            \
+    if (size_var > sizeof(data)) {                                          \
+      blog(LOG_ERROR,                                                       \
+           "Tried to register " #structure                                  \
+           " with size %llu which is more "                                 \
+           "than libols currently supports "                                \
+           "(%llu)",                                                        \
+           (long long unsigned)size_var, (long long unsigned)sizeof(data)); \
+      goto error;                                                           \
+    }                                                                       \
+                                                                            \
+    memcpy(&data, info, size_var);                                          \
+    da_push_back(dest, &data);                                              \
   } while (false)
 
-#define HAS_VAL(type, info, val)                                               \
+#define HAS_VAL(type, info, val) \
   ((offsetof(type, val) + sizeof(info->val) <= size) && info->val)
 
-#define CHECK_REQUIRED_VAL(type, info, val, func)                              \
-  do {                                                                         \
-    if (!HAS_VAL(type, info, val)) {                                           \
-      blog(LOG_ERROR,                                                          \
-           "Required value '" #val "' for "                                    \
-           "'%s' not found.  " #func " failed.",                               \
-           info->id);                                                          \
-      goto error;                                                              \
-    }                                                                          \
+#define CHECK_REQUIRED_VAL(type, info, val, func) \
+  do {                                            \
+    if (!HAS_VAL(type, info, val)) {              \
+      blog(LOG_ERROR,                             \
+           "Required value '" #val                \
+           "' for "                               \
+           "'%s' not found.  " #func " failed.",  \
+           info->id);                             \
+      goto error;                                 \
+    }                                             \
   } while (false)
 
-#define CHECK_REQUIRED_VAL_EITHER(type, info, val1, val2, func)                \
-  do {                                                                         \
-    if (!HAS_VAL(type, info, val1) && !HAS_VAL(type, info, val2)) {            \
-      blog(LOG_ERROR,                                                          \
-           "Neither '" #val1 "' nor '" #val2 "' "                              \
-           "for '%s' found.  " #func " failed.",                               \
-           info->id);                                                          \
-      goto error;                                                              \
-    }                                                                          \
+#define CHECK_REQUIRED_VAL_EITHER(type, info, val1, val2, func)     \
+  do {                                                              \
+    if (!HAS_VAL(type, info, val1) && !HAS_VAL(type, info, val2)) { \
+      blog(LOG_ERROR,                                               \
+           "Neither '" #val1 "' nor '" #val2                        \
+           "' "                                                     \
+           "for '%s' found.  " #func " failed.",                    \
+           info->id);                                               \
+      goto error;                                                   \
+    }                                                               \
   } while (false)
 
-#define HANDLE_ERROR(size_var, structure, info)                                \
-  do {                                                                         \
-    struct structure data = {0};                                               \
-    if (!size_var)                                                             \
-      return;                                                                  \
-                                                                               \
-    memcpy(&data, info, sizeof(data) < size_var ? sizeof(data) : size_var);    \
-                                                                               \
-    if (data.type_data && data.free_type_data)                                 \
-      data.free_type_data(data.type_data);                                     \
+#define HANDLE_ERROR(size_var, structure, info)                             \
+  do {                                                                      \
+    struct structure data = {0};                                            \
+    if (!size_var) return;                                                  \
+                                                                            \
+    memcpy(&data, info, sizeof(data) < size_var ? sizeof(data) : size_var); \
+                                                                            \
+    if (data.type_data && data.free_type_data)                              \
+      data.free_type_data(data.type_data);                                  \
   } while (false)
 
-#define source_warn(format, ...)                                               \
+#define source_warn(format, ...) \
   blog(LOG_WARNING, "ols_register_source: " format, ##__VA_ARGS__)
-#define output_warn(format, ...)                                               \
+#define output_warn(format, ...) \
   blog(LOG_WARNING, "ols_register_output: " format, ##__VA_ARGS__)
-#define process_warn(format, ...)                                              \
+#define process_warn(format, ...) \
   blog(LOG_WARNING, "ols_register_process: " format, ##__VA_ARGS__)
-#define service_warn(format, ...)                                              \
+#define service_warn(format, ...) \
   blog(LOG_WARNING, "ols_register_service: " format, ##__VA_ARGS__)
 
 void ols_register_source_s(const struct ols_source_info *info, size_t size) {
   struct ols_source_info data = {0};
-  ols_source_info_array_t *array = NULL;
+  //ols_source_info_array_t *array = NULL;
+  //array = &ols->source_types;
 
-  array = &ols->source_types;
+  if (get_source_info(info->id)) {
+		source_warn("Source '%s' already exists!  "
+			    "Duplicate library?",
+			    info->id);
+		goto error;
+	}
 
   if (size > sizeof(data)) {
-    source_warn("Tried to register ols_source_info with size "
-                "%llu which is more than libols currently "
-                "supports (%llu)",
-                (long long unsigned)size, (long long unsigned)sizeof(data));
+    source_warn(
+        "Tried to register ols_source_info with size "
+        "%llu which is more than libols currently "
+        "supports (%llu)",
+        (long long unsigned)size, (long long unsigned)sizeof(data));
     goto error;
   }
 
@@ -735,8 +717,8 @@ void ols_register_source_s(const struct ols_source_info *info, size_t size) {
     data.id = bstrdup(data.id);
   }
 
-  if (array)
-    da_push_back(*array, &data);
+  //if (array) da_push_back(*array, &data);
+
   da_push_back(ols->source_types, &data);
   return;
 
@@ -746,13 +728,14 @@ error:
 
 void ols_register_output_s(const struct ols_output_info *info, size_t size) {
   if (find_output(info->id)) {
-    output_warn("Output id '%s' already exists!  "
-                "Duplicate library?",
-                info->id);
+    output_warn(
+        "Output id '%s' already exists!  "
+        "Duplicate library?",
+        info->id);
     goto error;
   }
 
-#define CHECK_REQUIRED_VAL_(info, val, func)                                   \
+#define CHECK_REQUIRED_VAL_(info, val, func) \
   CHECK_REQUIRED_VAL(struct ols_output_info, info, val, func)
   CHECK_REQUIRED_VAL_(info, get_name, ols_register_output);
   CHECK_REQUIRED_VAL_(info, create, ols_register_output);

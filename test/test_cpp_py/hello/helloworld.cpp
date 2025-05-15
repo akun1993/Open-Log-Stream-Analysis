@@ -85,6 +85,27 @@ int main(int argc, char *argv[])
     // 在这里，最需要注意的是：PyArg_Parse的最后一个参数，必须加上“&”符号
     PyArg_Parse(pReturn, "i", &nResult);
     std::cout << "return result is " << nResult << std::endl;
+    
+    
+    //5、给python传参数
+    // 函数调用的参数传递均是以元组的形式打包的,2表示参数个数
+    // 如果AdditionFc中只有一个参数时，写1就可以了
+     pArgs = PyTuple_New(2);
+ 
+    // 0：第一个参数，传入 int 类型的值 2
+    PyTuple_SetItem(pArgs, 0, Py_BuildValue("i", 2)); 
+    // 1：第二个参数，传入 int 类型的值 4
+    PyTuple_SetItem(pArgs, 1, Py_BuildValue("i", 4)); 
+    
+    // 6、使用C++的python接口调用该函数
+    pReturn = PyEval_CallObject(pFunc, pArgs);
+    
+    // 7、接收python计算好的返回值
+    //int nResult;
+    // i表示转换成int型变量。
+    // 在这里，最需要注意的是：PyArg_Parse的最后一个参数，必须加上“&”符号
+    PyArg_Parse(pReturn, "i", &nResult);
+    std::cout << "return result is " << nResult << std::endl;    
 	
     // 终止Python解释器
     Py_Finalize();

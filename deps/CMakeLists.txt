@@ -7,4 +7,15 @@ endif()
 
 add_subdirectory(opts-parser)
 add_subdirectory(uthash)
-#add_subdirectory(jansson)
+
+# Use bundled jansson version as fallback
+find_package(Jansson 2.5 QUIET)
+if(NOT TARGET Jansson::Jansson)
+  ols_status(STATUS "Jansson >=2.5 not found, building bundled version.")
+
+  add_subdirectory(jansson)
+  add_library(Jansson::Jansson ALIAS jansson)
+else()
+  ols_status(STATUS "Using system Jansson library.")
+endif()
+

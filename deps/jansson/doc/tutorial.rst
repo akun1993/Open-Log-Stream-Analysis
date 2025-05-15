@@ -10,7 +10,7 @@ In this tutorial, we create a program that fetches the latest commits
 of a repository in GitHub_ over the web. `GitHub API`_ uses JSON, so
 the result can be parsed using Jansson.
 
-To stick to the scope of this tutorial, we will only cover the
+To stick to the the scope of this tutorial, we will only cover the the
 parts of the program related to handling JSON data. For the best user
 experience, the full source code is available:
 :download:`github_commits.c`. To compile it (on Unix-like systems with
@@ -74,7 +74,7 @@ function::
 
     static char *request(const char *url);
 
-It takes the URL as a parameter, performs a HTTP GET request, and
+It takes the URL as a parameter, preforms a HTTP GET request, and
 returns a newly allocated string that contains the response body. If
 the request fails, an error message is printed to stderr and the
 return value is *NULL*. For full details, refer to :download:`the code
@@ -238,7 +238,7 @@ from a JSON string using :func:`json_string_value()`::
 
         message_text = json_string_value(message);
         printf("%.8s %.*s\n",
-               json_string_value(sha),
+               json_string_value(id),
                newline_offset(message_text),
                message_text);
     }

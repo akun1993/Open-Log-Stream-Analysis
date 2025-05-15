@@ -1,9 +1,50 @@
+
 #pragma once
 
-#cmakedefine OLS_DATA_PATH "@OLS_DATA_PATH@"
-#cmakedefine OLS_PLUGIN_PATH "@OLS_PLUGIN_PATH@"
-#cmakedefine OLS_PLUGIN_DESTINATION "@OLS_PLUGIN_DESTINATION@"
+#ifndef ON
+#define ON 1
+#endif
 
+#ifndef OFF
+#define OFF 0
+#endif
 
+#define OLS_VERSION "@OLS_VERSION@"
+#define OLS_VERSION_CANONICAL "@OLS_VERSION_CANONICAL@"
+#define OLS_DATA_PATH "@OLS_DATA_PATH@"
+#define OLS_INSTALL_PREFIX "@OLS_INSTALL_PREFIX@"
+#define OLS_PLUGIN_DESTINATION "@OLS_PLUGIN_DESTINATION@"
+#define OLS_QT_VERSION @_QT_VERSION@
+
+#cmakedefine LINUX_PORTABLE
+#cmakedefine GIO_FOUND
+#cmakedefine PULSEAUDIO_FOUND
+#cmakedefine XCB_XINPUT_FOUND
+#cmakedefine ENABLE_WAYLAND
+
+/* NOTE: Release candidate version numbers internally are always the previous
+ * main release number!  For example, if the current public release is 21.0 and
+ * the build is 22.0 release candidate 1, internally the build number (defined
+ * by LIBOLS_API_VER/etc) will always be 21.0, despite the OLS_VERSION string
+ * saying "22.0 RC1".
+ *
+ * If the release candidate version number is 0.0.0 and the RC number is 0,
+ * that means it's not a release candidate build. */
+#define OLS_RELEASE_CANDIDATE_MAJOR @OLS_RELEASE_CANDIDATE_MAJOR@
+#define OLS_RELEASE_CANDIDATE_MINOR @OLS_RELEASE_CANDIDATE_MINOR@
+#define OLS_RELEASE_CANDIDATE_PATCH @OLS_RELEASE_CANDIDATE_PATCH@
+#define OLS_RELEASE_CANDIDATE_VER \
+	MAKE_SEMANTIC_VERSION(OLS_RELEASE_CANDIDATE_MAJOR, \
+	                      OLS_RELEASE_CANDIDATE_MINOR, \
+	                      OLS_RELEASE_CANDIDATE_PATCH)
 #define OLS_RELEASE_CANDIDATE @OLS_RELEASE_CANDIDATE@
+
+/* Same thing for beta builds */
+#define OLS_BETA_MAJOR @OLS_BETA_MAJOR@
+#define OLS_BETA_MINOR @OLS_BETA_MINOR@
+#define OLS_BETA_PATCH @OLS_BETA_PATCH@
+#define OLS_BETA_VER \
+	MAKE_SEMANTIC_VERSION(OLS_BETA_MAJOR, \
+	                      OLS_BETA_MINOR, \
+	                      OLS_BETA_PATCH)
 #define OLS_BETA @OLS_BETA@

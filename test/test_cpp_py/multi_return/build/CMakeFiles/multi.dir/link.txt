@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/multi.dir/multi_ret.cpp.o  -o multi  -lpython3.8 

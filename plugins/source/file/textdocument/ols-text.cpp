@@ -1,194 +1,267 @@
 
-#include <util/platform.h>
-#include <util/util.hpp>
-#include <ols-module.h>
-#include <sys/stat.h>
 #include <algorithm>
-#include <string>
-#include <memory>
 #include <locale>
+#include <memory>
+#include <ols-module.h>
+#include <string>
+#include <sys/stat.h>
+#include <util/base.h>
+#include <util/platform.h>
+#include <util/task.h>
+#include <util/util.hpp>
 
 using namespace std;
 
-#define warning(format, ...)                                           \
-	blog(LOG_WARNING, "[%s] " format, ols_source_get_name(source), \
-	     ##__VA_ARGS__)
+#define warning(format, ...)                                                   \
+  blog(LOG_WARNING, "[%s] " format, ols_source_get_name(source), ##__VA_ARGS__)
 
-#define warn_stat(call)                                                   \
-	do {                                                              \
-		if (stat != Ok)                                           \
-			warning("%s: %s failed (%d)", __FUNCTION__, call, \
-				(int)stat);                               \
-	} while (false)
+#define warn_stat(call)                                                        \
+  do {                                                                         \
+    if (stat != Ok)                                                            \
+      warning("%s: %s failed (%d)", __FUNCTION__, call, (int)stat);            \
+  } while (false)
 
 #ifndef clamp
-#define clamp(val, min_val, max_val) \
-	if (val < min_val)           \
-		val = min_val;       \
-	else if (val > max_val)      \
-		val = max_val;
+#define clamp(val, min_val, max_val)                                           \
+  if (val < min_val)                                                           \
+    val = min_val;                                                             \
+  else if (val > max_val)                                                      \
+    val = max_val;
 #endif
-
-
 
 /* ------------------------------------------------------------------------- */
 
 /* clang-format off */
 
-
-
 /* clang-format on */
 
 /* ------------------------------------------------------------------------- */
 
-static inline wstring to_wide(const char *utf8)
-{
-	wstring text;
+static inline wstring to_wide(const char *utf8) {
+  wstring text;
 
-	size_t len = os_utf8_to_wcs(utf8, 0, nullptr, 0);
-	text.resize(len);
-	if (len)
-		os_utf8_to_wcs(utf8, 0, &text[0], len + 1);
+  size_t len = os_utf8_to_wcs(utf8, 0, nullptr, 0);
+  text.resize(len);
+  if (len)
+    os_utf8_to_wcs(utf8, 0, &text[0], len + 1);
 
-	return text;
+  return text;
 }
-
 
 struct TextSource {
-	ols_source_t *source = nullptr;
+  ols_source_t *source_ = nullptr;
 
+  bool read_from_file = false;
+  string filename;
+  string uri;
+  FILE *file = nullptr;
+  uint64_t line_cnt = 0;
 
-	bool read_from_file = false;
-	string file;
-	time_t file_timestamp = 0;
+  wstring text;
 
+  /* --------------------------- */
 
-	wstring text;
-	bool chatlog_mode = false;
-	int chatlog_lines = 6;
+  inline TextSource(ols_source_t *source, ols_data_t *settings)
+      : source_(source) {
+    ols_source_update(source, settings);
+    filename = "/home/V01/uidq8743/sv_user.log.00000156_20241125151423";
+  }
 
-	/* --------------------------- */
+  inline ~TextSource() {}
 
-	inline TextSource(ols_source_t *source_, ols_data_t *settings)
-		: source(source_)
-	{
-		ols_source_update(source, settings);
-	}
+  int FileSrcGetData(ols_buffer_t *buf);
 
-	inline ~TextSource()
-	{
+  void LoadFileText();
+  bool FileSrcStart();
+  /* unmap and close the file */
+  bool FileSrcStop();
 
-	}
-
-	void UpdateFont();
-
-	void RenderText();
-	void LoadFileText();
-	void TransformText();
-
-	const char *GetMainString(const char *str);
-
-	inline void Update(ols_data_t *settings);
-	inline void Tick(float seconds);
-
+  inline void Update(ols_data_t *settings);
 };
 
-static time_t get_modified_timestamp(const char *filename)
-{
-	struct stat stats;
-	if (os_stat(filename, &stats) != 0)
-		return -1;
-	return stats.st_mtime;
+static time_t get_modified_timestamp(const char *filename) {
+  struct stat stats;
+  if (os_stat(filename, &stats) != 0)
+    return -1;
+  return stats.st_mtime;
 }
 
-const char *TextSource::GetMainString(const char *str)
-{
-	if (!str)
-		return "";
-	if (!chatlog_mode || !chatlog_lines)
-		return str;
+// const char *TextSource::GetMainString(const char *str)
+// {
+// 	if (!str)
+// 		return "";
 
-	int lines = chatlog_lines;
-	size_t len = strlen(str);
-	if (!len)
-		return str;
+// 	size_t len = strlen(str);
+// 	if (!len)
+// 		return str;
 
-	const char *temp = str + len;
+// 	const char *temp = str + len;
 
-	while (temp != str) {
-		temp--;
+// 	while (temp != str) {
+// 		temp--;
 
-		if (temp[0] == '\n' && temp[1] != 0) {
-			if (!--lines)
-				break;
-		}
-	}
+// 		if (temp[0] == '\n' && temp[1] != 0) {
+// 			if (!--lines)
+// 				break;
+// 		}
+// 	}
 
-	return *temp == '\n' ? temp + 1 : temp;
+// 	return *temp == '\n' ? temp + 1 : temp;
+// }
+
+void TextSource::LoadFileText() {
+  BPtr<char> file_text = os_quick_read_utf8_file(filename.c_str());
+  // text = to_wide(GetMainString(file_text));
+
+  if (!text.empty() && text.back() != '\n')
+    text.push_back('\n');
 }
 
-void TextSource::LoadFileText()
-{
-	BPtr<char> file_text = os_quick_read_utf8_file(file.c_str());
-	text = to_wide(GetMainString(file_text));
+void TextSource::Update(ols_data_t *settings) { UNUSED_PARAMETER(settings); }
 
-	if (!text.empty() && text.back() != '\n')
-		text.push_back('\n');
+int TextSource::FileSrcGetData(ols_buffer_t *buf) {
+
+  blog(LOG_DEBUG, "TextSource::FileSrcGetData");
+
+  int ret;
+
+  char *data;
+  char bytes[1024];
+
+  errno = 0;
+  data = os_fgets(file, bytes, 1024);
+  if (UNLIKELY(data == NULL)) {
+    goto eos;
+  }
+
+  ++line_cnt;
+  blog(LOG_DEBUG, "%s  line %ld", bytes, line_cnt);
+  return OLS_FLOW_OK;
+
+eos: {
+  blog(LOG_DEBUG, "EOS");
+  // ols_buffer_resize(buf, 0, 0);
+  return OLS_FLOW_EOS;
+}
 }
 
+/* open the file, necessary to go to READY state */
+bool TextSource::FileSrcStart() {
 
-void TextSource::Update(ols_data_t *settings)
-{
-	UNUSED_PARAMETER(settings);
+  struct stat stat_results;
+
+  if (filename.empty())
+    goto no_filename;
+
+  blog(LOG_INFO, "opening file %s", filename.c_str());
+
+  /* open the file */
+  file = os_fopen(filename.c_str(), "rb");
+
+  if (file == NULL)
+    goto open_failed;
+
+  /* check if it is a regular file, otherwise bail out */
+  if (os_stat(filename.c_str(), &stat_results) < 0)
+    goto no_stat;
+
+  if (S_ISDIR(stat_results.st_mode))
+    goto was_directory;
+
+  if (S_ISSOCK(stat_results.st_mode))
+    goto was_socket;
+
+  return true;
+
+  /* ERROR */
+no_filename: {
+  blog(LOG_ERROR, ("No file name specified for reading."));
+  goto error_exit;
 }
 
+open_failed: {
+  switch (errno) {
+  case ENOENT:
+    blog(LOG_ERROR, "No such file \"%s\"", filename.c_str());
+    break;
+  default:
+    blog(LOG_ERROR, ("Could not open file \"%s\" for reading."),
+         filename.c_str());
+    break;
+  }
+  goto error_exit;
+}
+no_stat: {
+  blog(LOG_ERROR, ("Could not get info on \"%s\"."), filename.c_str());
+  goto error_close;
+}
 
-#define obs_data_get_uint32 (uint32_t) obs_data_get_int
+was_directory: {
+  blog(LOG_ERROR, "\"%s\" is a directory.", filename.c_str());
+  goto error_close;
+}
 
+was_socket: {
+  blog(LOG_ERROR, ("File \"%s\" is a socket."), filename.c_str());
+  goto error_close;
+}
+
+lseek_wonky: {
+  blog(LOG_ERROR, "Could not seek back to zero after seek test in file \"%s\"",
+       filename.c_str());
+  goto error_close;
+}
+
+error_close:
+  fclose(file);
+error_exit:
+  return false;
+}
+
+/* unmap and close the file */
+bool TextSource::FileSrcStop() {
+  /* close the file */
+  fclose(file);
+  /* zero out a lot of our state */
+  file = NULL;
+  return true;
+}
+
+#define obs_data_get_uint32 (uint32_t)obs_data_get_int
 
 OLS_DECLARE_MODULE()
+
 OLS_MODULE_USE_DEFAULT_LOCALE("ols-text", "en-US")
-MODULE_EXPORT const char *ols_module_description(void)
-{
-	return "text source";
+MODULE_EXPORT const char *ols_module_description(void) { return "text source"; }
+
+static ols_properties_t *get_properties(void *data) {
+  TextSource *s = reinterpret_cast<TextSource *>(data);
+  string path;
+
+  ols_properties_t *props = ols_properties_create();
+  ols_property_t *p;
+
+  if (s && !s->filename.empty()) {
+    const char *slash;
+
+    path = s->filename;
+    replace(path.begin(), path.end(), '\\', '/');
+    slash = strrchr(path.c_str(), '/');
+    if (slash)
+      path.resize(slash - path.c_str() + 1);
+  }
+
+  return props;
 }
 
-static ols_properties_t *get_properties(void *data)
-{
-	TextSource *s = reinterpret_cast<TextSource *>(data);
-	string path;
+// static ols_pad_t *get_new_pad(void *data) {
+//   TextSource *s = reinterpret_cast<TextSource *>(data);
 
-	ols_properties_t *props = ols_properties_create();
-	ols_property_t *p;
+//   return s->srcpad;
+// }
 
-
-	// p = ols_properties_add_bool(props, S_USE_FILE, T_USE_FILE);
-	// ols_property_set_modified_callback(p, use_file_changed);
-
-	// string filter;
-	// filter += T_FILTER_TEXT_FILES;
-	// filter += " (*.txt);;";
-	// filter += T_FILTER_ALL_FILES;
-	// filter += " (*.*)";
-
-	if (s && !s->file.empty()) {
-		const char *slash;
-
-		path = s->file;
-		replace(path.begin(), path.end(), '\\', '/');
-		slash = strrchr(path.c_str(), '/');
-		if (slash)
-			path.resize(slash - path.c_str() + 1);
-	}
-
-
-
-	return props;
-}
-
-
-
-// static void missing_file_callback(void *src, const char *new_path, void *data)
+// static void missing_file_callback(void *src, const char *new_path, void
+// *data)
 // {
 // 	TextSource *s = reinterpret_cast<TextSource *>(src);
 
@@ -201,73 +274,73 @@ static ols_properties_t *get_properties(void *data)
 // 	UNUSED_PARAMETER(data);
 // }
 
-bool obs_module_load(void)
-{
-	ols_source_info si = {};
-	si.id = "text_file";
-	si.type = OLS_SOURCE_TYPE_INPUT;
-	// si.output_flags = OLS_SOURCE_ | OBS_SOURCE_CUSTOM_DRAW |
-	// 		  OBS_SOURCE_CAP_OBSOLETE | OBS_SOURCE_SRGB;
-	si.get_properties = get_properties;
-	si.icon_type = OLS_ICON_TYPE_TEXT;
+bool ols_module_load(void) {
+  ols_source_info si = {};
+  si.id = "text_file";
+  si.type = OLS_SOURCE_TYPE_INPUT;
+  // si.output_flags = OLS_SOURCE_ | OBS_SOURCE_CUSTOM_DRAW |
+  // 		  OBS_SOURCE_CAP_OBSOLETE | OBS_SOURCE_SRGB;
+  si.get_properties = get_properties;
+  si.icon_type = OLS_ICON_TYPE_TEXT;
 
-	si.get_name = [](void *) {
-		return ols_module_text("TextGDIPlus");
-	};
-	si.create = [](ols_data_t *settings, ols_source_t *source) {
-		return (void *)new TextSource(source, settings);
-	};
-	si.destroy = [](void *data) {
-		delete reinterpret_cast<TextSource *>(data);
-	};
+  si.get_name = [](void *) { return ols_module_text("TextFile"); };
+  si.create = [](ols_data_t *settings, ols_source_t *source) {
+    return (void *)new TextSource(source, settings);
+  };
+  si.destroy = [](void *data) { delete reinterpret_cast<TextSource *>(data); };
 
-	si.get_defaults = [](ols_data_t *settings) {
-		//defaults(settings, 1);
-		UNUSED_PARAMETER(settings);
-	};
+  si.get_new_pad = NULL;
 
-	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<TextSource *>(data)->Update(settings);
-	};
+  si.get_defaults = [](ols_data_t *settings) {
+    // defaults(settings, 1);
+    UNUSED_PARAMETER(settings);
+  };
 
-	// si.missing_files = [](void *data) {
-	// 	TextSource *s = reinterpret_cast<TextSource *>(data);
-	// 	ols_missing_files_t *files = ols_missing_files_create();
+  si.activate = [](void *data) {
+    reinterpret_cast<TextSource *>(data)->FileSrcStart();
+  };
 
-	// 	ols_source_t *source = s->source;
-	// 	ols_data_t *settings = ols_source_get_settings(source);
+  si.update = [](void *data, ols_data_t *settings) {
+    reinterpret_cast<TextSource *>(data)->Update(settings);
+  };
 
-	// 	bool read = ols_data_get_bool(settings, S_USE_FILE);
-	// 	const char *path = ols_data_get_string(settings, S_FILE);
+  si.get_data = [](void *data, ols_buffer_t *buf) {
+    return reinterpret_cast<TextSource *>(data)->FileSrcGetData(buf);
+  };
+  si.version = 0;
 
-	// 	if (read && strcmp(path, "") != 0) {
-	// 		if (!os_file_exists(path)) {
-	// 			ols_missing_file_t *file =
-	// 				ols_missing_file_create(
-	// 					path, missing_file_callback,
-	// 					OLS_MISSING_FILE_SOURCE,
-	// 					s->source, NULL);
+  // si.missing_files = [](void *data) {
+  // 	TextSource *s = reinterpret_cast<TextSource *>(data);
+  // 	ols_missing_files_t *files = ols_missing_files_create();
 
-	// 			ols_missing_files_add_file(files, file);
-	// 		}
-	// 	}
+  // 	ols_source_t *source = s->source;
+  // 	ols_data_t *settings = ols_source_get_settings(source);
 
-	// 	ols_data_release(settings);
+  // 	bool read = ols_data_get_bool(settings, S_USE_FILE);
+  // 	const char *path = ols_data_get_string(settings, S_FILE);
 
-	// 	return files;
-	// };
+  // 	if (read && strcmp(path, "") != 0) {
+  // 		if (!os_file_exists(path)) {
+  // 			ols_missing_file_t *file =
+  // 				ols_missing_file_create(
+  // 					path, missing_file_callback,
+  // 					OLS_MISSING_FILE_SOURCE,
+  // 					s->source, NULL);
 
+  // 			ols_missing_files_add_file(files, file);
+  // 		}
+  // 	}
 
+  // 	ols_data_release(settings);
 
-	ols_register_source(&si);
+  // 	return files;
+  // };
 
+  ols_register_source(&si);
 
-	// const GdiplusStartupInput gdip_input;
-	// GdiplusStartup(&gdip_token, &gdip_input, nullptr);
-	return true;
+  return true;
 }
 
-void obs_module_unload(void)
-{
-	//GdiplusShutdown(gdip_token);
+void ols_module_unload(void) {
+  // GdiplusShutdown(gdip_token);
 }

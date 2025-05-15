@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22...3.25)
 
 add_library(json11 OBJECT)
-add_library(OBS::json11 ALIAS json11)
+add_library(OLS::json11 ALIAS json11)
 
 target_sources(
   json11
