@@ -19,3 +19,6 @@ else()
   ols_status(STATUS "Using system Jansson library.")
 endif()
 
+add_subdirectory(tinyxml2)
+
+add_subdirectory(ols-scripting)

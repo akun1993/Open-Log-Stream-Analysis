@@ -4,6 +4,7 @@ project(tinyxml2 VERSION 11.0.0)
 include(CTest)
 option(tinyxml2_BUILD_TESTING "Build tests for tinyxml2" "${BUILD_TESTING}")
 
+set(tinyxml2_BUILD_TESTING OFF)
 ##
 ## Honor tinyxml2_SHARED_LIBS to match install interface
 ##
@@ -11,7 +12,7 @@ option(tinyxml2_BUILD_TESTING "Build tests for tinyxml2" "${BUILD_TESTING}")
 if (DEFINED tinyxml2_SHARED_LIBS)
     set(BUILD_SHARED_LIBS "${tinyxml2_SHARED_LIBS}")
 endif ()
-
+set(BUILD_SHARED_LIBS ON)
 ##
 ## Main library build
 ##
@@ -72,6 +73,7 @@ set(tinyxml2_INSTALL_PKGCONFIGDIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 set(tinyxml2_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/tinyxml2"
     CACHE STRING "Path to tinyxml2 CMake files")
 
+set_target_properties(tinyxml2 PROPERTIES FOLDER "deps")
 ## CMake targets and export scripts
 
 install(
