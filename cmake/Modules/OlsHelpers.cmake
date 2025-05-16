@@ -307,7 +307,7 @@ endfunction()
 if(NOT QT_VERSION)
   set(QT_VERSION
       AUTO
-      CACHE STRING "OBS Qt version [AUTO, 5, 6]" FORCE)
+      CACHE STRING "OLS Qt version [AUTO, 5, 6]" FORCE)
   set_property(CACHE QT_VERSION PROPERTY STRINGS AUTO 5 6)
 endif()
 
@@ -358,7 +358,7 @@ macro(find_qt)
             CACHE INTERNAL "")
       endif()
     endif()
-    obs_status(STATUS "Qt version: ${_QT_VERSION}")
+    ols_status(STATUS "Qt version: ${_QT_VERSION}")
   endif()
 
   set(QT_NO_CREATE_VERSIONLESS_TARGETS OFF)

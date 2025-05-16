@@ -1,19 +1,19 @@
-project(obs-text)
+project(ols-text)
 
-add_library(obs-text MODULE)
-add_library(OBS::text ALIAS obs-text)
+add_library(ols-text MODULE)
+add_library(OLS::text ALIAS ols-text)
 
-target_link_libraries(obs-text PRIVATE OBS::libobs)
+target_link_libraries(ols-text PRIVATE OLS::libols)
 
-set_target_properties(obs-text PROPERTIES FOLDER "plugins")
+set_target_properties(ols-text PROPERTIES FOLDER "plugins")
 
-set(MODULE_DESCRIPTION "OBS GDI+ text module")
-configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/obs-module.rc.in obs-text.rc)
+set(MODULE_DESCRIPTION "OLS GDI+ text module")
+configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in ols-text.rc)
 
-target_sources(obs-text PRIVATE gdiplus/obs-text.cpp obs-text.rc)
+target_sources(ols-text PRIVATE gdiplus/ols-text.cpp ols-text.rc)
 
-target_link_libraries(obs-text PRIVATE gdiplus)
+target_link_libraries(ols-text PRIVATE gdiplus)
 
-target_compile_definitions(obs-text PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+target_compile_definitions(ols-text PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
 
-setup_plugin_target(obs-text)
+setup_plugin_target(ols-text)

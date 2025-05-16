@@ -82,7 +82,7 @@ void ScriptCallerProcess::Update(ols_data_t *settings)
 
 
 
-#define obs_data_get_uint32 (uint32_t) obs_data_get_int
+#define ols_data_get_uint32 (uint32_t) ols_data_get_int
 
 
 OLS_DECLARE_MODULE()
@@ -118,8 +118,8 @@ bool ols_module_load(void)
 	ols_process_info si = {};
 	si.id = "script caller";
 	si.type = OLS_PROCESS_TYPE_INPUT;
-	// si.output_flags = OLS_SOURCE_ | OBS_SOURCE_CUSTOM_DRAW |
-	// 		  OBS_SOURCE_CAP_OBSOLETE | OBS_SOURCE_SRGB;
+	// si.output_flags = OLS_SOURCE_ | OLS_SOURCE_CUSTOM_DRAW |
+	// 		  OLS_SOURCE_CAP_OLSOLETE | OLS_SOURCE_SRGB;
 	si.get_properties = get_properties;
 	si.icon_type = OLS_ICON_TYPE_TEXT;
 

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16...3.21)
 option(ENABLE_SCRIPTING_PYTHON "Enable Python scripting support" ON)
 
 if(ENABLE_SCRIPTING_PYTHON)
-  add_subdirectory(obspython)
+  add_subdirectory(olspython)
   find_package(Python 3.8...<3.12 COMPONENTS Interpreter Development)
 else()
   target_disable_feature(ols-scripting "Python scripting support")

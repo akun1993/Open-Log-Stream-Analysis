@@ -1,5 +1,0 @@
-#include <olsversion.h>
-
-const char *OLS_VERSION = "@OLS_VERSION@";
-const char *OLS_VERSION_CANONICAL = "@OLS_VERSION_CANONICAL@";
-const char *OLS_COMMIT = "@OLS_COMMIT@";

@@ -22,7 +22,7 @@ if(OS_WINDOWS AND MSVC)
   endif()
 
   # Check for Win SDK version 10.0.20348 or above
-  obs_status(
+  ols_status(
     STATUS "Windows API version is ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
   string(REPLACE "." ";" WINAPI_VER
                  "${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
@@ -45,9 +45,9 @@ if(OS_WINDOWS AND MSVC)
   endif()
 
   if(NOT WINAPI_COMPATIBLE)
-    obs_status(
+    ols_status(
       FATAL_ERROR
-      "OBS requires Windows 10 SDK version 10.0.20348.0 and above to compile.\n"
+      "OLS requires Windows 10 SDK version 10.0.20348.0 and above to compile.\n"
       "Please download the most recent Windows 10 SDK in order to compile.")
   endif()
 
@@ -101,7 +101,7 @@ else()
     "$<$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>:-fcolor-diagnostics>"
     "$<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang>:-fcolor-diagnostics>")
 
-  if(OBS_CODESIGN_LINKER)
+  if(OLS_CODESIGN_LINKER)
     add_link_options("LINKER:$<$<PLATFORM_ID:Darwin>:-adhoc_codesign>")
   endif()
 

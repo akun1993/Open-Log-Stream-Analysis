@@ -23,7 +23,7 @@ else()
 endif()
 
 if(ENABLE_SCRIPTING_PYTHON)
-  add_subdirectory(obspython)
+  add_subdirectory(olspython)
   if(OS_WINDOWS)
     find_package(PythonWindows)
   else()

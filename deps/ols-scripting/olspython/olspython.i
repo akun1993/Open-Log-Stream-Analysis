@@ -1,26 +1,41 @@
-%module olslua
+%module(threads="1") olspython
+%nothread;
 %{
 #define SWIG_FILE_WITH_INIT
 #define DEPRECATED_START
 #define DEPRECATED_END
+
 #include <ols.h>
+
 #include <ols-source.h>
 #include <ols-data.h>
 #include <ols-properties.h>
 #include <callback/calldata.h>
+#include <callback/decl.h>
 #include <callback/proc.h>
 #include <callback/signal.h>
 #include <util/bmem.h>
 #include <util/base.h>
-#include "cstrcache.h"
+#include "olspython.h"
 #include <util/platform.h>
 #include <util/config-file.h>
 
 #if defined(ENABLE_UI)
-#include "ols-frontend-api.h"
+//#include "ols-frontend-api.h"
 #endif
 
+/* Redefine SWIG_PYTHON_INITIALIZE_THREADS if:
+ * - Python version is 3.7 or later because PyEval_InitThreads() became deprecated and unnecessary
+ * - SWIG version is not 4.1 or later because SWIG_PYTHON_INITIALIZE_THREADS will be define correctly
+ *   with Python 3.7 and later */
+#if PY_VERSION_HEX >= 0x03070000 && SWIGVERSION < 0x040100
+#undef SWIG_PYTHON_INITIALIZE_THREADS
+#define SWIG_PYTHON_INITIALIZE_THREADS
+#endif
 %}
+
+%feature("python:annotations", "c");
+%feature("autodoc", "2");
 
 #define DEPRECATED_START
 #define DEPRECATED_END
@@ -55,7 +70,6 @@ static inline void wrap_blog(int log_level, const char *message)
 %ignore ols_add_main_render_callback;
 %ignore ols_remove_main_render_callback;
 %ignore ols_enum_sources;
-%ignore ols_source_enum_filters;
 %ignore ols_properties_add_button;
 %ignore ols_property_set_modified_callback;
 %ignore signal_handler_connect;
@@ -63,11 +77,36 @@ static inline void wrap_blog(int log_level, const char *message)
 %ignore signal_handler_connect_global;
 %ignore signal_handler_disconnect_global;
 %ignore signal_handler_remove_current;
+%ignore ols_hotkey_register_frontend;
+%ignore ols_hotkey_register_encoder;
+%ignore ols_hotkey_register_output;
+%ignore ols_hotkey_register_service;
+%ignore ols_hotkey_register_source;
+%ignore ols_hotkey_pair_register_frontend;
+%ignore ols_hotkey_pair_register_encoder;
+%ignore ols_hotkey_pair_register_output;
+%ignore ols_hotkey_pair_register_service;
+%ignore ols_hotkey_pair_register_source;
 
+/* The function gs_debug_marker_begin_format has a va_args.
+ * By default, SWIG just drop it and replace it with a single NULL pointer.
+ * Source: http://swig.org/Doc4.0/Varargs.html#Varargs_nn4
+ *
+ * But the generated wrapper will make the compiler emit a warning
+ * because varargs is an unused parameter.
+ * So in the check step, varargs will be treated like any unused parameter. */
+%typemap(check) (const float color[4], const char *format, ...) {
+	(void)varargs;
+}
 
+"
+%include "graphics/quat.h"
+%include "olspython.h"
 %include "ols-data.h"
 %include "ols-source.h"
 %include "ols-properties.h"
+%include "ols-interaction.h"
+%include "ols-hotkey.h"
 %include "ols.h"
 %include "callback/calldata.h"
 %include "callback/proc.h"
@@ -80,3 +119,9 @@ static inline void wrap_blog(int log_level, const char *message)
 #if defined(ENABLE_UI)
 %include "ols-frontend-api.h"
 #endif
+
+/* declare these manually because mutex + GIL = deadlocks */
+%thread;
+void ols_enter_graphics(void); //Should only block on entering mutex
+%nothread;
+%include "ols.h"

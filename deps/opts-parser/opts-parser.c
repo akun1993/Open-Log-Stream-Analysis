@@ -22,7 +22,7 @@ static bool getparam(const char *param, char **name, const char **value)
 	return true;
 }
 
-struct obs_options obs_parse_options(const char *options_string)
+struct ols_options ols_parse_options(const char *options_string)
 {
 	if (!options_string || !*options_string)
 		goto failure;
@@ -37,9 +37,9 @@ struct obs_options obs_parse_options(const char *options_string)
 	char **ignored_words =
 		bmalloc(input_option_count * sizeof(*ignored_words));
 	char **ignored_word = ignored_words;
-	struct obs_option *out_options =
+	struct ols_option *out_options =
 		bmalloc(input_option_count * sizeof(*out_options));
-	struct obs_option *out_option = out_options;
+	struct ols_option *out_option = out_options;
 	for (char **input_word = input_words; *input_word; ++input_word) {
 		if (getparam(*input_word, &out_option->name,
 			     (const char **)&out_option->value)) {
@@ -49,7 +49,7 @@ struct obs_options obs_parse_options(const char *options_string)
 			++ignored_word;
 		}
 	}
-	return (struct obs_options){
+	return (struct ols_options){
 		.count = out_option - out_options,
 		.options = out_options,
 		.ignored_word_count = ignored_word - ignored_words,
@@ -58,7 +58,7 @@ struct obs_options obs_parse_options(const char *options_string)
 	};
 
 failure:
-	return (struct obs_options){
+	return (struct ols_options){
 		.count = 0,
 		.options = NULL,
 		.ignored_word_count = 0,
@@ -67,7 +67,7 @@ failure:
 	};
 }
 
-void obs_free_options(struct obs_options options)
+void ols_free_options(struct ols_options options)
 {
 	for (size_t i = 0; i < options.count; ++i) {
 		bfree(options.options[i].name);

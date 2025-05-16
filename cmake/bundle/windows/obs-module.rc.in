@@ -5,13 +5,13 @@ BEGIN
   BEGIN
     BLOCK "040904B0"
     BEGIN
-      VALUE "CompanyName", "${OBS_COMPANY_NAME}"
+      VALUE "CompanyName", "${OLS_COMPANY_NAME}"
       VALUE "FileDescription", "${MODULE_DESCRIPTION}"
       VALUE "FileVersion", "${UI_VERSION}"
-      VALUE "ProductName", "${OBS_PRODUCT_NAME}"
+      VALUE "ProductName", "${OLS_PRODUCT_NAME}"
       VALUE "ProductVersion", "${UI_VERSION}"
-      VALUE "Comments", "${OBS_COMMENTS}"
-      VALUE "LegalCopyright", "${OBS_LEGAL_COPYRIGHT}"
+      VALUE "Comments", "${OLS_COMMENTS}"
+      VALUE "LegalCopyright", "${OLS_LEGAL_COPYRIGHT}"
       VALUE "InternalName", "${PROJECT_NAME}"
       VALUE "OriginalFilename", "${PROJECT_NAME}"
     END

@@ -58,24 +58,24 @@ static void AddExtraModulePaths() {
   printf("base module dir %s\n", path.c_str());
 #if defined(__APPLE__)
   /* User Application Support Search Path */
-  obs_add_module_path((path + "/Contents/MacOS").c_str(),
+  ols_add_module_path((path + "/Contents/MacOS").c_str(),
                       (path + "/Contents/Resources").c_str());
 
 #ifndef __aarch64__
   /* Legacy System Library Search Path */
   char system_legacy_module_dir[PATH_MAX];
   GetProgramDataPath(system_legacy_module_dir, sizeof(system_legacy_module_dir),
-                     "obs-studio/plugins/%module%");
+                     "ols-studio/plugins/%module%");
   std::string path_system_legacy = system_legacy_module_dir;
-  obs_add_module_path((path_system_legacy + "/bin").c_str(),
+  ols_add_module_path((path_system_legacy + "/bin").c_str(),
                       (path_system_legacy + "/data").c_str());
 
   /* Legacy User Application Support Search Path */
   char user_legacy_module_dir[PATH_MAX];
   GetConfigPath(user_legacy_module_dir, sizeof(user_legacy_module_dir),
-                "obs-studio/plugins/%module%");
+                "ols-studio/plugins/%module%");
   std::string path_user_legacy = user_legacy_module_dir;
-  obs_add_module_path((path_user_legacy + "/bin").c_str(),
+  ols_add_module_path((path_user_legacy + "/bin").c_str(),
                       (path_user_legacy + "/data").c_str());
 #endif
 #else
@@ -91,7 +91,7 @@ static void AddExtraModulePaths() {
 int main(int argc, char **argv) {
 
   if (!ols_startup("en-US", NULL, NULL))
-    printf("Couldn't create OBS");
+    printf("Couldn't create OLS");
   struct ols_module_failure_info mfi;
 
   AddExtraModulePaths();

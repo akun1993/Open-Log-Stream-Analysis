@@ -1,19 +1,19 @@
 1 VERSIONINFO
-FILEVERSION ${OBS_VERSION_MAJOR},${OBS_VERSION_MINOR},${OBS_VERSION_PATCH},0
+FILEVERSION ${OLS_VERSION_MAJOR},${OLS_VERSION_MINOR},${OLS_VERSION_PATCH},0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
     BLOCK "040904B0"
     BEGIN
-      VALUE "CompanyName", "${OBS_COMPANY_NAME}"
-      VALUE "FileDescription", "OBS GDI+ text module"
-      VALUE "FileVersion", "${OBS_VERSION_CANONICAL}"
-      VALUE "ProductName", "${OBS_PRODUCT_NAME}"
-      VALUE "ProductVersion", "${OBS_VERSION_CANONICAL}"
-      VALUE "Comments", "${OBS_COMMENTS}"
-      VALUE "LegalCopyright", "${OBS_LEGAL_COPYRIGHT}"
-      VALUE "InternalName", "obs-text"
-      VALUE "OriginalFilename", "obs-text"
+      VALUE "CompanyName", "${OLS_COMPANY_NAME}"
+      VALUE "FileDescription", "OLS GDI+ text module"
+      VALUE "FileVersion", "${OLS_VERSION_CANONICAL}"
+      VALUE "ProductName", "${OLS_PRODUCT_NAME}"
+      VALUE "ProductVersion", "${OLS_VERSION_CANONICAL}"
+      VALUE "Comments", "${OLS_COMMENTS}"
+      VALUE "LegalCopyright", "${OLS_LEGAL_COPYRIGHT}"
+      VALUE "InternalName", "ols-text"
+      VALUE "OriginalFilename", "ols-text"
     END
   END
 
