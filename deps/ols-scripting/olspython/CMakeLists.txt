@@ -42,8 +42,7 @@ list(APPEND _SWIG_DEFINITIONS "SWIG_TYPE_TABLE=olspython" "Py_ENABLE_SHARED=1" "
 target_compile_definitions(olspython PRIVATE SWIG_TYPE_TABLE=olspython Py_ENABLE_SHARED=1
                                              SWIG_PYTHON_INTERPRETER_NO_DEBUG $<$<BOOL:${ENABLE_UI}>:ENABLE_UI>)
 
-target_link_libraries(olspython PRIVATE OLS::scripting OLS::cstrcache OLS::libols
-                                        $<$<BOOL:${ENABLE_UI}>:OLS::frontend-api>)
+target_link_libraries(olspython PRIVATE OLS::scripting OLS::cstrcache OLS::libols)
 
 if(OS_WINDOWS)
   target_link_libraries(olspython PRIVATE Python::Python)

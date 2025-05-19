@@ -68,7 +68,7 @@ target_compile_features(ols-scripting PRIVATE cxx_auto_type)
 target_include_directories(ols-scripting PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(OS_WINDOWS)
-  set(MODULE_DESCRIPTION "OBS Studio scripting module")
+  set(MODULE_DESCRIPTION "OLS Studio scripting module")
   configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in ols-scripting.rc)
 
   target_sources(ols-scripting PRIVATE ols-scripting.rc)
@@ -147,7 +147,7 @@ if(TARGET Python::Python)
   if(OS_WINDOWS)
     string(REGEX REPLACE "_d" "" _PYTHON_FILE ${_PYTHON_FILE})
   endif()
-  set(OBS_SCRIPT_PYTHON_PATH "${_PYTHON_FILE}")
+  set(OLS_SCRIPT_PYTHON_PATH "${_PYTHON_FILE}")
 
   unset(_PYTHON_FILE)
   unset(_PYTHON_PATH)
@@ -164,7 +164,7 @@ if(TARGET Python::Python)
   endif()
 
   if(ENABLE_UI)
-    target_link_libraries(ols-scripting PRIVATE OBS::frontend-api)
+    #target_link_libraries(ols-scripting PRIVATE OBS::frontend-api)
 
     target_sources(ols-scripting PRIVATE ols-scripting-python-frontend.c)
 

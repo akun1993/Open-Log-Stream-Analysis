@@ -38,7 +38,7 @@ file(
 target_include_directories(olspython PRIVATE "$<$<PLATFORM_ID:Windows>:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>>"
                                              "${CMAKE_CURRENT_BINARY_DIR}")
 
-target_link_libraries(olspython PRIVATE OBS::scripting OBS::libobs)
+target_link_libraries(olspython PRIVATE OLS::scripting OLS::libols)
 
 list(APPEND _SWIG_DEFINITIONS "SWIG_TYPE_TABLE=olspython" "Py_ENABLE_SHARED=1" "SWIG_PYTHON_INTERPRETER_NO_DEBUG")
 
@@ -49,7 +49,7 @@ target_compile_definitions(olspython PRIVATE SWIG_TYPE_TABLE=olspython Py_ENABLE
 
 if(ENABLE_UI)
   list(APPEND _SWIG_DEFINITIONS "ENABLE_UI")
-  target_link_libraries(olspython PRIVATE OBS::frontend-api)
+  #target_link_libraries(olspython PRIVATE OBS::frontend-api)
 
   target_compile_definitions(olspython PRIVATE ENABLE_UI)
 endif()
@@ -101,7 +101,7 @@ endif()
 set_target_properties(
   olspython
   PROPERTIES FOLDER "scripting"
-             VERSION "${OBS_VERSION_MAJOR}"
-             SOVERSION "${OBS_VERSION_CANONICAL}")
+             VERSION "${OLS_VERSION_MAJOR}"
+             SOVERSION "${OLS_VERSION_CANONICAL}")
 
 setup_script_plugin_target(olspython)

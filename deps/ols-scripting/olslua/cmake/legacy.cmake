@@ -27,15 +27,15 @@ swig_add_library(
   TYPE MODULE
   SOURCES olslua.i ../cstrcache.cpp ../cstrcache.h)
 
-target_link_libraries(olslua PRIVATE ols::scripting ols::libobs Luajit::Luajit)
+target_link_libraries(olslua PRIVATE ols::scripting ols::libols Luajit::Luajit)
 
 list(APPEND _SWIG_DEFINITIONS "SWIG_TYPE_TABLE=olslua" "SWIG_LUA_INTERPRETER_NO_DEBUG")
 
 set_target_properties(
   olslua
   PROPERTIES FOLDER "scripting"
-             VERSION "${OBS_VERSION_MAJOR}"
-             SOVERSION "${OBS_VERSION_CANONICAL}")
+             VERSION "${OLS_VERSION_MAJOR}"
+             SOVERSION "${OLS_VERSION_CANONICAL}")
 
 target_compile_definitions(olslua PRIVATE SWIG_TYPE_TABLE=olslua SWIG_LUA_INTERPRETER_NO_DEBUG)
 

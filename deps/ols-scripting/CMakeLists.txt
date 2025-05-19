@@ -31,16 +31,14 @@ endif()
 target_sources(
   ols-scripting
   PUBLIC ols-scripting.h
-  PRIVATE ols-scripting.c ols-scripting-logging.c ols-scripting-callback.h
-          $<$<BOOL:${ENABLE_UI}>:ols-scripting-python-frontend.c> $<$<BOOL:${ENABLE_UI}>:ols-scripting-lua-frontend.c>)
+  PRIVATE ols-scripting.c ols-scripting-logging.c ols-scripting-callback.h)
 
 target_compile_definitions(ols-scripting PRIVATE SCRIPT_DIR="${OLS_SCRIPT_PLUGIN_PATH}"
                                                  $<$<BOOL:${ENABLE_UI}>:ENABLE_UI>)
 target_compile_features(ols-scripting PRIVATE cxx_auto_type)
 target_include_directories(ols-scripting PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(ols-scripting PRIVATE OLS::libols OLS::cstrcache $<$<BOOL:${ENABLE_UI}>:OLS::frontend-api>
-                                            $<$<PLATFORM_ID:Windows>:OLS::w32-pthreads> $<$<PLATFORM_ID:Darwin>:objc>)
+target_link_libraries(ols-scripting PRIVATE OLS::libols OLS::cstrcache  $<$<PLATFORM_ID:Windows>:OLS::w32-pthreads> $<$<PLATFORM_ID:Darwin>:objc>)
 
 if(OS_WINDOWS)
   configure_file(cmake/windows/ols-module.rc.in ols-scripting.rc)

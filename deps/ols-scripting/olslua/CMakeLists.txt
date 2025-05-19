@@ -29,8 +29,7 @@ target_compile_options(olslua PRIVATE "$<$<C_COMPILER_ID:AppleClang,Clang>:-Wno-
 target_compile_definitions(olslua PRIVATE SWIG_TYPE_TABLE=olslua SWIG_LUA_INTERPRETER_NO_DEBUG
                                           $<$<BOOL:${ENABLE_UI}>:ENABLE_UI>)
 
-target_link_libraries(olslua PRIVATE OLS::scripting OLS::cstrcache OLS::libols Luajit::Luajit
-                                     $<$<BOOL:ENABLE_UI>:OLS::frontend-api>)
+target_link_libraries(olslua PRIVATE OLS::scripting OLS::cstrcache OLS::libols Luajit::Luajit)
 
 if(OS_WINDOWS)
   target_compile_options(olslua PRIVATE /wd4054 /wd4197 /wd4244 /wd4267)
