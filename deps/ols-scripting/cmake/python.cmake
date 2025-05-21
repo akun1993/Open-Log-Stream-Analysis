@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16...3.21)
 option(ENABLE_SCRIPTING_PYTHON "Enable Python scripting support" ON)
 
 if(ENABLE_SCRIPTING_PYTHON)
-  add_subdirectory(olspython)
+  #add_subdirectory(olspython)
   find_package(Python 3.8...<3.12 COMPONENTS Interpreter Development)
 else()
   target_disable_feature(ols-scripting "Python scripting support")
@@ -16,17 +16,17 @@ target_compile_definitions(
   PRIVATE ENABLE_SCRIPTING PYTHON_LIB="$<TARGET_LINKER_FILE_NAME:Python::Python>"
   PUBLIC Python_FOUND)
 
-add_custom_command(
-  OUTPUT swig/swigpyrun.h
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  PRE_BUILD
-  COMMAND ${CMAKE_COMMAND} -E make_directory swig
-  COMMAND ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
-          $<IF:$<BOOL:${OS_LINUX}>,-py3,-py3-stable-abi> -external-runtime swig/swigpyrun.h
-  COMMENT "ols-scripting - generating Python 3 SWIG interface headers")
+# add_custom_command(
+#   OUTPUT swig/swigpyrun.h
+#   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+#   PRE_BUILD
+#   COMMAND ${CMAKE_COMMAND} -E make_directory swig
+#   COMMAND ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
+#           $<IF:$<BOOL:${OS_LINUX}>,-py3,-py3-stable-abi> -external-runtime swig/swigpyrun.h
+#   COMMENT "ols-scripting - generating Python 3 SWIG interface headers")
 
-target_sources(ols-scripting PRIVATE swig/swigpyrun.h)
-set_source_files_properties(swig/swigpyrun.h PROPERTIES GENERATED ON)
+#target_sources(ols-scripting PRIVATE swig/swigpyrun.h)
+#set_source_files_properties(swig/swigpyrun.h PROPERTIES GENERATED ON)
 
 if(OS_WINDOWS)
   target_sources(ols-scripting PRIVATE ols-scripting-python-import.c)

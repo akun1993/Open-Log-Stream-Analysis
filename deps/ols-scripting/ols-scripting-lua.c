@@ -45,12 +45,10 @@ for val in pairs(package.preload) do\n\
 	package.preload[val] = nil\n\
 end\n\
 package.cpath = package.cpath .. \";\" .. \"%s/?." SO_EXT
-    "\" .. \";\" .. \"%s\" .. \"/?." SO_EXT
-    "\"\n\
+    "\" .. \";\" .. \"%s\" .. \"/?." SO_EXT "\"\n\
 require \"olslua\"\n";
 
-static const char *get_script_path_func =
-    "\
+static const char *get_script_path_func = "\
 function script_path()\n\
 	 return \"%s\"\n\
 end\n\
@@ -58,15 +56,101 @@ package.path = package.path .. \";\" .. script_path() .. \"/?.lua\"\n";
 
 static char *startup_script = NULL;
 
-
 pthread_mutex_t lua_source_def_mutex;
 
-#define call_func(name, args, rets) \
+#define call_func(name, args, rets)                                            \
   call_func_(script, cb->reg_idx, args, rets, #name, __FUNCTION__)
 
+/* -------------------------------------------- */
+
+THREAD_LOCAL struct lua_ols_callback *current_lua_cb = NULL;
+THREAD_LOCAL struct ols_lua_script *current_lua_script = NULL;
+
+/* -------------------------------------------- */
+
+static int hook_print(lua_State *script) {
+  struct ols_lua_script *data = current_lua_script;
+  const char *msg = lua_tostring(script, 1);
+  if (!msg)
+    return 0;
+
+  script_info(&data->base, "%s", msg);
+  return 0;
+}
+
+static int hook_error(lua_State *script) {
+  struct ols_lua_script *data = current_lua_script;
+  const char *msg = lua_tostring(script, 1);
+  if (!msg)
+    return 0;
+
+  script_error(&data->base, "%s", msg);
+  return 0;
+}
+
+/* -------------------------------------------- */
+static int lua_script_log(lua_State *script) {
+  struct ols_lua_script *data = current_lua_script;
+  int log_level = (int)lua_tointeger(script, 1);
+  const char *msg = lua_tostring(script, 2);
+
+  if (!msg)
+    return 0;
+
+  /* ------------------- */
+
+  dstr_copy(&data->log_chunk, msg);
+
+  const char *start = data->log_chunk.array;
+  char *endl = strchr(start, '\n');
+
+  while (endl) {
+    *endl = 0;
+    script_log(&data->base, log_level, "%s", start);
+    *endl = '\n';
+
+    start = endl + 1;
+    endl = strchr(start, '\n');
+  }
+
+  if (start && *start)
+    script_log(&data->base, log_level, "%s", start);
+  dstr_resize(&data->log_chunk, 0);
+
+  /* ------------------- */
+
+  return 0;
+}
+/* -------------------------------------------- */
+
+static void add_hook_functions(lua_State *script) {
+#define add_func(name, func)                                                   \
+  do {                                                                         \
+    lua_pushstring(script, name);                                              \
+    lua_pushcfunction(script, func);                                           \
+    lua_rawset(script, -3);                                                    \
+  } while (false)
+
+  lua_getglobal(script, "_G");
+
+  add_func("print", hook_print);
+  add_func("error", hook_error);
+
+  lua_pop(script, 1);
+
+  /* ------------- */
+
+  lua_getglobal(script, "olslua");
+
+  add_func("script_log", lua_script_log);
+
+  lua_pop(script, 1);
+#undef add_func
+}
+
+/* -------------------------------------------- */
+
 /* ========================================================================= */
-
-
 
 static bool load_lua_script(struct ols_lua_script *data) {
   struct dstr str = {0};
@@ -139,8 +223,6 @@ static bool load_lua_script(struct ols_lua_script *data) {
     }
   }
 
-
-
   lua_getglobal(script, "script_properties");
   if (lua_isfunction(script, -1))
     data->get_properties = luaL_ref(script, LUA_REGISTRYINDEX);
@@ -176,97 +258,6 @@ fail:
   return success;
 }
 
-/* -------------------------------------------- */
-
-THREAD_LOCAL struct lua_ols_callback *current_lua_cb = NULL;
-THREAD_LOCAL struct ols_lua_script *current_lua_script = NULL;
-
-
-
-/* -------------------------------------------- */
-
-static int hook_print(lua_State *script) {
-  struct ols_lua_script *data = current_lua_script;
-  const char *msg = lua_tostring(script, 1);
-  if (!msg) return 0;
-
-  script_info(&data->base, "%s", msg);
-  return 0;
-}
-
-static int hook_error(lua_State *script) {
-  struct ols_lua_script *data = current_lua_script;
-  const char *msg = lua_tostring(script, 1);
-  if (!msg) return 0;
-
-  script_error(&data->base, "%s", msg);
-  return 0;
-}
-
-/* -------------------------------------------- */
-
-static int lua_script_log(lua_State *script) {
-  struct ols_lua_script *data = current_lua_script;
-  int log_level = (int)lua_tointeger(script, 1);
-  const char *msg = lua_tostring(script, 2);
-
-  if (!msg) return 0;
-
-  /* ------------------- */
-
-  dstr_copy(&data->log_chunk, msg);
-
-  const char *start = data->log_chunk.array;
-  char *endl = strchr(start, '\n');
-
-  while (endl) {
-    *endl = 0;
-    script_log(&data->base, log_level, "%s", start);
-    *endl = '\n';
-
-    start = endl + 1;
-    endl = strchr(start, '\n');
-  }
-
-  if (start && *start) script_log(&data->base, log_level, "%s", start);
-  dstr_resize(&data->log_chunk, 0);
-
-  /* ------------------- */
-
-  return 0;
-}
-
-/* -------------------------------------------- */
-
-static void add_hook_functions(lua_State *script) {
-#define add_func(name, func)         \
-  do {                               \
-    lua_pushstring(script, name);    \
-    lua_pushcfunction(script, func); \
-    lua_rawset(script, -3);          \
-  } while (false)
-
-  lua_getglobal(script, "_G");
-
-  add_func("print", hook_print);
-  add_func("error", hook_error);
-
-  lua_pop(script, 1);
-
-  /* ------------- */
-
-  lua_getglobal(script, "olslua");
-
-  add_func("script_log", lua_script_log);
-
-
-  lua_pop(script, 1);
-#undef add_func
-}
-
-/* -------------------------------------------- */
-
-
 bool ols_lua_script_load(ols_script_t *s) {
   struct ols_lua_script *data = (struct ols_lua_script *)s;
   if (!data->base.loaded) {
@@ -274,7 +265,7 @@ bool ols_lua_script_load(ols_script_t *s) {
     if (data->base.loaded) {
       blog(LOG_INFO, "[ols-scripting]: Loaded lua script: %s",
            data->base.file.array);
-      ols_lua_script_update(s, NULL);
+      // ols_lua_script_update(s, NULL);
     }
   }
 
@@ -285,7 +276,7 @@ ols_script_t *ols_lua_script_create(const char *path, ols_data_t *settings) {
   struct ols_lua_script *data = bzalloc(sizeof(*data));
 
   data->base.type = OLS_SCRIPT_LANG_LUA;
-  data->tick = LUA_REFNIL;
+  // data->tick = LUA_REFNIL;
 
   pthread_mutex_init_value(&data->mutex);
 
@@ -306,17 +297,18 @@ ols_script_t *ols_lua_script_create(const char *path, ols_data_t *settings) {
   }
 
   data->base.settings = ols_data_create();
-  if (settings) ols_data_apply(data->base.settings, settings);
+  if (settings)
+    ols_data_apply(data->base.settings, settings);
 
   ols_lua_script_load((ols_script_t *)data);
   return (ols_script_t *)data;
 }
 
-
 void ols_lua_script_unload(ols_script_t *s) {
   struct ols_lua_script *data = (struct ols_lua_script *)s;
 
-  if (!s->loaded) return;
+  if (!s->loaded)
+    return;
 
   lua_State *script = data->script;
 
@@ -337,8 +329,6 @@ void ols_lua_script_unload(ols_script_t *s) {
   }
 
   pthread_mutex_unlock(&data->mutex);
-
-
 
   /* ---------------------------- */
   /* call script_unload           */
@@ -388,8 +378,6 @@ void ols_lua_script_destroy(ols_script_t *s) {
   }
 }
 
-
-
 /* -------------------------------------------- */
 
 void ols_lua_load(void) {
@@ -424,11 +412,11 @@ void ols_lua_load(void) {
   dstr_printf(&tmp, startup_script_template, import_path, SCRIPT_DIR);
   startup_script = tmp.array;
 
-  ols_add_tick_callback(lua_tick, NULL);
+  // ols_add_tick_callback(lua_tick, NULL);
 }
 
 void ols_lua_unload(void) {
-  ols_remove_tick_callback(lua_tick, NULL);
+  // ols_remove_tick_callback(lua_tick, NULL);
 
   bfree(startup_script);
 
