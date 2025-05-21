@@ -375,30 +375,12 @@ void ols_python_script_unload(ols_script_t *s) {
    * processor or operating system is going to schedule things. a more
    * ideal method would be to reference count the script objects and
    * atomically share ownership with callbacks when they're called. */
-  struct script_callback *cb = data->first_callback;
-  while (cb) {
-    os_atomic_set_bool(&cb->removed, true);
-    cb = cb->next;
-  }
 
   Py_XDECREF(data->tick);
   Py_XDECREF(data->save);
-  Py_XDECREF(data->update);
-  Py_XDECREF(data->get_properties);
+
   data->tick = NULL;
   data->save = NULL;
-  data->update = NULL;
-  data->get_properties = NULL;
-
-  /* ---------------------------- */
-  /* remove all callbacks         */
-
-  cb = data->first_callback;
-  while (cb) {
-    struct script_callback *next = cb->next;
-    remove_script_callback(cb);
-    cb = next;
-  }
 
   /* ---------------------------- */
   /* unload                       */

@@ -313,24 +313,6 @@ void ols_lua_script_unload(ols_script_t *s) {
   lua_State *script = data->script;
 
   /* ---------------------------- */
-  /* mark callbacks as removed    */
-
-  pthread_mutex_lock(&data->mutex);
-
-  /* XXX: scripts can potentially make callbacks when this happens, so
-   * this probably still isn't ideal as we can't predict how the
-   * processor or operating system is going to schedule things. a more
-   * ideal method would be to reference count the script objects and
-   * atomically share ownership with callbacks when they're called. */
-  struct lua_ols_callback *cb = (struct lua_ols_callback *)data->first_callback;
-  while (cb) {
-    os_atomic_set_bool(&cb->base.removed, true);
-    cb = (struct lua_ols_callback *)cb->base.next;
-  }
-
-  pthread_mutex_unlock(&data->mutex);
-
-  /* ---------------------------- */
   /* call script_unload           */
 
   pthread_mutex_lock(&data->mutex);
@@ -340,16 +322,6 @@ void ols_lua_script_unload(ols_script_t *s) {
   lua_pcall(script, 0, 0, 0);
 
   current_lua_script = NULL;
-
-  /* ---------------------------- */
-  /* remove all callbacks         */
-
-  cb = (struct lua_ols_callback *)data->first_callback;
-  while (cb) {
-    struct lua_ols_callback *next = (struct lua_ols_callback *)cb->base.next;
-    remove_lua_ols_callback(cb);
-    cb = next;
-  }
 
   pthread_mutex_unlock(&data->mutex);
 

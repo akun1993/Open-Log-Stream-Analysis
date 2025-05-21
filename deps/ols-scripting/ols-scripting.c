@@ -16,7 +16,6 @@
 ******************************************************************************/
 
 #include <ols.h>
-#include <util/circlebuf.h>
 #include <util/dstr.h>
 #include <util/platform.h>
 #include <util/threading.h>
@@ -46,10 +45,6 @@ extern void ols_python_unload(void);
 
 #endif
 
-pthread_mutex_t detach_mutex;
-struct script_callback *detached_callbacks;
-
-static struct dstr file_filter = {0};
 static bool scripting_loaded = false;
 
 static const char *supported_formats[] = {
@@ -63,74 +58,11 @@ static const char *supported_formats[] = {
 
 /* -------------------------------------------- */
 
-static pthread_mutex_t defer_call_mutex;
-static struct circlebuf defer_call_queue;
-static bool defer_call_exit = false;
-static os_sem_t *defer_call_semaphore;
-static pthread_t defer_call_thread;
-
-struct defer_call {
-  defer_call_cb call;
-  void *cb;
-};
-
-static void *defer_thread(void *unused) {
-  UNUSED_PARAMETER(unused);
-  os_set_thread_name("scripting: defer");
-
-  while (os_sem_wait(defer_call_semaphore) == 0) {
-    struct defer_call info;
-
-    pthread_mutex_lock(&defer_call_mutex);
-    if (defer_call_exit) {
-      pthread_mutex_unlock(&defer_call_mutex);
-      return NULL;
-    }
-
-    circlebuf_pop_front(&defer_call_queue, &info, sizeof(info));
-    pthread_mutex_unlock(&defer_call_mutex);
-
-    info.call(info.cb);
-  }
-
-  return NULL;
-}
-
-void defer_call_post(defer_call_cb call, void *cb) {
-  struct defer_call info;
-  info.call = call;
-  info.cb = cb;
-
-  pthread_mutex_lock(&defer_call_mutex);
-  if (!defer_call_exit)
-    circlebuf_push_back(&defer_call_queue, &info, sizeof(info));
-  pthread_mutex_unlock(&defer_call_mutex);
-
-  os_sem_post(defer_call_semaphore);
-}
-
 /* -------------------------------------------- */
 
 bool ols_scripting_load(void) {
-  circlebuf_init(&defer_call_queue);
 
   if (pthread_mutex_init(&detach_mutex, NULL) != 0) {
-    return false;
-  }
-  if (pthread_mutex_init(&defer_call_mutex, NULL) != 0) {
-    pthread_mutex_destroy(&detach_mutex);
-    return false;
-  }
-  if (os_sem_init(&defer_call_semaphore, 0) != 0) {
-    pthread_mutex_destroy(&defer_call_mutex);
-    pthread_mutex_destroy(&detach_mutex);
-    return false;
-  }
-
-  if (pthread_create(&defer_call_thread, NULL, defer_thread, NULL) != 0) {
-    os_sem_destroy(defer_call_semaphore);
-    pthread_mutex_destroy(&defer_call_mutex);
-    pthread_mutex_destroy(&detach_mutex);
     return false;
   }
 
@@ -140,8 +72,8 @@ bool ols_scripting_load(void) {
 
 #if defined(Python_FOUND)
   ols_python_load();
-#if !defined(_WIN32) &&                                                      \
-    !defined(__APPLE__) /* Win32 and macOS need user-provided Python library \
+#if !defined(_WIN32) &&                                                        \
+    !defined(__APPLE__) /* Win32 and macOS need user-provided Python library   \
                            paths */
   ols_scripting_load_python(NULL);
 #endif
@@ -152,7 +84,8 @@ bool ols_scripting_load(void) {
 }
 
 void ols_scripting_unload(void) {
-  if (!scripting_loaded) return;
+  if (!scripting_loaded)
+    return;
 
   /* ---------------------- */
 
@@ -163,45 +96,6 @@ void ols_scripting_unload(void) {
 #if defined(Python_FOUND)
   ols_python_unload();
 #endif
-
-  dstr_free(&file_filter);
-
-  /* ---------------------- */
-
-  int total_detached = 0;
-
-  pthread_mutex_lock(&detach_mutex);
-
-  struct script_callback *cur = detached_callbacks;
-  while (cur) {
-    struct script_callback *next = cur->next;
-    just_free_script_callback(cur);
-    cur = next;
-
-    ++total_detached;
-  }
-
-  pthread_mutex_unlock(&detach_mutex);
-  pthread_mutex_destroy(&detach_mutex);
-
-  blog(LOG_INFO, "[Scripting] Total detached callbacks: %d", total_detached);
-
-  /* ---------------------- */
-
-  pthread_mutex_lock(&defer_call_mutex);
-
-  /* TODO */
-
-  defer_call_exit = true;
-  circlebuf_free(&defer_call_queue);
-
-  pthread_mutex_unlock(&defer_call_mutex);
-
-  os_sem_post(defer_call_semaphore);
-  pthread_join(defer_call_thread, NULL);
-
-  pthread_mutex_destroy(&defer_call_mutex);
-  os_sem_destroy(defer_call_semaphore);
 
   scripting_loaded = false;
 }
@@ -224,11 +118,14 @@ ols_script_t *ols_script_create(const char *path, ols_data_t *settings) {
   ols_script_t *script = NULL;
   const char *ext;
 
-  if (!scripting_loaded) return NULL;
-  if (!ptr_valid(path)) return NULL;
+  if (!scripting_loaded)
+    return NULL;
+  if (!ptr_valid(path))
+    return NULL;
 
   ext = strrchr(path, '.');
-  if (!ext) return NULL;
+  if (!ext)
+    return NULL;
 
 #if defined(LUAJIT_FOUND)
   if (strcmp(ext, ".lua") == 0) {
@@ -272,7 +169,8 @@ static void clear_queue_signal(void *p_event) {
 
 static void clear_call_queue(void) {
   os_event_t *event;
-  if (os_event_init(&event, OS_EVENT_TYPE_AUTO) != 0) return;
+  if (os_event_init(&event, OS_EVENT_TYPE_AUTO) != 0)
+    return;
 
   defer_call_post(clear_queue_signal, event);
 
@@ -281,8 +179,10 @@ static void clear_call_queue(void) {
 }
 
 bool ols_script_reload(ols_script_t *script) {
-  if (!scripting_loaded) return false;
-  if (!ptr_valid(script)) return false;
+  if (!scripting_loaded)
+    return false;
+  if (!ptr_valid(script))
+    return false;
 
 #if defined(LUAJIT_FOUND)
   if (script->type == OLS_SCRIPT_LANG_LUA) {
@@ -310,7 +210,8 @@ bool ols_script_loaded(const ols_script_t *script) {
 }
 
 void ols_script_destroy(ols_script_t *script) {
-  if (!script) return;
+  if (!script)
+    return;
 
 #if defined(LUAJIT_FOUND)
   if (script->type == OLS_SCRIPT_LANG_LUA) {

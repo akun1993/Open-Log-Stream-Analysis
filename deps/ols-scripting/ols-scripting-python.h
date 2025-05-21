@@ -71,86 +71,11 @@ struct ols_python_script {
   PyObject *module;
 
   PyObject *save;
-  PyObject *update;
-  PyObject *get_properties;
-
-  struct script_callback *first_callback;
 
   PyObject *tick;
-  struct ols_python_script *next_tick;
-  struct ols_python_script **p_prev_next_tick;
 };
 
 /* ------------------------------------------------------------ */
-
-struct python_ols_callback {
-  struct script_callback base;
-
-  PyObject *func;
-};
-
-static inline struct python_ols_callback *
-add_python_ols_callback_extra(struct ols_python_script *script, PyObject *func,
-                              size_t extra_size) {
-  struct python_ols_callback *cb =
-      add_script_callback(&script->first_callback, (ols_script_t *)script,
-                          sizeof(*cb) + extra_size);
-
-  Py_XINCREF(func);
-  cb->func = func;
-  return cb;
-}
-
-static inline struct python_ols_callback *
-add_python_ols_callback(struct ols_python_script *script, PyObject *func) {
-  return add_python_ols_callback_extra(script, func, 0);
-}
-
-static inline void *
-python_ols_callback_extra_data(struct python_ols_callback *cb) {
-  return (void *)&cb[1];
-}
-
-static inline struct ols_python_script *
-python_ols_callback_script(struct python_ols_callback *cb) {
-  return (struct ols_python_script *)cb->base.script;
-}
-
-static inline struct python_ols_callback *
-find_next_python_ols_callback(struct ols_python_script *script,
-                              struct python_ols_callback *cb, PyObject *func) {
-  cb = cb ? (struct python_ols_callback *)cb->base.next
-          : (struct python_ols_callback *)script->first_callback;
-
-  while (cb) {
-    if (cb->func == func)
-      break;
-    cb = (struct python_ols_callback *)cb->base.next;
-  }
-
-  return cb;
-}
-
-static inline struct python_ols_callback *
-find_python_ols_callback(struct ols_python_script *script, PyObject *func) {
-  return find_next_python_ols_callback(script, NULL, func);
-}
-
-static inline void remove_python_ols_callback(struct python_ols_callback *cb) {
-  remove_script_callback(&cb->base);
-
-  Py_XDECREF(cb->func);
-  cb->func = NULL;
-}
-
-static inline void
-just_free_python_ols_callback(struct python_ols_callback *cb) {
-  just_free_script_callback(&cb->base);
-}
-
-static inline void free_python_ols_callback(struct python_ols_callback *cb) {
-  free_script_callback(&cb->base);
-}
 
 /* ------------------------------------------------------------ */
 
