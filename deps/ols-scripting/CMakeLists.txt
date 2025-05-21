@@ -13,7 +13,6 @@ add_library(OLS::cstrcache ALIAS ols-cstrcache)
 target_sources(ols-cstrcache INTERFACE cstrcache.cpp cstrcache.h)
 target_include_directories(ols-cstrcache INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-find_package(SWIG 4 REQUIRED)
 
 add_library(ols-scripting SHARED)
 add_library(OLS::scripting ALIAS ols-scripting)

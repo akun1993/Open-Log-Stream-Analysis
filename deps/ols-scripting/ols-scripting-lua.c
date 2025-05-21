@@ -58,28 +58,15 @@ package.path = package.path .. \";\" .. script_path() .. \"/?.lua\"\n";
 
 static char *startup_script = NULL;
 
-static pthread_mutex_t tick_mutex;
-static struct ols_lua_script *first_tick_script = NULL;
 
 pthread_mutex_t lua_source_def_mutex;
 
-#define ls_get_libols_obj(type, lua_index, ols_obj)                \
-  ls_get_libols_obj_(script, #type " *", lua_index, ols_obj, NULL, \
-                     __FUNCTION__, __LINE__)
-#define ls_push_libols_obj(type, ols_obj, ownership)                \
-  ls_push_libols_obj_(script, #type " *", ols_obj, ownership, NULL, \
-                      __FUNCTION__, __LINE__)
 #define call_func(name, args, rets) \
   call_func_(script, cb->reg_idx, args, rets, #name, __FUNCTION__)
 
 /* ========================================================================= */
 
-static void add_hook_functions(lua_State *script);
-static int ols_lua_remove_tick_callback(lua_State *script);
 
-#ifdef ENABLE_UI
-// void add_lua_frontend_funcs(lua_State *script);
-#endif
 
 static bool load_lua_script(struct ols_lua_script *data) {
   struct dstr str = {0};
@@ -116,7 +103,6 @@ static bool load_lua_script(struct ols_lua_script *data) {
 
   current_lua_script = data;
 
-  add_lua_source_functions(script);
   add_hook_functions(script);
 #ifdef ENABLE_UI
   // add_lua_frontend_funcs(script);
@@ -153,20 +139,7 @@ static bool load_lua_script(struct ols_lua_script *data) {
     }
   }
 
-  lua_getglobal(script, "script_tick");
-  if (lua_isfunction(script, -1)) {
-    pthread_mutex_lock(&tick_mutex);
 
-    struct ols_lua_script *next = first_tick_script;
-    data->next_tick = next;
-    data->p_prev_next_tick = &first_tick_script;
-    if (next) next->p_prev_next_tick = &data->next_tick;
-    first_tick_script = data;
-
-    data->tick = luaL_ref(script, LUA_REGISTRYINDEX);
-
-    pthread_mutex_unlock(&tick_mutex);
-  }
 
   lua_getglobal(script, "script_properties");
   if (lua_isfunction(script, -1))
@@ -185,41 +158,6 @@ static bool load_lua_script(struct ols_lua_script *data) {
     data->save = luaL_ref(script, LUA_REGISTRYINDEX);
   else
     data->save = LUA_REFNIL;
-
-  lua_getglobal(script, "script_defaults");
-  if (lua_isfunction(script, -1)) {
-    ls_push_libols_obj(ols_data_t, data->base.settings, false);
-    if (lua_pcall(script, 1, 0, 0) != 0) {
-      script_warn(&data->base,
-                  "Error calling "
-                  "script_defaults: %s",
-                  lua_tostring(script, -1));
-    }
-  }
-
-  lua_getglobal(script, "script_description");
-  if (lua_isfunction(script, -1)) {
-    if (lua_pcall(script, 0, 1, 0) != 0) {
-      script_warn(&data->base,
-                  "Error calling "
-                  "script_defaults: %s",
-                  lua_tostring(script, -1));
-    } else {
-      const char *desc = lua_tostring(script, -1);
-      dstr_copy(&data->base.desc, desc);
-    }
-  }
-
-  lua_getglobal(script, "script_load");
-  if (lua_isfunction(script, -1)) {
-    ls_push_libols_obj(ols_data_t, data->base.settings, false);
-    if (lua_pcall(script, 1, 0, 0) != 0) {
-      script_warn(&data->base,
-                  "Error calling "
-                  "script_load: %s",
-                  lua_tostring(script, -1));
-    }
-  }
 
   data->script = script;
   success = true;
@@ -243,276 +181,7 @@ fail:
 THREAD_LOCAL struct lua_ols_callback *current_lua_cb = NULL;
 THREAD_LOCAL struct ols_lua_script *current_lua_script = NULL;
 
-/* -------------------------------------------- */
 
-struct lua_ols_timer {
-  struct lua_ols_timer *next;
-  struct lua_ols_timer **p_prev_next;
-
-  uint64_t last_ts;
-  uint64_t interval;
-};
-
-static pthread_mutex_t timer_mutex;
-static struct lua_ols_timer *first_timer = NULL;
-
-static inline void lua_ols_timer_init(struct lua_ols_timer *timer) {
-  pthread_mutex_lock(&timer_mutex);
-
-  struct lua_ols_timer *next = first_timer;
-  timer->next = next;
-  timer->p_prev_next = &first_timer;
-  if (next) next->p_prev_next = &timer->next;
-  first_timer = timer;
-
-  pthread_mutex_unlock(&timer_mutex);
-}
-
-static inline void lua_ols_timer_remove(struct lua_ols_timer *timer) {
-  struct lua_ols_timer *next = timer->next;
-  if (next) next->p_prev_next = timer->p_prev_next;
-  *timer->p_prev_next = timer->next;
-}
-
-static inline struct lua_ols_callback *lua_ols_timer_cb(
-    struct lua_ols_timer *timer) {
-  return &((struct lua_ols_callback *)timer)[-1];
-}
-
-static int timer_remove(lua_State *script) {
-  if (!is_function(script, 1)) return 0;
-
-  struct lua_ols_callback *cb = find_lua_ols_callback(script, 1);
-  if (cb) remove_lua_ols_callback(cb);
-  return 0;
-}
-
-static void timer_call(struct script_callback *p_cb) {
-  struct lua_ols_callback *cb = (struct lua_ols_callback *)p_cb;
-
-  if (script_callback_removed(p_cb)) return;
-
-  lock_callback();
-  call_func_(cb->script, cb->reg_idx, 0, 0, "timer_cb", __FUNCTION__);
-  unlock_callback();
-}
-
-static void defer_timer_init(void *p_cb) {
-  struct lua_ols_callback *cb = p_cb;
-  struct lua_ols_timer *timer = lua_ols_callback_extra_data(cb);
-  lua_ols_timer_init(timer);
-}
-
-static int timer_add(lua_State *script) {
-  if (!is_function(script, 1)) return 0;
-  int ms = (int)lua_tointeger(script, 2);
-  if (!ms) return 0;
-
-  struct lua_ols_callback *cb =
-      add_lua_ols_callback_extra(script, 1, sizeof(struct lua_ols_timer));
-  struct lua_ols_timer *timer = lua_ols_callback_extra_data(cb);
-
-  timer->interval = (uint64_t)ms * 1000000ULL;
-  timer->last_ts = ols_get_video_frame_time();
-
-  defer_call_post(defer_timer_init, cb);
-  return 0;
-}
-
-/* -------------------------------------------- */
-
-/* -------------------------------------------- */
-
-static void ols_lua_tick_callback(void *priv, float seconds) {
-  struct lua_ols_callback *cb = priv;
-  lua_State *script = cb->script;
-
-  if (script_callback_removed(&cb->base)) {
-    ols_remove_tick_callback(ols_lua_tick_callback, cb);
-    return;
-  }
-
-  lock_callback();
-
-  lua_pushnumber(script, (lua_Number)seconds);
-  call_func(ols_lua_tick_callback, 1, 0);
-
-  unlock_callback();
-}
-
-static int ols_lua_remove_tick_callback(lua_State *script) {
-  if (!verify_args1(script, is_function)) return 0;
-
-  struct lua_ols_callback *cb = find_lua_ols_callback(script, 1);
-  if (cb) remove_lua_ols_callback(cb);
-  return 0;
-}
-
-static void defer_add_tick(void *cb) {
-  ols_add_tick_callback(ols_lua_tick_callback, cb);
-}
-
-static int ols_lua_add_tick_callback(lua_State *script) {
-  if (!verify_args1(script, is_function)) return 0;
-
-  struct lua_ols_callback *cb = add_lua_ols_callback(script, 1);
-  defer_call_post(defer_add_tick, cb);
-  return 0;
-}
-
-/* -------------------------------------------- */
-
-static void calldata_signal_callback(void *priv, calldata_t *cd) {
-  struct lua_ols_callback *cb = priv;
-  lua_State *script = cb->script;
-
-  if (script_callback_removed(&cb->base)) {
-    signal_handler_remove_current();
-    return;
-  }
-
-  lock_callback();
-
-  ls_push_libols_obj(calldata_t, cd, false);
-  call_func(calldata_signal_callback, 1, 0);
-
-  unlock_callback();
-}
-
-static int ols_lua_signal_handler_disconnect(lua_State *script) {
-  signal_handler_t *handler;
-  const char *signal;
-
-  if (!ls_get_libols_obj(signal_handler_t, 1, &handler)) return 0;
-  signal = lua_tostring(script, 2);
-  if (!signal) return 0;
-  if (!is_function(script, 3)) return 0;
-
-  struct lua_ols_callback *cb = find_lua_ols_callback(script, 3);
-  while (cb) {
-    signal_handler_t *cb_handler = calldata_ptr(&cb->base.extra, "handler");
-    const char *cb_signal = calldata_string(&cb->base.extra, "signal");
-
-    if (cb_signal && strcmp(signal, cb_signal) == 0 && handler == cb_handler)
-      break;
-
-    cb = find_next_lua_ols_callback(script, cb, 3);
-  }
-
-  if (cb) remove_lua_ols_callback(cb);
-  return 0;
-}
-
-static void defer_connect(void *p_cb) {
-  struct script_callback *cb = p_cb;
-
-  signal_handler_t *handler = calldata_ptr(&cb->extra, "handler");
-  const char *signal = calldata_string(&cb->extra, "signal");
-  signal_handler_connect(handler, signal, calldata_signal_callback, cb);
-}
-
-static int ols_lua_signal_handler_connect(lua_State *script) {
-  signal_handler_t *handler;
-  const char *signal;
-
-  if (!ls_get_libols_obj(signal_handler_t, 1, &handler)) return 0;
-  signal = lua_tostring(script, 2);
-  if (!signal) return 0;
-  if (!is_function(script, 3)) return 0;
-
-  struct lua_ols_callback *cb = add_lua_ols_callback(script, 3);
-  calldata_set_ptr(&cb->base.extra, "handler", handler);
-  calldata_set_string(&cb->base.extra, "signal", signal);
-  defer_call_post(defer_connect, cb);
-  return 0;
-}
-
-/* -------------------------------------------- */
-
-static void calldata_signal_callback_global(void *priv, const char *signal,
-                                            calldata_t *cd) {
-  struct lua_ols_callback *cb = priv;
-  lua_State *script = cb->script;
-
-  if (script_callback_removed(&cb->base)) {
-    signal_handler_remove_current();
-    return;
-  }
-
-  lock_callback();
-
-  lua_pushstring(script, signal);
-  ls_push_libols_obj(calldata_t, cd, false);
-  call_func(calldata_signal_callback_global, 2, 0);
-
-  unlock_callback();
-}
-
-static int ols_lua_signal_handler_disconnect_global(lua_State *script) {
-  signal_handler_t *handler;
-
-  if (!ls_get_libols_obj(signal_handler_t, 1, &handler)) return 0;
-  if (!is_function(script, 2)) return 0;
-
-  struct lua_ols_callback *cb = find_lua_ols_callback(script, 3);
-  while (cb) {
-    signal_handler_t *cb_handler = calldata_ptr(&cb->base.extra, "handler");
-
-    if (handler == cb_handler) break;
-
-    cb = find_next_lua_ols_callback(script, cb, 3);
-  }
-
-  if (cb) remove_lua_ols_callback(cb);
-  return 0;
-}
-
-static void defer_connect_global(void *p_cb) {
-  struct script_callback *cb = p_cb;
-
-  signal_handler_t *handler = calldata_ptr(&cb->extra, "handler");
-  signal_handler_connect_global(handler, calldata_signal_callback_global, cb);
-}
-
-static int ols_lua_signal_handler_connect_global(lua_State *script) {
-  signal_handler_t *handler;
-
-  if (!ls_get_libols_obj(signal_handler_t, 1, &handler)) return 0;
-  if (!is_function(script, 2)) return 0;
-
-  struct lua_ols_callback *cb = add_lua_ols_callback(script, 2);
-  calldata_set_ptr(&cb->base.extra, "handler", handler);
-  defer_call_post(defer_connect_global, cb);
-  return 0;
-}
-
-static int source_list_release(lua_State *script) {
-  size_t count = lua_rawlen(script, 1);
-  for (size_t i = 0; i < count; i++) {
-    ols_source_t *source;
-
-    lua_rawgeti(script, 1, (int)i + 1);
-    ls_get_libols_obj(ols_source_t, -1, &source);
-    lua_pop(script, 1);
-
-    ols_source_release(source);
-  }
-  return 0;
-}
-
-static int sceneitem_list_release(lua_State *script) {
-  size_t count = lua_rawlen(script, 1);
-  for (size_t i = 0; i < count; i++) {
-    ols_sceneitem_t *item;
-
-    lua_rawgeti(script, 1, (int)i + 1);
-    ls_get_libols_obj(ols_sceneitem_t, -1, &item);
-    lua_pop(script, 1);
-
-    ols_sceneitem_release(item);
-  }
-  return 0;
-}
 
 /* -------------------------------------------- */
 
@@ -589,20 +258,7 @@ static void add_hook_functions(lua_State *script) {
   lua_getglobal(script, "olslua");
 
   add_func("script_log", lua_script_log);
-  add_func("timer_remove", timer_remove);
-  add_func("timer_add", timer_add);
 
-  add_func("source_list_release", source_list_release);
-  add_func("sceneitem_list_release", sceneitem_list_release);
-
-  add_func("ols_add_tick_callback", ols_lua_add_tick_callback);
-  add_func("ols_remove_tick_callback", ols_lua_remove_tick_callback);
-  add_func("signal_handler_connect", ols_lua_signal_handler_connect);
-  add_func("signal_handler_disconnect", ols_lua_signal_handler_disconnect);
-  add_func("signal_handler_connect_global",
-           ols_lua_signal_handler_connect_global);
-  add_func("signal_handler_disconnect_global",
-           ols_lua_signal_handler_disconnect_global);
 
   lua_pop(script, 1);
 #undef add_func
@@ -610,62 +266,6 @@ static void add_hook_functions(lua_State *script) {
 
 /* -------------------------------------------- */
 
-static void lua_tick(void *param, float seconds) {
-  struct ols_lua_script *data;
-  struct lua_ols_timer *timer;
-  uint64_t ts = ols_get_video_frame_time();
-
-  /* --------------------------------- */
-  /* process script_tick calls         */
-
-  pthread_mutex_lock(&tick_mutex);
-  data = first_tick_script;
-  while (data) {
-    lua_State *script = data->script;
-    current_lua_script = data;
-
-    pthread_mutex_lock(&data->mutex);
-
-    lua_pushnumber(script, (double)seconds);
-    call_func_(script, data->tick, 1, 0, "tick", __FUNCTION__);
-
-    pthread_mutex_unlock(&data->mutex);
-
-    data = data->next_tick;
-  }
-  current_lua_script = NULL;
-  pthread_mutex_unlock(&tick_mutex);
-
-  /* --------------------------------- */
-  /* process timers                    */
-
-  pthread_mutex_lock(&timer_mutex);
-  timer = first_timer;
-  while (timer) {
-    struct lua_ols_timer *next = timer->next;
-    struct lua_ols_callback *cb = lua_ols_timer_cb(timer);
-
-    if (script_callback_removed(&cb->base)) {
-      lua_ols_timer_remove(timer);
-    } else {
-      uint64_t elapsed = ts - timer->last_ts;
-
-      if (elapsed >= timer->interval) {
-        timer_call(&cb->base);
-        timer->last_ts += timer->interval;
-      }
-    }
-
-    timer = next;
-  }
-  pthread_mutex_unlock(&timer_mutex);
-
-  UNUSED_PARAMETER(param);
-}
-
-/* -------------------------------------------- */
-
-void ols_lua_script_update(ols_script_t *script, ols_data_t *settings);
 
 bool ols_lua_script_load(ols_script_t *s) {
   struct ols_lua_script *data = (struct ols_lua_script *)s;
@@ -712,7 +312,6 @@ ols_script_t *ols_lua_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
-extern void undef_lua_script_sources(struct ols_lua_script *data);
 
 void ols_lua_script_unload(ols_script_t *s) {
   struct ols_lua_script *data = (struct ols_lua_script *)s;
@@ -739,26 +338,7 @@ void ols_lua_script_unload(ols_script_t *s) {
 
   pthread_mutex_unlock(&data->mutex);
 
-  /* ---------------------------- */
-  /* undefine source types        */
 
-  undef_lua_script_sources(data);
-
-  /* ---------------------------- */
-  /* unhook tick function         */
-
-  if (data->p_prev_next_tick) {
-    pthread_mutex_lock(&tick_mutex);
-
-    struct ols_lua_script *next = data->next_tick;
-    if (next) next->p_prev_next_tick = data->p_prev_next_tick;
-    *data->p_prev_next_tick = next;
-
-    pthread_mutex_unlock(&tick_mutex);
-
-    data->p_prev_next_tick = NULL;
-    data->next_tick = NULL;
-  }
 
   /* ---------------------------- */
   /* call script_unload           */
@@ -808,70 +388,13 @@ void ols_lua_script_destroy(ols_script_t *s) {
   }
 }
 
-void ols_lua_script_update(ols_script_t *s, ols_data_t *settings) {
-  struct ols_lua_script *data = (struct ols_lua_script *)s;
-  lua_State *script = data->script;
 
-  if (!s->loaded) return;
-  if (data->update == LUA_REFNIL) return;
-
-  if (settings) ols_data_apply(s->settings, settings);
-
-  current_lua_script = data;
-  pthread_mutex_lock(&data->mutex);
-
-  ls_push_libols_obj(ols_data_t, s->settings, false);
-  call_func_(script, data->update, 1, 0, "script_update", __FUNCTION__);
-
-  pthread_mutex_unlock(&data->mutex);
-  current_lua_script = NULL;
-}
-
-ols_properties_t *ols_lua_script_get_properties(ols_script_t *s) {
-  struct ols_lua_script *data = (struct ols_lua_script *)s;
-  lua_State *script = data->script;
-  ols_properties_t *props = NULL;
-
-  if (!s->loaded) return NULL;
-  if (data->get_properties == LUA_REFNIL) return NULL;
-
-  current_lua_script = data;
-  pthread_mutex_lock(&data->mutex);
-
-  call_func_(script, data->get_properties, 0, 1, "script_properties",
-             __FUNCTION__);
-  ls_get_libols_obj(ols_properties_t, -1, &props);
-
-  pthread_mutex_unlock(&data->mutex);
-  current_lua_script = NULL;
-
-  return props;
-}
-
-void ols_lua_script_save(ols_script_t *s) {
-  struct ols_lua_script *data = (struct ols_lua_script *)s;
-  lua_State *script = data->script;
-
-  if (!s->loaded) return;
-  if (data->save == LUA_REFNIL) return;
-
-  current_lua_script = data;
-  pthread_mutex_lock(&data->mutex);
-
-  ls_push_libols_obj(ols_data_t, s->settings, false);
-  call_func_(script, data->save, 1, 0, "script_save", __FUNCTION__);
-
-  pthread_mutex_unlock(&data->mutex);
-  current_lua_script = NULL;
-}
 
 /* -------------------------------------------- */
 
 void ols_lua_load(void) {
   struct dstr tmp = {0};
 
-  pthread_mutex_init(&tick_mutex, NULL);
-  pthread_mutex_init_recursive(&timer_mutex);
   pthread_mutex_init(&lua_source_def_mutex, NULL);
 
   /* ---------------------------------------------- */
@@ -908,7 +431,6 @@ void ols_lua_unload(void) {
   ols_remove_tick_callback(lua_tick, NULL);
 
   bfree(startup_script);
-  pthread_mutex_destroy(&tick_mutex);
-  pthread_mutex_destroy(&timer_mutex);
+
   pthread_mutex_destroy(&lua_source_def_mutex);
 }

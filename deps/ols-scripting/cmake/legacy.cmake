@@ -163,13 +163,6 @@ if(TARGET Python::Python)
     target_link_libraries(ols-scripting PRIVATE Python::Python)
   endif()
 
-  if(ENABLE_UI)
-    #target_link_libraries(ols-scripting PRIVATE OBS::frontend-api)
-
-    target_sources(ols-scripting PRIVATE ols-scripting-python-frontend.c)
-
-    target_compile_definitions(ols-scripting PRIVATE UI_ENABLED=ON)
-  endif()
 endif()
 
 target_compile_definitions(ols-scripting PRIVATE SCRIPT_DIR="${OLS_SCRIPT_PLUGIN_PATH}"

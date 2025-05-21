@@ -31,8 +31,6 @@
 #pragma warning(disable : 4267)
 #endif
 
-#define SWIG_TYPE_TABLE olslua
-#include "swig/swigluarun.h"
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -79,7 +77,6 @@ struct ols_lua_script {
 	int get_properties;
 	int save;
 
-	int tick;
 	struct ols_lua_script *next_tick;
 	struct ols_lua_script **p_prev_next_tick;
 
@@ -241,11 +238,3 @@ static inline bool call_func_(lua_State *script, int reg_idx, int args,
 	return true;
 }
 
-bool ls_get_libols_obj_(lua_State *script, const char *type, int lua_idx,
-			void *libols_out, const char *id, const char *func,
-			int line);
-bool ls_push_libols_obj_(lua_State *script, const char *type, void *libols_in,
-			 bool ownership, const char *id, const char *func,
-			 int line);
-
-extern void add_lua_source_functions(lua_State *script);
