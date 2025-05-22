@@ -1,6 +1,7 @@
 #include "ols-module.h"
 #include <stdio.h>
 #include <string>
+//#include "ols-scripting.h"
 #include <util/platform.h>
 
 int GetConfigPath(char *path, size_t size, const char *name) {
@@ -101,6 +102,10 @@ int main(int argc, char **argv) {
   ols_log_loaded_modules();
   printf("---------------------------------\n");
   ols_post_load_modules();
+
+  printf("load script start\n");
+ // ols_scripting_load();
+  printf("load script end\n");
 
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 

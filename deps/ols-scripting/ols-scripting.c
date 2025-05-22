@@ -19,6 +19,7 @@
 #include <util/dstr.h>
 #include <util/platform.h>
 #include <util/threading.h>
+#include <util/deque.h>
 
 #include "ols-scripting-callback.h"
 #include "ols-scripting-internal.h"
@@ -45,6 +46,9 @@ extern void ols_python_unload(void);
 
 #endif
 
+pthread_mutex_t detach_mutex;
+struct script_callback *detached_callbacks;
+
 static bool scripting_loaded = false;
 
 static const char *supported_formats[] = {
@@ -58,13 +62,79 @@ static const char *supported_formats[] = {
 
 /* -------------------------------------------- */
 
+static pthread_mutex_t defer_call_mutex;
+static struct deque defer_call_queue;
+static bool defer_call_exit = false;
+static os_sem_t *defer_call_semaphore;
+static pthread_t defer_call_thread;
+
+struct defer_call {
+	defer_call_cb call;
+	void *cb;
+};
+
+static void *defer_thread(void *unused)
+{
+	UNUSED_PARAMETER(unused);
+	os_set_thread_name("scripting: defer");
+
+	while (os_sem_wait(defer_call_semaphore) == 0) {
+		struct defer_call info;
+
+		pthread_mutex_lock(&defer_call_mutex);
+		if (defer_call_exit) {
+			pthread_mutex_unlock(&defer_call_mutex);
+			return NULL;
+		}
+
+		deque_pop_front(&defer_call_queue, &info, sizeof(info));
+		pthread_mutex_unlock(&defer_call_mutex);
+
+		info.call(info.cb);
+	}
+
+	return NULL;
+}
+
+void defer_call_post(defer_call_cb call, void *cb)
+{
+	struct defer_call info;
+	info.call = call;
+	info.cb = cb;
+
+	pthread_mutex_lock(&defer_call_mutex);
+	if (!defer_call_exit)
+		deque_push_back(&defer_call_queue, &info, sizeof(info));
+	pthread_mutex_unlock(&defer_call_mutex);
+
+	os_sem_post(defer_call_semaphore);
+}
+
 /* -------------------------------------------- */
 
 bool ols_scripting_load(void) {
 
-  if (pthread_mutex_init(&detach_mutex, NULL) != 0) {
-    return false;
-  }
+  deque_init(&defer_call_queue);
+
+	if (pthread_mutex_init(&detach_mutex, NULL) != 0) {
+		return false;
+	}
+	if (pthread_mutex_init(&defer_call_mutex, NULL) != 0) {
+		pthread_mutex_destroy(&detach_mutex);
+		return false;
+	}
+	if (os_sem_init(&defer_call_semaphore, 0) != 0) {
+		pthread_mutex_destroy(&defer_call_mutex);
+		pthread_mutex_destroy(&detach_mutex);
+		return false;
+	}
+
+	if (pthread_create(&defer_call_thread, NULL, defer_thread, NULL) != 0) {
+		os_sem_destroy(defer_call_semaphore);
+		pthread_mutex_destroy(&defer_call_mutex);
+		pthread_mutex_destroy(&detach_mutex);
+		return false;
+	}
 
 #if defined(LUAJIT_FOUND)
   ols_lua_load();
@@ -96,7 +166,43 @@ void ols_scripting_unload(void) {
 #if defined(Python_FOUND)
   ols_python_unload();
 #endif
+	/* ---------------------- */
 
+	int total_detached = 0;
+
+	pthread_mutex_lock(&detach_mutex);
+
+	struct script_callback *cur = detached_callbacks;
+	while (cur) {
+		struct script_callback *next = cur->next;
+		just_free_script_callback(cur);
+		cur = next;
+
+		++total_detached;
+	}
+
+	pthread_mutex_unlock(&detach_mutex);
+	pthread_mutex_destroy(&detach_mutex);
+
+	blog(LOG_INFO, "[Scripting] Total detached callbacks: %d", total_detached);
+
+	/* ---------------------- */
+
+	pthread_mutex_lock(&defer_call_mutex);
+
+	/* TODO */
+
+	defer_call_exit = true;
+	deque_free(&defer_call_queue);
+
+	pthread_mutex_unlock(&defer_call_mutex);
+
+	os_sem_post(defer_call_semaphore);
+	pthread_join(defer_call_thread, NULL);
+
+	pthread_mutex_destroy(&defer_call_mutex);
+	os_sem_destroy(defer_call_semaphore);
+  
   scripting_loaded = false;
 }
 
