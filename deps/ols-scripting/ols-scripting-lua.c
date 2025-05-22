@@ -345,6 +345,12 @@ void ols_lua_script_destroy(ols_script_t *s) {
   }
 }
 
+void ols_lua_parse_data(ols_script_t *s, const char *data, int len) {
+  struct ols_lua_script *lua_script = (struct ols_lua_script *)s;
+  lua_pushstring(lua_script->script, data);
+  call_func_(lua_script, lua_script->parse, 1, 0, "parse_data", "parse");
+}
+
 /* -------------------------------------------- */
 
 void ols_lua_load(void) {

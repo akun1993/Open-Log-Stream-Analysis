@@ -111,6 +111,8 @@ int main(int argc, char **argv) {
                     "test/test_lua/sub_add.lua",
                     NULL);
 
+  call_func_();
+
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 
   printf("source create at address %p\n", source);

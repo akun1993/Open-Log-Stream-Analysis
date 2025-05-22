@@ -39,6 +39,9 @@ EXPORT bool ols_scripting_load(void);
 EXPORT void ols_scripting_unload(void);
 EXPORT const char **ols_scripting_supported_formats(void);
 
+EXPORT void ols_scripting_prase(ols_script_t *script, const char *data,
+                                int len);
+
 typedef void (*scripting_log_handler_t)(void *p, ols_script_t *script, int lvl,
                                         const char *msg);
 
