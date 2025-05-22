@@ -169,25 +169,25 @@ static bool load_lua_script(struct ols_lua_script *data) {
   luaL_openlibs(script);
   luaopen_ffi(script);
 
-  if (luaL_dostring(script, startup_script) != 0) {
-    script_warn(&data->base, "Error executing startup script 1: %s",
-                lua_tostring(script, -1));
-    goto fail;
-  }
+  // if (luaL_dostring(script, startup_script) != 0) {
+  //   script_warn(&data->base, "Error executing startup script 1: %s",
+  //               lua_tostring(script, -1));
+  //   goto fail;
+  // }
 
-  dstr_printf(&str, get_script_path_func, data->dir.array);
-  ret = luaL_dostring(script, str.array);
-  dstr_free(&str);
+  // dstr_printf(&str, get_script_path_func, data->dir.array);
+  // ret = luaL_dostring(script, str.array);
+  // dstr_free(&str);
 
-  if (ret != 0) {
-    script_warn(&data->base, "Error executing startup script 2: %s",
-                lua_tostring(script, -1));
-    goto fail;
-  }
+  // if (ret != 0) {
+  //   script_warn(&data->base, "Error executing startup script 2: %s",
+  //               lua_tostring(script, -1));
+  //   goto fail;
+  // }
 
   current_lua_script = data;
 
-  add_hook_functions(script);
+  // add_hook_functions(script);
 #ifdef ENABLE_UI
   // add_lua_frontend_funcs(script);
 #endif
@@ -223,23 +223,18 @@ static bool load_lua_script(struct ols_lua_script *data) {
     }
   }
 
-  lua_getglobal(script, "script_properties");
+  lua_getglobal(script, "get_script_info");
   if (lua_isfunction(script, -1))
-    data->get_properties = luaL_ref(script, LUA_REGISTRYINDEX);
+    data->get_info = luaL_ref(script, LUA_REGISTRYINDEX);
   else
-    data->get_properties = LUA_REFNIL;
+    data->get_info = LUA_REFNIL;
 
-  lua_getglobal(script, "script_update");
-  if (lua_isfunction(script, -1))
-    data->update = luaL_ref(script, LUA_REGISTRYINDEX);
-  else
-    data->update = LUA_REFNIL;
-
-  lua_getglobal(script, "script_save");
-  if (lua_isfunction(script, -1))
-    data->save = luaL_ref(script, LUA_REGISTRYINDEX);
-  else
-    data->save = LUA_REFNIL;
+  lua_getglobal(script, "script_parse_log");
+  if (lua_isfunction(script, -1)) {
+    data->parse = luaL_ref(script, LUA_REGISTRYINDEX);
+    script_info(&data->base, "loading script_parse_log success");
+  } else
+    data->parse = LUA_REFNIL;
 
   data->script = script;
   success = true;

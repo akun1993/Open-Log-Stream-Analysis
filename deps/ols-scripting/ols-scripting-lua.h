@@ -66,9 +66,8 @@ struct ols_lua_script {
   pthread_mutex_t mutex;
   lua_State *script;
 
-  int update;
-  int get_properties;
-  int save;
+  int get_info;
+  int parse;
 
   bool defined_sources;
 };

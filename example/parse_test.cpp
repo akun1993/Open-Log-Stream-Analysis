@@ -1,7 +1,7 @@
 #include "ols-module.h"
+#include "ols-scripting.h"
 #include <stdio.h>
 #include <string>
-//#include "ols-scripting.h"
 #include <util/platform.h>
 
 int GetConfigPath(char *path, size_t size, const char *name) {
@@ -104,8 +104,12 @@ int main(int argc, char **argv) {
   ols_post_load_modules();
 
   printf("load script start\n");
- // ols_scripting_load();
+  ols_scripting_load();
   printf("load script end\n");
+
+  ols_script_create("/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/"
+                    "test/test_lua/sub_add.lua",
+                    NULL);
 
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 
