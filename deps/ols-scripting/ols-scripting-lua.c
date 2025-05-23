@@ -191,7 +191,8 @@ static bool load_lua_script(struct ols_lua_script *data) {
 #ifdef ENABLE_UI
   // add_lua_frontend_funcs(script);
 #endif
-
+  script_info(&data->base, " opening file: %s",
+                data->base.path.array);
   file_data = os_quick_read_utf8_file(data->base.path.array);
   if (!file_data) {
     script_warn(&data->base, "Error opening file: %s",
@@ -348,7 +349,7 @@ void ols_lua_script_destroy(ols_script_t *s) {
 void ols_lua_parse_data(ols_script_t *s, const char *data, int len) {
   struct ols_lua_script *lua_script = (struct ols_lua_script *)s;
   lua_pushstring(lua_script->script, data);
-  call_func_(lua_script, lua_script->parse, 1, 0, "parse_data", "parse");
+  call_func_(lua_script->script, lua_script->parse, 1, 0, "parse_data", "parse");
 }
 
 /* -------------------------------------------- */

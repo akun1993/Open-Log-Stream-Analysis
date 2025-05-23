@@ -107,11 +107,10 @@ int main(int argc, char **argv) {
   ols_scripting_load();
   printf("load script end\n");
 
-  ols_script_create("/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/"
-                    "test/test_lua/sub_add.lua",
-                    NULL);
+  // ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/test/test_lua/sub_add.lua",
+  //                   NULL);
 
-  call_func_();
+  //ols_scripting_prase(script,"this is data",sizeof("this is data") - 1);
 
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 

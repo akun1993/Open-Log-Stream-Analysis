@@ -252,6 +252,7 @@ ols_script_t *ols_script_create(const char *path, ols_data_t *settings) {
 void ols_scripting_prase(ols_script_t *script, const char *data, int len) {
 
   if (OLS_SCRIPT_LANG_LUA == script->type) {
+    ols_lua_parse_data(script,data,len);
   }
 }
 
