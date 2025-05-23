@@ -56,7 +56,6 @@ struct TextSource {
   string uri;
   FILE *file = nullptr;
   uint64_t line_cnt = 0;
-
   wstring text;
 
   /* --------------------------- */
@@ -64,7 +63,7 @@ struct TextSource {
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
     ols_source_update(source, settings);
-    filename = "/home/V01/uidq8743/sv_user.log.00000156_20241125151423";
+    filename = "/home/V01/uidq8743/sv_user.log.00000356";
   }
 
   inline ~TextSource() {}
@@ -135,7 +134,9 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
   }
 
   ++line_cnt;
-  blog(LOG_DEBUG, "%s  line %ld", bytes, line_cnt);
+
+  // blog(LOG_DEBUG, "%s  line %ld", bytes, line_cnt);
+
   return OLS_FLOW_OK;
 
 eos: {

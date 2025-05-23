@@ -543,19 +543,19 @@ bool ols_scripting_load_python(const char *python_path) {
   add_to_python_path(absolute_script_path);
   bfree(absolute_script_path);
 #endif
+  bool success= true;
+  // py_olspython = PyImport_ImportModule("olspython");
+  // bool success = !py_error();
+  // if (!success) {
+  //   warn("Error importing olspython.py', unloading ols-python");
+  //   goto out;
+  // }
 
-  py_olspython = PyImport_ImportModule("olspython");
-  bool success = !py_error();
-  if (!success) {
-    warn("Error importing olspython.py', unloading ols-python");
-    goto out;
-  }
+  // python_loaded = PyRun_SimpleString(startup_script) == 0;
+  // py_error();
 
-  python_loaded = PyRun_SimpleString(startup_script) == 0;
-  py_error();
-
-  add_hook_functions(py_olspython);
-  py_error();
+  // add_hook_functions(py_olspython);
+  // py_error();
 
 out:
   /* ---------------------------------------------- */

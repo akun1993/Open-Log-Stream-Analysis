@@ -174,7 +174,9 @@ ols_object_t *ols_pad_get_parent(ols_pad_t *pad) {
  */
 ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction) {
   ols_pad_t *pad = (ols_pad_t *)bmalloc(sizeof(ols_pad_t));
+
   if (pad) {
+    memset(pad, 0, sizeof(ols_pad_t));
     ols_pad_init(pad);
     pad->direction = direction;
   }

@@ -3,7 +3,7 @@ project(ols-text)
 add_library(ols-text MODULE)
 add_library(ols::text ALIAS ols-text)
 
-target_link_libraries(ols-text PRIVATE OLS::libols)
+target_link_libraries(ols-text PRIVATE OLS::libols OLS::scripting)
 
 set_target_properties(ols-text PROPERTIES FOLDER "plugins")
 

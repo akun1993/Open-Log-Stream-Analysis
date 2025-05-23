@@ -1,6 +1,7 @@
 
 function script_parse_log(log_str)
    print(log_str)
+   print("this is print in lua")
 end
 
 
