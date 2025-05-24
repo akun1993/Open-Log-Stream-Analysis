@@ -189,30 +189,7 @@ function(setup_ols_app target)
     VERBATIM)
 endfunction()
 
-# Helper function to do additional setup for browser source plugin
-function(setup_target_browser target)
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Resources/
-    DESTINATION ${OLS_PLUGIN_DESTINATION}
-    COMPONENT ${target}_Runtime)
 
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Release/
-    DESTINATION ${OLS_PLUGIN_DESTINATION}
-    COMPONENT ${target}_Runtime)
-
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Resources/
-    DESTINATION ${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_PLUGIN_DESTINATION}
-    COMPONENT ols_rundir
-    EXCLUDE_FROM_ALL)
-
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Release/
-    DESTINATION ${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_PLUGIN_DESTINATION}
-    COMPONENT ols_rundir
-    EXCLUDE_FROM_ALL)
-endfunction()
 
 # Helper function to export target to build and install tree. Allows usage of `find_package(libols)` by other build
 # trees
@@ -285,24 +262,6 @@ function(export_target target)
     ${_EXCLUDE})
 endfunction()
 
-# Helper function to define available graphics modules for targets
-function(define_graphic_modules target)
-  foreach(_GRAPHICS_API metal d3d11 opengl d3d9)
-    string(TOUPPER ${_GRAPHICS_API} _GRAPHICS_API_u)
-    if(TARGET OLS::libols-${_GRAPHICS_API})
-      if(OS_POSIX AND NOT LINUX_PORTABLE)
-        target_compile_definitions(${target}
-                                   PRIVATE DL_${_GRAPHICS_API_u}="$<TARGET_SONAME_FILE_NAME:libols-${_GRAPHICS_API}>")
-      else()
-        target_compile_definitions(${target}
-                                   PRIVATE DL_${_GRAPHICS_API_u}="$<TARGET_FILE_NAME:libols-${_GRAPHICS_API}>")
-      endif()
-      add_dependencies(${target} OLS::libols-${_GRAPHICS_API})
-    else()
-      target_compile_definitions(${target} PRIVATE DL_${_GRAPHICS_API_u}="")
-    endif()
-  endforeach()
-endfunction()
 
 if(NOT QT_VERSION)
   set(QT_VERSION

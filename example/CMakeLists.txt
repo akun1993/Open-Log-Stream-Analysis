@@ -10,3 +10,5 @@ target_include_directories(parse_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" ../l
 target_link_libraries(parse_test uuid OLS::libols  OLS::scripting dl )
 
 set_target_properties(parse_test PROPERTIES FOLDER example)
+
+setup_ols_app(parse_test)
