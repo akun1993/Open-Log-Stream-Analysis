@@ -17,7 +17,7 @@
 
 #include "cstrcache.h"
 #include "ols-scripting-lua.h"
-
+#include "ols-scripting-config.h"
 #include <ols-module.h>
 
 /* ========================================================================= */

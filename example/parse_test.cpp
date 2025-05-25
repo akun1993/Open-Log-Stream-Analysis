@@ -111,7 +111,11 @@ int main(int argc, char **argv) {
 
   printf("source create at address %p\n", source);
 
-  ols_source_set_active(source, true);
+  //ols_source_set_active(source, true);
+
+  ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
+
+  ols_scripting_prase(script,"parse this log in python",sizeof("parse this log in python") - 1);
 
   int c;
   printf("Enter characters, I shall repeat them.\n");
@@ -119,6 +123,10 @@ int main(int argc, char **argv) {
   while ((c = getchar()) != EOF) {
     putchar(c);
   }
+
+
+
+  ols_scripting_unload();
 
   ols_shutdown();
 

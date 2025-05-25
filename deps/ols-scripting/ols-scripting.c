@@ -23,6 +23,7 @@
 
 #include "ols-scripting-callback.h"
 #include "ols-scripting-internal.h"
+#include "ols-scripting-config.h"
 
 #if defined(LUAJIT_FOUND)
 extern ols_script_t *ols_lua_script_create(const char *path,
@@ -39,6 +40,8 @@ extern void ols_lua_parse_data(ols_script_t *s, const char *data, int len);
 #if defined(Python_FOUND)
 extern ols_script_t *ols_python_script_create(const char *path,
                                               ols_data_t *settings);
+
+extern void ols_python_parse_data(ols_script_t *s, const char *data, int len);                                              
 extern bool ols_python_script_load(ols_script_t *s);
 extern void ols_python_script_unload(ols_script_t *s);
 extern void ols_python_script_destroy(ols_script_t *s);
@@ -251,9 +254,19 @@ ols_script_t *ols_script_create(const char *path, ols_data_t *settings) {
 
 void ols_scripting_prase(ols_script_t *script, const char *data, int len) {
 
-  if (OLS_SCRIPT_LANG_LUA == script->type) {
+  switch (script->type)
+  {
+  case OLS_SCRIPT_LANG_LUA:
     ols_lua_parse_data(script,data,len);
+    /* code */
+    break;
+  case OLS_SCRIPT_LANG_PYTHON:
+    ols_python_parse_data(script,data,len);
+    break;
+  default:
+    break;
   }
+
 }
 
 const char *ols_script_get_description(const ols_script_t *script) {

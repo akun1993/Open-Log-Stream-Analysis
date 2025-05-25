@@ -17,6 +17,7 @@
 ******************************************************************************/
 
 #include "ols-scripting-python.h"
+#include "ols-scripting-config.h"
 #include <util/base.h>
 #include <util/darray.h>
 #include <util/dstr.h>
@@ -135,10 +136,10 @@ static bool load_python_script(struct ols_python_script *data) {
   if (py_error() || ret != 0)
     goto fail;
 
-  PyObject *py_data = PyCapsule_New(data, NULL, NULL);
-  ret = PyModule_AddObject(py_module, "__script_data__", py_data);
-  if (py_error() || ret != 0)
-    goto fail;
+
+  data->parse = PyObject_GetAttrString(py_module, "parse_str");
+	if (!data->parse)
+		PyErr_Clear();
 
   static PyMethodDef global_funcs[] = {{"script_path",
                                         py_get_current_script_path, METH_NOARGS,
@@ -359,6 +360,25 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
+
+void ols_python_parse_data(ols_script_t *s, const char *data, int len) {
+  struct ols_python_script *python_script = (struct ols_python_script *)s;
+  if (!s->loaded || !python_loaded)
+    return;
+
+  lock_python();
+
+  PyObject *args = Py_BuildValue("(s)", data);
+  printf("parse object %p args %p\n",python_script->parse,args);
+  PyObject *py_ret = PyObject_CallObject(python_script->parse, args);
+  printf("parse object %p args %p py ret %p\n",python_script->parse,args,py_ret);
+  py_error();
+  Py_XDECREF(py_ret);
+  Py_XDECREF(args);
+
+  unlock_python();
+}
+
 void ols_python_script_unload(ols_script_t *s) {
   struct ols_python_script *data = (struct ols_python_script *)s;
 
@@ -376,11 +396,13 @@ void ols_python_script_unload(ols_script_t *s) {
    * ideal method would be to reference count the script objects and
    * atomically share ownership with callbacks when they're called. */
 
+  Py_XDECREF(data->parse);
   Py_XDECREF(data->tick);
   Py_XDECREF(data->save);
 
   data->tick = NULL;
   data->save = NULL;
+  data->parse = NULL;
 
   /* ---------------------------- */
   /* unload                       */
@@ -540,22 +562,23 @@ bool ols_scripting_load_python(const char *python_path) {
   dstr_free(&resource_path);
 #else
   char *absolute_script_path = os_get_abs_path_ptr(SCRIPT_DIR);
+  printf("script dir %s\n",absolute_script_path);
   add_to_python_path(absolute_script_path);
   bfree(absolute_script_path);
 #endif
-  bool success= true;
-  // py_olspython = PyImport_ImportModule("olspython");
-  // bool success = !py_error();
-  // if (!success) {
-  //   warn("Error importing olspython.py', unloading ols-python");
-  //   goto out;
-  // }
+  //bool success= true;
+  py_olspython = PyImport_ImportModule("olspython");
+  bool success = !py_error();
+  if (!success) {
+    warn("Error importing olspython.py', unloading ols-python");
+    goto out;
+  }
 
-  // python_loaded = PyRun_SimpleString(startup_script) == 0;
-  // py_error();
+  python_loaded = PyRun_SimpleString(startup_script) == 0;
+  py_error();
 
-  // add_hook_functions(py_olspython);
-  // py_error();
+  add_hook_functions(py_olspython);
+  py_error();
 
 out:
   /* ---------------------------------------------- */
@@ -569,6 +592,8 @@ out:
   }
 
   python_loaded_at_all = success;
+
+  info("Load python plugin end");
 
   return python_loaded;
 }

@@ -16,7 +16,7 @@
 ******************************************************************************/
 
 #include "ols-scripting-lua.h"
-
+#include "ols-scripting-config.h"
 #include <ols.h>
 #include <util/base.h>
 #include <util/dstr.h>

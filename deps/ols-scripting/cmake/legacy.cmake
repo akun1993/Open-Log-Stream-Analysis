@@ -23,7 +23,7 @@ else()
 endif()
 
 if(ENABLE_SCRIPTING_PYTHON)
-  #add_subdirectory(olspython)
+  add_subdirectory(olspython)
   if(OS_WINDOWS)
     find_package(PythonWindows)
   else()
@@ -46,11 +46,11 @@ if(NOT TARGET Luajit::Luajit AND NOT TARGET Python::Python)
 endif()
 
 if(OS_MACOS)
-  #find_package(SWIG 4 REQUIRED)
+  find_package(SWIG 4 REQUIRED)
 elseif(OS_POSIX)
-  #find_package(SWIG 3 REQUIRED)
+  find_package(SWIG 3 REQUIRED)
 elseif(OS_WINDOWS)
-  #find_package(SwigWindows 3 REQUIRED)
+  find_package(SwigWindows 3 REQUIRED)
 endif()
 
 add_library(ols-scripting SHARED)
@@ -85,7 +85,7 @@ set_target_properties(
              VERSION "${OLS_VERSION_MAJOR}"
              SOVERSION "1")
 
-#file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/swig)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/swig)
 
 if(TARGET Luajit::Luajit)
   # add_custom_command(
@@ -116,17 +116,17 @@ if(TARGET Luajit::Luajit)
 endif()
 
 if(TARGET Python::Python)
-  # add_custom_command(
-  #   OUTPUT swig/swigpyrun.h
-  #   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  #   PRE_BUILD
-  #   COMMAND
-  #     ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
-  #     $<IF:$<AND:$<BOOL:${OS_POSIX}>,$<NOT:$<BOOL:${OS_MACOS}>>>,-py3,-py3-stable-abi> -external-runtime
-  #     swig/swigpyrun.h
-  #   COMMENT "ols-scripting - generating Python 3 SWIG interface headers")
+  add_custom_command(
+    OUTPUT swig/swigpyrun.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PRE_BUILD
+    COMMAND
+      ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
+      $<IF:$<AND:$<BOOL:${OS_POSIX}>,$<NOT:$<BOOL:${OS_MACOS}>>>,-py3,-py3-stable-abi> -external-runtime
+      swig/swigpyrun.h
+    COMMENT "ols-scripting - generating Python 3 SWIG interface headers")
 
-  #set_source_files_properties(swig/swigpyrun.h PROPERTIES GENERATED ON)
+  set_source_files_properties(swig/swigpyrun.h PROPERTIES GENERATED ON)
 
   target_sources(ols-scripting PRIVATE ols-scripting-python.c ols-scripting-python.h ols-scripting-python-import.h)
 

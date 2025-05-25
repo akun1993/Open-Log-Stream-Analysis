@@ -1,5 +1,18 @@
 #include <Python.h>
  #include <iostream>
+
+
+static inline bool py_error_(const char *func, int line)
+{
+	if (PyErr_Occurred()) {
+		printf("Python failure in %s:%d:", func, line);
+		PyErr_Print();
+		return true;
+	}
+	return false;
+}
+
+#define py_error() py_error_(__FUNCTION__, __LINE__) 
  
 int main(int argc, char *argv[])
 {
@@ -32,9 +45,21 @@ int main(int argc, char *argv[])
 		std::cout <<"not found function add_num" << std::endl;
 		return 0;
 	}
-	PyEval_CallObject(pFunc, NULL);//调用函数       
-        
 
+    PyObject* pArgs1 = PyTuple_New(1);
+ 
+    // 0：第一个参数，传入 int 类型的值 2
+    
+
+
+    PyTuple_SetItem(pArgs1, 0,Py_BuildValue("s", "print in python")); 
+
+    printf("parse object %p args %p\n",pFunc,pArgs1);
+	PyObject_CallObject(pFunc, Py_BuildValue("(s)", "print in python"));//调用函数    
+    py_error();   
+        
+   printf("%d.%d\n", PY_MAJOR_VERSION,
+           PY_MINOR_VERSION);
 
     pFunc = PyObject_GetAttrString(pModule, "OnRcvLine");
     
@@ -48,7 +73,7 @@ int main(int argc, char *argv[])
     PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", "  hello   ")); 
 
     // 6、使用C++的python接口调用该函数
-    PyObject*  pReturn = PyEval_CallObject(pFunc, pArgs);
+    PyObject*  pReturn = PyObject_CallObject(pFunc, pArgs);
     
     char *strResult;
     PyArg_Parse(pReturn, "s", &strResult);

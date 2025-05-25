@@ -72,6 +72,8 @@ struct ols_python_script {
 
   PyObject *save;
 
+  PyObject *parse;
+
   PyObject *tick;
 };
 

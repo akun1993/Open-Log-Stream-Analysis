@@ -58,6 +58,7 @@ if(INSTALLER_RUN)
   return()
 endif()
 
+message("lib ols ${OLS_SCRIPT_PLUGIN_PATH}")
 # OLS sources and plugins
 add_subdirectory(deps)
 message("lib ols in")
