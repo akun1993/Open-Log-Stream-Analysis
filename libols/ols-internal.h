@@ -122,7 +122,8 @@ struct ols_core_data {
   struct ols_source *sources;        /* Lookup by UUID (hh_uuid) */
   struct ols_source *public_sources; /* Lookup by name (hh) */
   struct ols_process *processes;     /* Lookup by UUID (hh_uuid) */
-
+  
+  
   /* Linked lists */
   struct ols_output *first_output;
 
@@ -224,13 +225,13 @@ struct ols_context_data {
   pthread_mutex_t *hh_mutex;
   UT_hash_handle hh;
   UT_hash_handle hh_uuid;
-  bool private;
+  bool is_private;
 };
 
 extern bool ols_context_data_init(struct ols_context_data *context,
                                   enum ols_obj_type type, ols_data_t *settings,
                                   const char *name, const char *uuid,
-                                  bool private);
+                                  bool is_private);
 extern void ols_context_init_control(struct ols_context_data *context,
                                      void *object, ols_destroy_cb destroy);
 extern void ols_context_data_free(struct ols_context_data *context);
@@ -364,7 +365,7 @@ extern struct ols_source_info *get_source_info(const char *id);
 
 extern bool ols_source_init_context(struct ols_source *source,
                                     ols_data_t *settings, const char *name,
-                                    const char *uuid, bool private);
+                                    const char *uuid, bool is_private);
 
 extern ols_source_t *
 ols_source_create_set_last_ver(const char *id, const char *name,
@@ -381,7 +382,7 @@ static inline void ols_source_dosignal(struct ols_source *source,
 
   calldata_init_fixed(&data, stack, sizeof(stack));
   calldata_set_ptr(&data, "source", source);
-  if (signal_ols && !source->context.private)
+  if (signal_ols && !source->context.is_private)
     signal_handler_signal(ols->signals, signal_ols, &data);
   if (signal_source)
     signal_handler_signal(source->context.signals, signal_source, &data);
@@ -439,7 +440,7 @@ extern struct ols_process_info *get_process_info(const char *id);
 
 extern bool ols_process_init_context(struct ols_process *source,
                                      ols_data_t *settings, const char *name,
-                                     const char *uuid, bool private);
+                                     const char *uuid, bool is_private);
 
 extern ols_process_t *
 ols_process_create_set_last_ver(const char *id, const char *name,
@@ -456,7 +457,7 @@ static inline void ols_process_dosignal(struct ols_process *process,
 
   calldata_init_fixed(&data, stack, sizeof(stack));
   calldata_set_ptr(&data, "process", process);
-  if (signal_ols && !process->context.private)
+  if (signal_ols && !process->context.is_private)
     signal_handler_signal(ols->signals, signal_ols, &data);
   if (signal_process)
     signal_handler_signal(process->context.signals, signal_process, &data);

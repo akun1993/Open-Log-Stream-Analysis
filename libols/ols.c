@@ -86,6 +86,7 @@ static void ols_free_data(void) {
 
   FREE_OLS_HASH_TABLE(hh, &data->public_sources, source);
   FREE_OLS_HASH_TABLE(hh_uuid, &data->sources, source);
+  FREE_OLS_HASH_TABLE(hh_uuid, &data->processes, process);
 
   os_task_queue_wait(ols->destruction_task_thread);
 
@@ -271,28 +272,32 @@ void ols_shutdown(void) {
 
   ols_wait_for_destroy_queue();
 
-  for (size_t i = 0; i < ols->source_types.num; i++) {
-    struct ols_source_info *item = &ols->source_types.array[i];
-    if (item->type_data && item->free_type_data)
-      item->free_type_data(item->type_data);
-    if (item->id)
-      bfree((void *)item->id);
-  }
+  #define FREE_REGISTERED_TYPES(structure, list)     \
+	do {                                                \
+		for (size_t i = 0; i < list.num; i++) {            \
+			struct structure *item = &list.array[i];         \
+			if (item->type_data && item->free_type_data)      \
+				item->free_type_data(item->type_data);           \
+      if (item->id)                                       \
+        bfree((void *)item->id);                           \
+		}                                                      \
+		da_free(list);                                         \
+	} while (false)
+
+  FREE_REGISTERED_TYPES(ols_source_info, ols->source_types);
+
+  FREE_REGISTERED_TYPES(ols_process_info, ols->process_types);
+
   da_free(ols->source_types);
+  da_free(ols->process_types);
+                                                             
+  for (size_t i = 0; i < ols->output_types.num; i++) {                                    
+    struct ols_output_info *item = &ols->output_types.array[i];                                 
+    if (item->type_data && item->free_type_data)                             
+      item->free_type_data(item->type_data);                                 
+  }                                                                          
+  da_free(ols->output_types);                                                             
 
-#define FREE_REGISTERED_TYPES(structure, list)                                 \
-  do {                                                                         \
-    for (size_t i = 0; i < list.num; i++) {                                    \
-      struct structure *item = &list.array[i];                                 \
-      if (item->type_data && item->free_type_data)                             \
-        item->free_type_data(item->type_data);                                 \
-    }                                                                          \
-    da_free(list);                                                             \
-  } while (false)
-
-  FREE_REGISTERED_TYPES(ols_output_info, ols->output_types);
-
-#undef FREE_REGISTERED_TYPES
 
   // da_free(ols->input_types);
 
@@ -669,10 +674,10 @@ static inline bool ols_context_data_init_wrap(struct ols_context_data *context,
                                               enum ols_obj_type type,
                                               ols_data_t *settings,
                                               const char *name,
-                                              const char *uuid, bool private) {
+                                              const char *uuid, bool is_private) {
   assert(context);
   memset(context, 0, sizeof(*context));
-  context->private = private;
+  context->is_private = is_private;
   context->type = type;
 
   if (pthread_mutex_init_recursive(&context->mutex) != 0)
@@ -689,10 +694,10 @@ static inline bool ols_context_data_init_wrap(struct ols_context_data *context,
   if (uuid && strlen(uuid) == UUID_STR_LENGTH)
     context->uuid = bstrdup(uuid);
   /* Only automatically generate UUIDs for sources */
-  else if (type == OLS_OBJ_TYPE_SOURCE)
+  else if (type == OLS_OBJ_TYPE_SOURCE || type == OLS_OBJ_TYPE_PROCESS)
     context->uuid = os_generate_uuid();
 
-  context->name = dup_name(name, private);
+  context->name = dup_name(name, is_private);
   context->settings = ols_data_newref(settings);
   return true;
 }
@@ -876,7 +881,7 @@ void ols_context_data_setname_ht(struct ols_context_data *context,
          context->name, new_name);
     context->name = new_name;
   } else {
-    context->name = dup_name(name, context->private);
+    context->name = dup_name(name, context->is_private);
   }
 
   HASH_ADD_STR(*head, name, context);
@@ -1365,7 +1370,7 @@ bool ols_obj_is_private(void *obj) {
   if (!context)
     return false;
 
-  return context->private;
+  return context->is_private;
 }
 
 void ols_apply_private_data(ols_data_t *settings) {

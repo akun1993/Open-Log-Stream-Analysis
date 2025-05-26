@@ -95,7 +95,7 @@ static bool ols_source_init(struct ols_source *source) {
 }
 
 static void ols_source_init_finalize(struct ols_source *source) {
-  if (!source->context.private) {
+  if (!source->context.is_private) {
     ols_context_data_insert_name(&source->context, &ols->data.sources_mutex,
                                  &ols->data.public_sources);
   }
@@ -224,7 +224,7 @@ void ols_source_destroy(struct ols_source *source) {
   }
 
   ols_context_data_remove_uuid(&source->context, &ols->data.sources);
-  if (!source->context.private)
+  if (!source->context.is_private)
     ols_context_data_remove_name(&source->context, &ols->data.public_sources);
 
   /* defer source destroy */
@@ -247,7 +247,7 @@ void ols_source_destroy_defer(struct ols_source *source) {
   }
 
   blog(LOG_DEBUG, "%ssource '%s' destroyed",
-       source->context.private ? "private " : "", source->context.name);
+       source->context.is_private ? "private " : "", source->context.name);
 
   ols_data_release(source->private_settings);
   ols_context_data_free(&source->context);
@@ -573,7 +573,7 @@ void ols_source_set_name(ols_source_t *source, const char *name) {
     struct calldata data;
     char *prev_name = bstrdup(source->context.name);
 
-    if (!source->context.private) {
+    if (!source->context.is_private) {
       ols_context_data_setname_ht(&source->context, name,
                                   &ols->data.public_sources);
     }
@@ -581,7 +581,7 @@ void ols_source_set_name(ols_source_t *source, const char *name) {
     calldata_set_ptr(&data, "source", source);
     calldata_set_string(&data, "new_name", source->context.name);
     calldata_set_string(&data, "prev_name", prev_name);
-    if (!source->context.private)
+    if (!source->context.is_private)
       signal_handler_signal(ols->signals, "source_rename", &data);
     signal_handler_signal(source->context.signals, "rename", &data);
     calldata_free(&data);
@@ -634,6 +634,16 @@ bool ols_source_active(const ols_source_t *source) {
   return ols_source_valid(source, "ols_source_active")
              ? source->activate_refs != 0
              : false;
+}
+
+bool ols_source_add_pad(ols_source_t *source, ols_pad_t *pad){
+
+  if(! source || !pad){
+    blog(LOG_ERROR,"source add pad with args NULL");
+    return false;
+  }
+
+  return ols_context_add_pad(&source->context,pad);
 }
 
 static inline void signal_flags_updated(ols_source_t *source) {

@@ -726,6 +726,48 @@ error:
   HANDLE_ERROR(size, ols_source_info, info);
 }
 
+
+void ols_register_process_s(const struct ols_process_info *info, size_t size) {
+  struct ols_process_info data = {0};
+  //ols_source_info_array_t *array = NULL;
+  //array = &ols->source_types;
+
+  if (get_process_info(info->id)) {
+		source_warn("Process '%s' already exists!  "
+			    "Duplicate library?",
+			    info->id);
+		goto error;
+	}
+
+  if (size > sizeof(data)) {
+    process_warn(
+        "Tried to register ols_source_info with size "
+        "%llu which is more than libols currently "
+        "supports (%llu)",
+        (long long unsigned)size, (long long unsigned)sizeof(data));
+    goto error;
+  }
+
+  memcpy(&data, info, size);
+
+  /* version-related stuff */
+  if (data.version) {
+    struct dstr versioned_id = {0};
+    dstr_printf(&versioned_id, "%s_v%d", data.id, (int)data.version);
+    data.id = versioned_id.array;
+  } else {
+    data.id = bstrdup(data.id);
+  }
+
+  //if (array) da_push_back(*array, &data);
+
+  da_push_back(ols->process_types, &data);
+  return;
+
+error:
+  HANDLE_ERROR(size, ols_source_info, info);
+}
+
 void ols_register_output_s(const struct ols_output_info *info, size_t size) {
   if (find_output(info->id)) {
     output_warn(

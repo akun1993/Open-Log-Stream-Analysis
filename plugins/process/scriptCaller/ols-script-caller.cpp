@@ -32,35 +32,42 @@ using namespace std;
 
 /* clang-format off */
 static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
-
+	blog(LOG_DEBUG, "script_chainlist_func");
+	return OLS_FLOW_OK;
 }
 
 static OlsFlowReturn script_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
-
+	blog(LOG_DEBUG, "script_chain_func");
+	return OLS_FLOW_OK;
 }
 
 static OlsPadLinkReturn script_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-
+	blog(LOG_DEBUG, "script_link_func");
+	return OLS_PAD_LINK_OK;
 }
 
 
 struct ScriptCallerProcess {
-	ols_process_t *process = nullptr;
-	ols_pad_t     *srcpad  = nullptr;
-	ols_pad_t     *sinkpad  = nullptr;
+	ols_process_t *process_ = nullptr;
+	ols_pad_t     *srcpad_  = nullptr;
+	ols_pad_t     *sinkpad_  = nullptr;
 
 	/* --------------------------- */
 
-	inline ScriptCallerProcess(ols_process_t *process_, ols_data_t *settings)
-		: process(process_)
+	inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
+		: process_(process)
 	{
 		ols_process_update(process_, settings);
-		srcpad = ols_pad_new("script-process-src",OLS_PAD_SRC);
-		sinkpad = ols_pad_new("script-process-sink",OLS_PAD_SINK);
+		srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
+		sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
 
-		ols_pad_set_link_function(sinkpad,script_link_func);
-		ols_pad_set_chain_function(sinkpad,script_chain_func);
+		ols_pad_set_link_function(sinkpad_,script_link_func);
+		ols_pad_set_chain_function(sinkpad_,script_chain_func);
+
+		blog(LOG_DEBUG, "ols_context_add_pad");
+		ols_process_add_pad(process_, sinkpad_);
+
 		//ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
 	}
 
@@ -109,14 +116,14 @@ static ols_pad_t *get_new_pad(void *data)
 	ScriptCallerProcess *s = reinterpret_cast<ScriptCallerProcess *>(data);
 
 
-	return s->srcpad;
+	return s->srcpad_;
 }
 
 
 bool ols_module_load(void)
 {
 	ols_process_info si = {};
-	si.id = "script caller";
+	si.id = "script_caller";
 	si.type = OLS_PROCESS_TYPE_INPUT;
 	// si.output_flags = OLS_SOURCE_ | OLS_SOURCE_CUSTOM_DRAW |
 	// 		  OLS_SOURCE_CAP_OLSOLETE | OLS_SOURCE_SRGB;

@@ -103,6 +103,8 @@ struct ols_process_info {
 
   /** Icon type for the source */
   enum ols_icon_type icon_type;
+
+  uint32_t version; /* increment if needed to specify a new version */
 };
 
 EXPORT void ols_register_process_s(const struct ols_process_info *info,

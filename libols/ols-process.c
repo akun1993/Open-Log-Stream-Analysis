@@ -82,8 +82,8 @@ bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
   // process->context.sink =
   //     gst_ghost_pad_new_from_template("sink", scale->sinkpads->data,
   //     template);
-  ols_pad_set_chain_function(process->sinkpad,
-                             (ols_pad_chain_function)process_default_chain);
+  // ols_pad_set_chain_function(process->sinkpad,
+  //                            (ols_pad_chain_function)process_default_chain);
   // gst_element_add_pad(GST_ELEMENT(self), process->sink);
   // gst_object_unref(template);
 
@@ -253,7 +253,7 @@ void ols_process_destroy_defer(struct ols_process *process) {
   }
 
   blog(LOG_DEBUG, "%sprocess '%s' destroyed",
-       process->context.private ? "private " : "", process->context.name);
+       process->context.is_private ? "private " : "", process->context.name);
 
   ols_data_release(process->private_settings);
   ols_context_data_free(&process->context);
@@ -472,7 +472,7 @@ void ols_process_set_name(ols_process_t *process, const char *name) {
     struct calldata data;
     char *prev_name = bstrdup(process->context.name);
 
-    if (!process->context.private) {
+    if (!process->context.is_private) {
       // ols_context_data_setname_ht(&process->context, name,
       //                             &ols->data.public_processs);
     }
@@ -480,7 +480,7 @@ void ols_process_set_name(ols_process_t *process, const char *name) {
     calldata_set_ptr(&data, "process", process);
     calldata_set_string(&data, "new_name", process->context.name);
     calldata_set_string(&data, "prev_name", prev_name);
-    if (!process->context.private)
+    if (!process->context.is_private)
       signal_handler_signal(ols->signals, "process_rename", &data);
     signal_handler_signal(process->context.signals, "rename", &data);
     calldata_free(&data);
@@ -532,6 +532,17 @@ bool ols_process_active(const ols_process_t *process) {
   return ols_process_valid(process, "ols_process_active")
              ? process->activate_refs != 0
              : false;
+}
+
+
+bool ols_process_add_pad(ols_process_t *process, ols_pad_t *pad){
+
+  if(! process || !pad){
+    blog(LOG_ERROR,"process add pad with args NULL");
+    return false;
+  }
+
+  return ols_context_add_pad(&process->context,pad);
 }
 
 bool ols_process_showing(const ols_process_t *process) {

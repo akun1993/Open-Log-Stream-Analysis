@@ -601,6 +601,10 @@ EXPORT bool ols_source_active(const ols_source_t *source);
 // /** Set this source to be active or deactive */
 EXPORT bool ols_source_set_active(ols_source_t *source, bool is_active);
 
+
+// /** Add pad to source */
+EXPORT bool ols_source_add_pad(ols_source_t *source, ols_pad_t *pad);
+
 /** Unused flag */
 #define OLS_SOURCE_FLAG_UNUSED_1 (1 << 0)
 /** Specifies to force audio to mono */
@@ -710,7 +714,11 @@ EXPORT proc_handler_t *
 ols_process_get_proc_handler(const ols_process_t *process);
 
 /** Returns true if active, false if not */
-EXPORT bool ols_process_active(const ols_process_t *source);
+EXPORT bool ols_process_active(const ols_process_t *process);
+
+
+// /** Add pad to source */
+EXPORT bool ols_process_add_pad(ols_process_t *process, ols_pad_t *pad);
 
 /** Unused flag */
 #define OLS_PROCESS_FLAG_UNUSED_1 (1 << 0)
@@ -803,6 +811,8 @@ EXPORT void ols_output_set_reconnect_settings(ols_output_t *output,
 /* ------------------------------------------------------------------------- */
 /* Get source icon type */
 EXPORT enum ols_icon_type ols_source_get_icon_type(const char *id);
+
+
 
 #ifdef __cplusplus
 }

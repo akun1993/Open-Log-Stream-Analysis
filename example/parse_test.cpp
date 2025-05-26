@@ -109,9 +109,15 @@ int main(int argc, char **argv) {
 
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 
+  ols_process_t *process = ols_process_create("script_caller", "test_process", nullptr);
+
+  //ols_context_link(source,process);
+
+  //source->link->process2->link->output;
+
   printf("source create at address %p\n", source);
 
-  //ols_source_set_active(source, true);
+  ols_source_set_active(source, true);
 
   ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
 
@@ -123,8 +129,6 @@ int main(int argc, char **argv) {
   while ((c = getchar()) != EOF) {
     putchar(c);
   }
-
-
 
   ols_scripting_unload();
 
