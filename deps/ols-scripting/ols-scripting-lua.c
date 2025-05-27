@@ -169,28 +169,26 @@ static bool load_lua_script(struct ols_lua_script *data) {
   luaL_openlibs(script);
   luaopen_ffi(script);
 
-  // if (luaL_dostring(script, startup_script) != 0) {
-  //   script_warn(&data->base, "Error executing startup script 1: %s",
-  //               lua_tostring(script, -1));
-  //   goto fail;
-  // }
+  if (luaL_dostring(script, startup_script) != 0) {
+    script_warn(&data->base, "Error executing startup script 1: %s",
+                lua_tostring(script, -1));
+    goto fail;
+  }
 
-  // dstr_printf(&str, get_script_path_func, data->dir.array);
-  // ret = luaL_dostring(script, str.array);
-  // dstr_free(&str);
+  dstr_printf(&str, get_script_path_func, data->dir.array);
+  ret = luaL_dostring(script, str.array);
+  dstr_free(&str);
 
-  // if (ret != 0) {
-  //   script_warn(&data->base, "Error executing startup script 2: %s",
-  //               lua_tostring(script, -1));
-  //   goto fail;
-  // }
+  if (ret != 0) {
+    script_warn(&data->base, "Error executing startup script 2: %s",
+                lua_tostring(script, -1));
+    goto fail;
+  }
 
   current_lua_script = data;
 
-  // add_hook_functions(script);
-#ifdef ENABLE_UI
-  // add_lua_frontend_funcs(script);
-#endif
+  add_hook_functions(script);
+
   script_info(&data->base, " opening file: %s",
                 data->base.path.array);
   file_data = os_quick_read_utf8_file(data->base.path.array);

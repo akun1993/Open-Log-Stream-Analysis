@@ -1146,8 +1146,9 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
                                 const char *srcpadname,
                                 struct ols_context_data *dest,
                                 const char *destpadname) {
-  const DARRAY(ols_pad_t *) *srcpads, *destpads, *srctempls, *desttempls, *l;
   ols_pad_t *srcpad, *destpad;
+  bool use_srcpads = false;
+  bool use_destpads = false;
 
   bool srcrequest = false;
   bool destrequest = false;
@@ -1180,11 +1181,11 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
         return false;
       }
     }
-    srcpads = NULL;
+    use_srcpads = false;
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(src);
-    srcpads = &src->pads;
+    use_srcpads = true;
     srcpad = src->pads.num > 0 ? src->pads.array[0] : NULL;
     // if (srcpad)
     //   gst_object_ref (srcpad);
@@ -1223,12 +1224,12 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
         return false;
       }
     }
-    destpads = NULL;
+    use_destpads = false;
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(dest);
-    destpads = &dest->pads;
-    destpads = dest->pads.num > 0 ? dest->pads.array[0] : NULL;
+    use_destpads = true;
+    destpad = dest->pads.num > 0 ? dest->pads.array[0] : NULL;
     // destpads = OLS_OBJECT_PADS(dest);
     // destpad = destpads ? OLS_PAD_CAST(destpads->data) : NULL;
     // if (destpad)
@@ -1248,19 +1249,20 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
     /* loop through the allowed pads in the source, trying to find a
      * compatible destination pad */
     blog (LOG_INFO,"looping through allowed src and dest pads");
+    size_t pad_idx = 0;
     do {
       blog (LOG_DEBUG, "trying src pad %s:%s",OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME (srcpad));
       if ((OLS_PAD_DIRECTION (srcpad) == OLS_PAD_SRC) &&
           (OLS_PAD_PEER (srcpad) == NULL)) {
 
         bool temprequest = false;
-        ols_pad_t *temp;
+        ols_pad_t *temp = NULL;
 
         if (destpadname) {
           temp = destpad;
           //gst_object_ref (temp);
         } else {
-          temp = gst_element_get_compatible_pad (dest, srcpad, NULL);
+          //temp = ols_context_ (dest, srcpad, NULL);
           temprequest = true;
         }
 
@@ -1275,21 +1277,22 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
         }
 
         if (temp) {
-          if (temprequest)
-            gst_element_release_request_pad (dest, temp);
+          if (temprequest){}
+            //gst_element_release_request_pad (dest, temp);
         }
       }
 
+     
       /* find a better way for this mess */
-      if (srcpads) {
-        srcpads = g_list_next (srcpads);
-        if (srcpads) {
-          gst_object_unref (srcpad);
-          srcpad = GST_PAD_CAST (srcpads->data);
-          gst_object_ref (srcpad);
+      if (use_srcpads) {
+        ++pad_idx;
+        if(pad_idx < src->pads.num ){
+           srcpad =  src->pads.array[pad_idx];
+        } else {
+          use_srcpads = false;
         }
       }
-    } while (srcpads);
+    } while (use_srcpads);
   }
 
   if (srcpadname) {
@@ -1302,18 +1305,19 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
   }
 
   if (srcpad) {
-    release_and_unref_pad (src, srcpad, srcrequest);
+    //release_and_unref_pad (src, srcpad, srcrequest);
     srcpad = NULL;
   }
 
   if (destpad) {
     /* loop through the existing pads in the destination */
+    size_t pad_idx = 0;
     do {
       blog (LOG_DEBUG, "trying dest pad %s:%s",OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME (destpad));
       if ((OLS_PAD_DIRECTION (destpad) == OLS_PAD_SINK) &&
           (OLS_PAD_PEER (destpad) == NULL)) {
 
-        ols_pad_t *temp = gst_element_get_compatible_pad (src, destpad, NULL);
+        ols_pad_t *temp = NULL;//= gst_element_get_compatible_pad (src, destpad, NULL);
         bool temprequest = false;
 
         if (temp ) {
@@ -1321,24 +1325,23 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
         }
 
         if (temp && pad_link_maybe_ghosting (temp, destpad)) {
-          blog (LOG_DEBUG, "linked pad %s:%s to pad %s:%s",
-              GST_DEBUG_PAD_NAME (temp), GST_DEBUG_PAD_NAME (destpad));
+          blog (LOG_DEBUG, "linked pad %s:%s to pad %s:%s", OLS_PAD_PARENT(temp) ? OLS_PAD_PARENT(temp)->name: "NULL",OLS_PAD_NAME(temp), OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME(destpad));
           // gst_object_unref (temp);
           // gst_object_unref (destpad);
           return true;
         }
 
-        release_and_unref_pad (src, temp, temprequest);
+        //release_and_unref_pad (src, temp, temprequest);
       }
-      if (destpads) {
-        destpads = g_list_next (destpads);
-        if (destpads) {
-          gst_object_unref (destpad);
-          destpad = GST_PAD_CAST (destpads->data);
-          gst_object_ref (destpad);
+      if (use_destpads) {
+        ++pad_idx;
+        if(pad_idx < dest->pads.num ){
+           destpad =  dest->pads.array[pad_idx];
+        } else {
+          use_destpads = false;
         }
       }
-    } while (destpads);
+    } while (use_destpads);
   }
   //OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME(srcpad), OLS_PAD_PARENT(temp) ? OLS_PAD_PARENT(temp)->name: "NULL",OLS_PAD_NAME(temp)
   if (destpadname) {
@@ -1350,9 +1353,9 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
     /* no need to release any request pad as the case of unset destpatname and
      * destpad being a requst pad has already been taken care of when looking
      * though the destination pads above */
-    if (destpad) {
-      gst_object_unref (destpad);
-    }
+    // if (destpad) {
+    //   gst_object_unref (destpad);
+    // }
     destpad = NULL;
   }
 
