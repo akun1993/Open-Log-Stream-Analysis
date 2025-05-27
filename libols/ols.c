@@ -481,8 +481,7 @@ signal_handler_t *ols_get_signal_handler(void) { return ols->signals; }
 
 proc_handler_t *ols_get_proc_handler(void) { return ols->procs; }
 
-static ols_source_t *ols_load_source_type(ols_data_t *source_data,
-                                          bool is_private) {
+static ols_source_t *ols_load_source_type(ols_data_t *source_data) {
   ols_source_t *source;
   const char *name = ols_data_get_string(source_data, "name");
   const char *uuid = ols_data_get_string(source_data, "uuid");
@@ -498,8 +497,7 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
   if (!*v_id)
     v_id = id;
 
-  source = ols_source_create_set_last_ver(v_id, name, uuid, settings, prev_ver,
-                                          is_private);
+  source = ols_source_create_set_last_ver(v_id, name, uuid, settings, prev_ver);
 
   ols_data_set_default_int(source_data, "flags", source->default_flags);
   flags = (uint32_t)ols_data_get_int(source_data, "flags");
@@ -516,11 +514,11 @@ static ols_source_t *ols_load_source_type(ols_data_t *source_data,
 }
 
 ols_source_t *ols_load_source(ols_data_t *source_data) {
-  return ols_load_source_type(source_data, false);
+  return ols_load_source_type(source_data);
 }
 
 ols_source_t *ols_load_private_source(ols_data_t *source_data) {
-  return ols_load_source_type(source_data, true);
+  return ols_load_source_type(source_data);
 }
 
 void ols_load_sources(ols_data_array_t *array, ols_load_source_cb cb,
@@ -656,8 +654,8 @@ void ols_reset_source_uuids() {
 }
 
 /* ensures that names are never blank */
-static inline char *dup_name(const char *name, bool private) {
-  if (private && !name)
+static inline char *dup_name(const char *name) {
+  if (!name)
     return NULL;
 
   if (!name || !*name) {
@@ -674,10 +672,9 @@ static inline bool ols_context_data_init_wrap(struct ols_context_data *context,
                                               enum ols_obj_type type,
                                               ols_data_t *settings,
                                               const char *name,
-                                              const char *uuid, bool is_private) {
+                                              const char *uuid) {
   assert(context);
   memset(context, 0, sizeof(*context));
-  context->is_private = is_private;
   context->type = type;
 
   if (pthread_mutex_init_recursive(&context->mutex) != 0)
@@ -697,16 +694,15 @@ static inline bool ols_context_data_init_wrap(struct ols_context_data *context,
   else if (type == OLS_OBJ_TYPE_SOURCE || type == OLS_OBJ_TYPE_PROCESS)
     context->uuid = os_generate_uuid();
 
-  context->name = dup_name(name, is_private);
+  context->name = dup_name(name);
   context->settings = ols_data_newref(settings);
   return true;
 }
 
 bool ols_context_data_init(struct ols_context_data *context,
                            enum ols_obj_type type, ols_data_t *settings,
-                           const char *name, const char *uuid, bool private) {
-  if (ols_context_data_init_wrap(context, type, settings, name, uuid,
-                                 private)) {
+                           const char *name, const char *uuid) {
+  if (ols_context_data_init_wrap(context, type, settings, name, uuid)) {
     return true;
   } else {
     ols_context_data_free(context);
@@ -881,7 +877,7 @@ void ols_context_data_setname_ht(struct ols_context_data *context,
          context->name, new_name);
     context->name = new_name;
   } else {
-    context->name = dup_name(name, context->is_private);
+    context->name = dup_name(name);
   }
 
   HASH_ADD_STR(*head, name, context);
@@ -1150,7 +1146,7 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
                                 const char *srcpadname,
                                 struct ols_context_data *dest,
                                 const char *destpadname) {
-  const ols_pad_t *srcpads, *destpads, *srctempls, *desttempls, *l;
+  const DARRAY(ols_pad_t *) *srcpads, *destpads, *srctempls, *desttempls, *l;
   ols_pad_t *srcpad, *destpad;
 
   bool srcrequest = false;
@@ -1188,10 +1184,7 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(src);
-    // for (int i = 0; i < context->pads.num; i++) {
-    //   ols_pad_t *pad = context->pads.array[i];
-    //   if (pad) {
-
+    srcpads = &src->pads;
     srcpad = src->pads.num > 0 ? src->pads.array[0] : NULL;
     // if (srcpad)
     //   gst_object_ref (srcpad);
@@ -1234,7 +1227,7 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
   } else {
     /* no name given, get the first available pad */
     OLS_OBJECT_LOCK(dest);
-
+    destpads = &dest->pads;
     destpads = dest->pads.num > 0 ? dest->pads.array[0] : NULL;
     // destpads = OLS_OBJECT_PADS(dest);
     // destpad = destpads ? OLS_PAD_CAST(destpads->data) : NULL;
@@ -1251,6 +1244,120 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
     return result;
   }
 
+  if (srcpad) {
+    /* loop through the allowed pads in the source, trying to find a
+     * compatible destination pad */
+    blog (LOG_INFO,"looping through allowed src and dest pads");
+    do {
+      blog (LOG_DEBUG, "trying src pad %s:%s",OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME (srcpad));
+      if ((OLS_PAD_DIRECTION (srcpad) == OLS_PAD_SRC) &&
+          (OLS_PAD_PEER (srcpad) == NULL)) {
+
+        bool temprequest = false;
+        ols_pad_t *temp;
+
+        if (destpadname) {
+          temp = destpad;
+          //gst_object_ref (temp);
+        } else {
+          temp = gst_element_get_compatible_pad (dest, srcpad, NULL);
+          temprequest = true;
+        }
+
+        if (temp && pad_link_maybe_ghosting (srcpad, temp)) {
+          blog (LOG_DEBUG, "linked pad %s:%s to pad %s:%s",
+            OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME(srcpad), OLS_PAD_PARENT(temp) ? OLS_PAD_PARENT(temp)->name: "NULL",OLS_PAD_NAME(temp));
+          // if (destpad)
+          //   gst_object_unref (destpad);
+          // gst_object_unref (srcpad);
+          // gst_object_unref (temp);
+          return true;
+        }
+
+        if (temp) {
+          if (temprequest)
+            gst_element_release_request_pad (dest, temp);
+        }
+      }
+
+      /* find a better way for this mess */
+      if (srcpads) {
+        srcpads = g_list_next (srcpads);
+        if (srcpads) {
+          gst_object_unref (srcpad);
+          srcpad = GST_PAD_CAST (srcpads->data);
+          gst_object_ref (srcpad);
+        }
+      }
+    } while (srcpads);
+  }
+
+  if (srcpadname) {
+    blog (LOG_DEBUG, "no link possible from %s:%s to %s",OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME (srcpad), dest->name);
+    /* no need to release any request pad as both src- and destpadname must be
+     * set to end up here, but this case has already been taken care of above */
+    // if (destpad)
+    //   gst_object_unref (destpad);
+    destpad = NULL;
+  }
+
+  if (srcpad) {
+    release_and_unref_pad (src, srcpad, srcrequest);
+    srcpad = NULL;
+  }
+
+  if (destpad) {
+    /* loop through the existing pads in the destination */
+    do {
+      blog (LOG_DEBUG, "trying dest pad %s:%s",OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME (destpad));
+      if ((OLS_PAD_DIRECTION (destpad) == OLS_PAD_SINK) &&
+          (OLS_PAD_PEER (destpad) == NULL)) {
+
+        ols_pad_t *temp = gst_element_get_compatible_pad (src, destpad, NULL);
+        bool temprequest = false;
+
+        if (temp ) {
+          temprequest = true;
+        }
+
+        if (temp && pad_link_maybe_ghosting (temp, destpad)) {
+          blog (LOG_DEBUG, "linked pad %s:%s to pad %s:%s",
+              GST_DEBUG_PAD_NAME (temp), GST_DEBUG_PAD_NAME (destpad));
+          // gst_object_unref (temp);
+          // gst_object_unref (destpad);
+          return true;
+        }
+
+        release_and_unref_pad (src, temp, temprequest);
+      }
+      if (destpads) {
+        destpads = g_list_next (destpads);
+        if (destpads) {
+          gst_object_unref (destpad);
+          destpad = GST_PAD_CAST (destpads->data);
+          gst_object_ref (destpad);
+        }
+      }
+    } while (destpads);
+  }
+  //OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME(srcpad), OLS_PAD_PARENT(temp) ? OLS_PAD_PARENT(temp)->name: "NULL",OLS_PAD_NAME(temp)
+  if (destpadname) {
+    blog (LOG_DEBUG, "no link possible from %s to %s:%s",
+        src->name, OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME(destpad));
+    //release_and_unref_pad (dest, destpad, destrequest);
+    return false;
+  } else {
+    /* no need to release any request pad as the case of unset destpatname and
+     * destpad being a requst pad has already been taken care of when looking
+     * though the destination pads above */
+    if (destpad) {
+      gst_object_unref (destpad);
+    }
+    destpad = NULL;
+  }
+
+  blog (LOG_DEBUG, "no link possible from %s to %s",src->name, dest->name);
+
   // GST_CAT_DEBUG (GST_CAT_ELEMENT_PADS, "no link possible from %s to %s",
   //     GST_ELEMENT_NAME (src), GST_ELEMENT_NAME (dest));
   return false;
@@ -1262,7 +1369,7 @@ bool ols_context_link_pads(struct ols_context_data *src, const char *srcpadname,
   return ols_context_link_pads_full(src, srcpadname, dest, destpadname);
 }
 
-bool ols_object_link(struct ols_context_data *src,
+bool ols_context_link(struct ols_context_data *src,
                      struct ols_context_data *dest) {
   return ols_context_link_pads(src, NULL, dest, NULL);
 }
@@ -1365,13 +1472,7 @@ void *ols_obj_get_data(void *obj) {
   return context->data;
 }
 
-bool ols_obj_is_private(void *obj) {
-  struct ols_context_data *context = obj;
-  if (!context)
-    return false;
 
-  return context->is_private;
-}
 
 void ols_apply_private_data(ols_data_t *settings) {
   if (!settings)

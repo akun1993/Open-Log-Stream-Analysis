@@ -73,10 +73,9 @@ static OlsFlowReturn process_default_chain(ols_pad_t *pad, ols_object_t *parent,
 }
 
 bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
-                              const char *name, const char *uuid,
-                              bool private) {
+                              const char *name, const char *uuid) {
   if (!ols_context_data_init(&process->context, OLS_OBJ_TYPE_PROCESS, settings,
-                             name, uuid, private))
+                             name, uuid))
     return false;
 
   // process->context.sink =
@@ -112,8 +111,7 @@ static void ols_process_init_finalize(struct ols_process *process) {
 }
 
 static ols_process_t *ols_process_create_internal(
-    const char *id, const char *name, const char *uuid, ols_data_t *settings,
-    bool private, uint32_t last_ols_ver) {
+    const char *id, const char *name, const char *uuid, ols_data_t *settings,uint32_t last_ols_ver) {
   struct ols_process *process = bzalloc(sizeof(struct ols_process));
 
   const struct ols_process_info *info = get_process_info(id);
@@ -128,7 +126,7 @@ static ols_process_t *ols_process_create_internal(
 
   process->last_ols_ver = last_ols_ver;
 
-  if (!ols_process_init_context(process, settings, name, uuid, private))
+  if (!ols_process_init_context(process, settings, name, uuid))
     goto fail;
 
   if (info) {
@@ -146,16 +144,15 @@ static ols_process_t *ols_process_create_internal(
   if ((!info || info->create) && !process->context.data)
     blog(LOG_ERROR, "Failed to create process '%s'!", name);
 
-  blog(LOG_DEBUG, "%sprocess '%s' (%s) created", private ? "private " : "",
-       name, id);
+  blog(LOG_DEBUG, "process '%s' (%s) created",name, id);
 
   process->flags = process->default_flags;
   // process->enabled = true;
 
   ols_process_init_finalize(process);
-  if (!private) {
-    ols_process_dosignal(process, "process_create", NULL);
-  }
+
+  ols_process_dosignal(process, "process_create", NULL);
+
 
   return process;
 
@@ -167,28 +164,21 @@ fail:
 
 ols_process_t *ols_process_create(const char *id, const char *name,
                                   ols_data_t *settings) {
-  return ols_process_create_internal(id, name, NULL, settings, false,
+  return ols_process_create_internal(id, name, NULL, settings,
                                      LIBOLS_API_VER);
 }
 
-ols_process_t *ols_process_create_private(const char *id, const char *name,
-                                          ols_data_t *settings) {
-  return ols_process_create_internal(id, name, NULL, settings, true,
-                                     LIBOLS_API_VER);
-}
 
 ols_process_t *ols_process_create_set_last_ver(const char *id, const char *name,
                                                const char *uuid,
                                                ols_data_t *settings,
-                                               uint32_t last_ols_ver,
-                                               bool is_private) {
-  return ols_process_create_internal(id, name, uuid, settings, is_private,
+                                               uint32_t last_ols_ver) {
+  return ols_process_create_internal(id, name, uuid, settings,
                                      last_ols_ver);
 }
 
 ols_process_t *ols_process_duplicate(ols_process_t *process,
-                                     const char *new_name,
-                                     bool create_private) {
+                                     const char *new_name) {
   ols_process_t *new_process;
   ols_data_t *settings;
 
@@ -201,10 +191,7 @@ ols_process_t *ols_process_duplicate(ols_process_t *process,
   settings = ols_data_create();
   ols_data_apply(settings, process->context.settings);
 
-  new_process =
-      create_private
-          ? ols_process_create_private(process->info.id, new_name, settings)
-          : ols_process_create(process->info.id, new_name, settings);
+  new_process = ols_process_create(process->info.id, new_name, settings);
 
   new_process->flags = process->flags;
 
@@ -252,8 +239,7 @@ void ols_process_destroy_defer(struct ols_process *process) {
     process->context.data = NULL;
   }
 
-  blog(LOG_DEBUG, "%sprocess '%s' destroyed",
-       process->context.is_private ? "private " : "", process->context.name);
+  blog(LOG_DEBUG, "process '%s' destroyed", process->context.name);
 
   ols_data_release(process->private_settings);
   ols_context_data_free(&process->context);
@@ -472,16 +458,12 @@ void ols_process_set_name(ols_process_t *process, const char *name) {
     struct calldata data;
     char *prev_name = bstrdup(process->context.name);
 
-    if (!process->context.is_private) {
-      // ols_context_data_setname_ht(&process->context, name,
-      //                             &ols->data.public_processs);
-    }
     calldata_init(&data);
     calldata_set_ptr(&data, "process", process);
     calldata_set_string(&data, "new_name", process->context.name);
     calldata_set_string(&data, "prev_name", prev_name);
-    if (!process->context.is_private)
-      signal_handler_signal(ols->signals, "process_rename", &data);
+
+    signal_handler_signal(ols->signals, "process_rename", &data);
     signal_handler_signal(process->context.signals, "rename", &data);
     calldata_free(&data);
     bfree(prev_name);

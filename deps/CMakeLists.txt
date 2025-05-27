@@ -6,7 +6,7 @@ if(OS_WINDOWS)
 endif()
 
 add_subdirectory(opts-parser)
-add_subdirectory(uthash)
+add_subdirectory(uthash-header)
 
 # Use bundled jansson version as fallback
 find_package(Jansson 2.5 QUIET)

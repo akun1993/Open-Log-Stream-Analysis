@@ -59,9 +59,9 @@ static const char *source_signals[] = {
 };
 
 bool ols_source_init_context(struct ols_source *source, ols_data_t *settings,
-                             const char *name, const char *uuid, bool private) {
+                             const char *name, const char *uuid) {
   if (!ols_context_data_init(&source->context, OLS_OBJ_TYPE_SOURCE, settings,
-                             name, uuid, private))
+                             name, uuid))
     return false;
 
   return signal_handler_add_array(source->context.signals, source_signals);
@@ -95,10 +95,6 @@ static bool ols_source_init(struct ols_source *source) {
 }
 
 static void ols_source_init_finalize(struct ols_source *source) {
-  if (!source->context.is_private) {
-    ols_context_data_insert_name(&source->context, &ols->data.sources_mutex,
-                                 &ols->data.public_sources);
-  }
 
   ols_context_data_insert_uuid(&source->context, &ols->data.sources_mutex,
                                &ols->data.sources);
@@ -106,8 +102,7 @@ static void ols_source_init_finalize(struct ols_source *source) {
 
 static ols_source_t *
 ols_source_create_internal(const char *id, const char *name, const char *uuid,
-                           ols_data_t *settings, bool private,
-                           uint32_t last_ols_ver) {
+                           ols_data_t *settings,  uint32_t last_ols_ver) {
   struct ols_source *source = bzalloc(sizeof(struct ols_source));
 
   const struct ols_source_info *info = get_source_info(id);
@@ -122,7 +117,7 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
 
   source->last_ols_ver = last_ols_ver;
 
-  if (!ols_source_init_context(source, settings, name, uuid, private))
+  if (!ols_source_init_context(source, settings, name, uuid))
     goto fail;
 
   if (info) {
@@ -141,16 +136,15 @@ ols_source_create_internal(const char *id, const char *name, const char *uuid,
   if ((!info || info->create) && !source->context.data)
     blog(LOG_ERROR, "Failed to create source '%s'!", name);
 
-  blog(LOG_DEBUG, "%ssource '%s' (%s) created", private ? "private " : "", name,
-       id);
+  blog(LOG_DEBUG, "source '%s' (%s) created",  name, id);
 
   source->flags = source->default_flags;
   source->enabled = true;
 
   ols_source_init_finalize(source);
-  if (!private) {
-    ols_source_dosignal(source, "source_create", NULL);
-  }
+
+  ols_source_dosignal(source, "source_create", NULL);
+
 
   return source;
 
@@ -162,27 +156,19 @@ fail:
 
 ols_source_t *ols_source_create(const char *id, const char *name,
                                 ols_data_t *settings) {
-  return ols_source_create_internal(id, name, NULL, settings, false,
-                                    LIBOLS_API_VER);
+  return ols_source_create_internal(id, name, NULL, settings,  LIBOLS_API_VER);
 }
 
-ols_source_t *ols_source_create_private(const char *id, const char *name,
-                                        ols_data_t *settings) {
-  return ols_source_create_internal(id, name, NULL, settings, true,
-                                    LIBOLS_API_VER);
-}
+
 
 ols_source_t *ols_source_create_set_last_ver(const char *id, const char *name,
                                              const char *uuid,
                                              ols_data_t *settings,
-                                             uint32_t last_ols_ver,
-                                             bool is_private) {
-  return ols_source_create_internal(id, name, uuid, settings, is_private,
-                                    last_ols_ver);
+                                             uint32_t last_ols_ver) {
+  return ols_source_create_internal(id, name, uuid, settings, last_ols_ver);
 }
 
-ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name,
-                                   bool create_private) {
+ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name) {
   ols_source_t *new_source;
   ols_data_t *settings;
 
@@ -196,10 +182,7 @@ ols_source_t *ols_source_duplicate(ols_source_t *source, const char *new_name,
   settings = ols_data_create();
   ols_data_apply(settings, source->context.settings);
 
-  new_source =
-      create_private
-          ? ols_source_create_private(source->info.id, new_name, settings)
-          : ols_source_create(source->info.id, new_name, settings);
+  new_source =  ols_source_create(source->info.id, new_name, settings);
 
   new_source->flags = source->flags;
 
@@ -224,8 +207,8 @@ void ols_source_destroy(struct ols_source *source) {
   }
 
   ols_context_data_remove_uuid(&source->context, &ols->data.sources);
-  if (!source->context.is_private)
-    ols_context_data_remove_name(&source->context, &ols->data.public_sources);
+
+  ols_context_data_remove_name(&source->context, &ols->data.public_sources);
 
   /* defer source destroy */
   os_task_queue_queue_task(ols->destruction_task_thread,
@@ -246,8 +229,7 @@ void ols_source_destroy_defer(struct ols_source *source) {
     source->context.data = NULL;
   }
 
-  blog(LOG_DEBUG, "%ssource '%s' destroyed",
-       source->context.is_private ? "private " : "", source->context.name);
+  blog(LOG_DEBUG, "source '%s' destroyed", source->context.name);
 
   ols_data_release(source->private_settings);
   ols_context_data_free(&source->context);
@@ -573,16 +555,16 @@ void ols_source_set_name(ols_source_t *source, const char *name) {
     struct calldata data;
     char *prev_name = bstrdup(source->context.name);
 
-    if (!source->context.is_private) {
-      ols_context_data_setname_ht(&source->context, name,
-                                  &ols->data.public_sources);
-    }
+
+    ols_context_data_setname_ht(&source->context, name,
+                                &ols->data.public_sources);
+
     calldata_init(&data);
     calldata_set_ptr(&data, "source", source);
     calldata_set_string(&data, "new_name", source->context.name);
     calldata_set_string(&data, "prev_name", prev_name);
-    if (!source->context.is_private)
-      signal_handler_signal(ols->signals, "source_rename", &data);
+
+    signal_handler_signal(ols->signals, "source_rename", &data);
     signal_handler_signal(source->context.signals, "rename", &data);
     calldata_free(&data);
     bfree(prev_name);

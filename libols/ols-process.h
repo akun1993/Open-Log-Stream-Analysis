@@ -16,6 +16,8 @@
 ******************************************************************************/
 
 #pragma once
+
+#include "ols-ref.h"
 #include "ols.h"
 
 #ifdef __cplusplus
@@ -35,6 +37,7 @@ enum ols_process_type {
   OLS_PROCESS_TYPE_INPUT,
   OLS_PROCESS_TYPE_FILTER,
 };
+
 
 struct ols_process_info {
   /* required */
@@ -105,6 +108,54 @@ struct ols_process_info {
   enum ols_icon_type icon_type;
 
   uint32_t version; /* increment if needed to specify a new version */
+};
+
+/* ------------------------------------------------------------------------- */
+/* process  */
+
+struct ols_weak_process {
+  struct ols_weak_ref ref;
+  struct ols_process *process;
+};
+
+struct ols_process {
+  struct ols_context_data context;
+  struct ols_process_info info;
+
+  /* general exposed flags that can be set for the source */
+  uint32_t flags;
+  uint32_t default_flags;
+  uint32_t last_ols_ver;
+
+  /* indicates ownership of the info.id buffer */
+  bool owns_info_id;
+
+  /* signals to call the source update in the video thread */
+  long defer_update_count;
+
+  /* ensures show/hide are only called once */
+  volatile long show_refs;
+
+  /* ensures activate/deactivate are only called once */
+  volatile long activate_refs;
+
+  /* source is in the process of being destroyed */
+  volatile long destroying;
+
+  /* used to indicate that the source has been removed and all
+   * references to it should be released (not exactly how I would prefer
+   * to handle things but it's the best option) */
+  bool removed;
+
+  bool active;
+
+  uint64_t last_frame_ts;
+  uint64_t last_sys_timestamp;
+
+  /* private data */
+  /*< protected >*/
+  ols_pad_t *sinkpad;
+  ols_data_t *private_settings;
 };
 
 EXPORT void ols_register_process_s(const struct ols_process_info *info,

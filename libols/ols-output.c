@@ -77,7 +77,7 @@ static bool init_output_handlers(struct ols_output *output, const char *name,
                                  ols_data_t *settings)
 {
   if (!ols_context_data_init(&output->context, OLS_OBJ_TYPE_OUTPUT, settings,
-                             name, NULL, false))
+                             name, NULL))
     return false;
 
   ols_pad_set_chain_function(output->sinkpad,

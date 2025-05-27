@@ -1,0 +1,240 @@
+<html>
+    <head>
+        <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <style type="text/css">
+		html {direction:ltr;}
+		table {border-width:0pt;border-color:black;border-style:solid;border-collapse:collapse;padding:0;margin:0;width:200mm;table-layout:auto}
+		.border_style {border-width:1pt;border-color:black;border-style:solid;border-collapse:collapse;padding-left:5;padding-right:5;margin-top:10;margin-bottom:10;width:195mm}
+		tr {border-width:0pt;border-color:black;border-style:solid;padding:0;margin:0;text-align:left}
+		td {border-width:0pt;border-color:black;border-style:solid;padding:0;margin:0;text-align:left}
+		.align_opposite {text-align:right;}
+		span {margin-top:0pt;margin-bottom:0pt}
+		div {margin-top:0pt;margin-bottom:10pt;margin-left:16pt}
+		p {margin-top:0pt;margin-bottom:0pt}
+		.p_mini {margin-top:0pt;margin-bottom:0pt}
+		.p_small {margin-top:10pt;margin-bottom:10pt}
+		.p_big {margin-top:16pt;margin-bottom:16pt}
+		.courier_style {margin-top:0;margin-bottom:0;font-size:10pt;font-family:"Courier New";direction:ltr}
+		.default_obd_mode {color:blue;margin-top:0;margin-bottom:0;font-size:10pt;font-weight:bold;font-family:Arial;direction:ltr}
+		.default_error {color:red;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_error_b {color:red;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.default_warn {color:orange;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_warn_b {color:orange;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.default_ok {color:green;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.compstylenotequal {color:red;margin-top:0;margin-bottom:0;font-size:10pt;font-weight:bold;font-family:Arial;direction:ltr}
+		.compstyleequal {margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_style {margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_style_revert_align {margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;direction:right}
+		.default_style_topmargin {margin-top:15;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_style_b {margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.default_style_b_indent {text-indent:20pt;margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.default_style_bu {margin-top:0;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;text-decoration:underline;direction:ltr}
+		.default_style_bu_topmargin {margin-top:15;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;text-decoration:underline;direction:ltr}
+		.default_style_bu_diagfunction {background-color:#C0C0C0;margin-top:15;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;text-decoration:underline;direction:ltr}
+		.default_style_diagfunction {background-color:#C0C0C0;margin-top:15;margin-bottom:0;font-size:10pt;font-family:Arial;direction:ltr}
+		.default_style_ecu {background-color:#8FBCE6;margin-top:15;margin-bottom:0;font-size:10pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.default_style_big_bi {margin-top:0;margin-bottom:0;font-size:16pt;font-family:Arial;font-weight:bold;font-style:italic;direction:ltr}
+		.default_style_big_b {margin-top:0;margin-bottom:0;font-size:20pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.header_style_big {margin-top:0;margin-bottom:0;font-size:13pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.header_style_bigu {margin-top:0;margin-bottom:0;font-size:13pt;font-family:Arial;font-weight:bold;direction:ltr;text-decoration:underline}
+		.header_style_small {margin-top:0;margin-bottom:0;font-size:11pt;font-family:Arial;direction:ltr}
+		.small_style {margin-top:0;margin-bottom:0;font-size:8pt;font-family:Arial;direction:ltr}
+		.very_small_style {margin-top:0;margin-bottom:0;font-size:6pt;font-family:Arial;direction:ltr}
+		.small_style_b {margin-top:0;margin-bottom:0;font-size:8pt;font-family:Arial;font-weight:bold;direction:ltr}
+		.small_style_bu {margin-top:0;margin-bottom:0;font-size:8pt;font-family:Arial;font-weight:bold;text-decoration:underline;direction:ltr}
+		.font_arial {font-family:Arial}
+		.font_courier {font-family:"Courier New"}
+		.font_sidis {font-family:SidisSymbole}
+		.font_symbol {font-family:"Symbol"}
+		.font_wingdings {font-family:"Wingdings"}
+		.size_small {font-size:10pt}
+		.size_big {font-size:12pt}
+		.color_black {color:#000000}
+		.color_red {color:#FF0000}
+		.color_green {color:#006400}
+		.color_blue {color:#0000FF}
+		.color_yellow {color:#FFF405}
+		.color_green2 {color:#92C027}
+		.color_blue2 {color:#6BBCE4}
+		.style_normal {font-style:normal}
+		.style_italic {font-style:italic}
+		.weight_normal {font-weight:normal}
+		.weight_bold {font-weight:bold}
+
+		.table_spec {border-width:0;border-collapse:collapse;padding:0;margin:0;width:100%}
+	 
+		td.border_cell{border-width:1pt;border-color:black;border-style:solid;padding:0;margin:0;text-align:left}
+		td.border_bottom{border-color:black;border-top:blank;border-bottom:solid;border-bottom-width:thin;border-right:blank;border-left:blank;padding:0;margin:0;text-align:left}
+		table.small_table {border-width:0pt;border-color:black;border-style:solid;border-collapse:collapse;padding:0;margin:0;width:47mm;table-layout:auto;font-size:10pt;font-family:Arial}
+
+		/* Styles for the expansion mechanism */
+		input.treeView {float:left !important; z-index:-1 !important; position:absolute; vertical-align:middle;  width:0px; height:0px; overflow:hidden;}
+		label.treeView.hover {text-decoration:underline; vertical-align:middle;}
+		label.treeView {cursor:pointer; vertical-align:middle;}
+		.treeView_label_content { position:relative; left:1.5em; vertical-align:middle;}
+		.treeView_selector_item { position:absolute; display:table-cell; vertical-align:middle; border:1px solid; padding-left:0.33em; padding-right:0.33em; background-color:#E7E7E7; font-family:Consolas,'Courier New',Courier; margin-top:0;margin-bottom:0;font-size:10pt;font-weight:bold;direction:ltr}
+		
+			.treeView_content {clear:left; margin-left:2%; width:98%; background-color:#ffffff; display:none}
+				
+	
+	 
+		@media screen
+		{
+		  body { margin-top:0;margin-bottom:0 }
+		  .table_spec2 {border-width:0;border-collapse:collapse;padding:0;margin:0;width:100%}
+		  p {margin-top:0pt;margin-bottom:0pt }
+		  .nichtdrucken {font-size:10pt;font-family:Arial;direction:ltr}
+		}
+	 
+		#button_bar {position:fixed; right:15px; text-align:left;}
+		#button_bar span {display:block;}
+
+		@media print
+		{
+          body { margin-top:0;margin-bottom:0 }
+          .table_spec2 {border-width:0;border-collapse:collapse;padding:0;margin:0;width:195mm}
+          p {margin-top:0pt;margin-bottom:0pt }
+          .nichtdrucken {font-size:10pt;font-family:Arial;direction:ltr;display:none}
+
+		  /* do not print expansion mechanism items*/ 
+		  .treeView_selector_item,
+		  input.treeView { display:none; }
+		  .treeView_label_content { position:static; }
+		  #button_bar {display:none;}
+		}
+	  </style>
+        <script type="text/javascript">
+		
+
+		  function showHideSectionsAfterCheckbox(checkbox) {
+			var startMarker = document.getElementById("start_marker_"+checkbox.id);
+			showHideSectionByNode(startMarker.nextSibling, !(checkbox.checked));
+		  }
+		
+		  function showSectionsByID(id) {
+			var checkbox = document.getElementById("treeView_"+id);
+			checkbox.checked=true;
+			showHideSectionsAfterCheckbox(checkbox);
+		  }
+		
+	 	  function set_all_treeViews(expand) {
+			var input_elements = document.getElementsByName("treeView_checkbox");
+			for (var i=0; i<input_elements.length; i++) {
+			  if (expand) {
+				if (!input_elements[i].checked) {
+				  input_elements[i].checked=true;
+				  showHideSectionsAfterCheckbox(input_elements[i]);
+				}
+			  }
+			  else {
+				if (input_elements[i].checked) {
+				  input_elements[i].checked=false;
+				  showHideSectionsAfterCheckbox(input_elements[i]);
+				}
+			  }
+			}	
+		  }
+
+		  function expand_parent_node(nodeId) {
+			var input_elements = document.getElementsByName(nodeId);
+			expand_parent_node_recursivly(input_elements[0].parentNode);
+		  }
+		  function expand_parent_node_recursivly(node) {
+			if (node.className == "treeView_content") {
+			  checkChildCheckbox(node.previousSibling);
+			  var currentNode = node.previousSibling;
+			}
+			else {
+			  expand_parent_node_recursivly(node.parentNode);
+			}
+		  }
+		  function checkChildCheckbox(node) {
+			if (node.name == "treeView_checkbox") {
+			  node.checked=true;
+			  showHideSectionsAfterCheckbox(node);
+			}
+			else {
+			  for (var i=0; i<node.childNodes.length; i++) {
+				checkChildCheckbox(node.childNodes[i]);
+			  }
+			}
+		  }
+		
+		  function showHideSectionByNode(node, hideBoolean) {
+			for (var sibling=node; sibling!=null; sibling=sibling.nextSibling) {
+			  with(sibling) {
+				if (nodeType == 1) {
+				  if (className == "treeView_content") {
+					if (hideBoolean) {
+					  style.display="none";
+					}
+					else {
+					  //FireFox table display fix:
+					  if (nodeName.toUpperCase() == "TBODY") {
+						style.display="table-row-group";
+					  }
+					  else {
+						style.display="block";
+					  }
+					}
+				  } 
+				  else if (className == "treeView") {
+					if (nodeName.toLowerCase() == "input") {
+					  if (type == "hidden") {
+						return;
+					  }
+					  //Ignore the checkbox input itself
+					}
+					else if (nodeName.toLowerCase() == "label") {
+					  for (var i=0; i<childNodes.length; i++) {
+						with (childNodes[i]) {
+						  if (className == "treeView_selector_item") {
+							if (hideBoolean) {
+							  firstChild.nodeValue="+";
+							}
+							else {
+							  firstChild.nodeValue="-";
+							}
+							break;
+						  }
+						}
+					  }
+					}
+				  } 
+				  else {
+					showHideSectionByNode(childNodes[0], hideBoolean);
+				  }
+				}
+			  }
+			}
+		  }
+		
+	  </script>
+        <title>Vehicle documentation</title>
+    </head>
+    <body> 
+	
+	     <table style="border-bottom-style=groove;border-bottom-color=black;border-bottom-width=2">
+            <tr>
+                <td valign="bottom" style="width:45mm;">
+                    <p class="header_style_big">TBOX  Analysis</p>
+                </td>
+				<td valign="bottom" style="width:80mm;text-align:center">
+                    <p class="header_style_big">Vehicle documentation</p>
+                </td>
+				<td valign="bottom" class="align_opposite" style="width:45mm;">
+                    <p class="header_style_small">
+                        28.02.2025 19:23:18+08:
+                        <br>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: center">
+                    <p class="header_style_small">(Confidentiality level: confidential)</p>
+                </td>
+            </tr>
+        </table>
+	
+	</body>
+</html>

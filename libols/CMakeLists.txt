@@ -143,10 +143,12 @@ set_target_properties(
               SOVERSION "0")
 
 target_compile_features(libols PRIVATE cxx_alias_templates)
-
+message("dir is ${uthash__INCLUDE_DIRS}")
 target_include_directories(
   libols PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>)
+                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config> 
+                $<BUILD_INTERFACE:${uthash__INCLUDE_DIRS}> 
+                $<INSTALL_INTERFACE:${INSTALL_INCLUDEDIR}>)
 
 if(OS_WINDOWS)
   include(cmake/os-windows.cmake)

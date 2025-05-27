@@ -16,6 +16,9 @@
 ******************************************************************************/
 
 #pragma once
+#include "ols-ref.h"
+#include "ols-context.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +26,9 @@ extern "C" {
 
 #define OLS_OUTPUT_SERVICE (1 << 3)
 #define OLS_OUTPUT_CAN_PAUSE (1 << 5)
+
+/* ------------------------------------------------------------------------- */
+/* outputs  */
 
 struct ols_output_info {
   /* required */
@@ -51,6 +57,42 @@ struct ols_output_info {
 
   void *type_data;
   void (*free_type_data)(void *type_data);
+};
+
+
+struct ols_weak_output {
+  struct ols_weak_ref ref;
+  struct ols_output *output;
+};
+
+struct ols_output {
+  struct ols_context_data context;
+  struct ols_output_info info;
+  /* indicates ownership of the info.id buffer */
+  bool owns_info_id;
+  volatile bool data_active;
+  int stop_code;
+
+  int reconnect_retry_sec;
+  int reconnect_retry_max;
+  int reconnect_retries;
+  uint32_t reconnect_retry_cur_msec;
+  float reconnect_retry_exp;
+  pthread_t reconnect_thread;
+  os_event_t *reconnect_stop_event;
+  volatile bool reconnecting;
+  volatile bool reconnect_thread_active;
+
+  uint32_t starting_drawn_count;
+  uint32_t starting_lagged_count;
+
+  ols_pad_t *sinkpad;
+
+  int total_frames;
+
+  bool valid;
+
+  char *last_error_message;
 };
 
 EXPORT void ols_register_output_s(const struct ols_output_info *info,

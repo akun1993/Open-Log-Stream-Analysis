@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string>
 #include <util/platform.h>
+#include "ols-context.h"
 
 int GetConfigPath(char *path, size_t size, const char *name) {
 #if ALLOW_PORTABLE_MODE
@@ -111,7 +112,7 @@ int main(int argc, char **argv) {
 
   ols_process_t *process = ols_process_create("script_caller", "test_process", nullptr);
 
-  //ols_context_link(source,process);
+  ols_context_link(&source->context,&process->context);
 
   //source->link->process2->link->output;
 

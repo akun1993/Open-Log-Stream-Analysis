@@ -16,7 +16,7 @@
 ******************************************************************************/
 
 #pragma once
-
+#include "ols-ref.h"
 #include "ols.h"
 
 /**
@@ -188,6 +188,59 @@ struct ols_source_info {
 
 	uint32_t version; /* increment if needed to specify a new version */
 };
+
+
+/* ------------------------------------------------------------------------- */
+/* sources  */
+
+struct ols_weak_source {
+	struct ols_weak_ref ref;
+	struct ols_source *source;
+  };
+  
+struct ols_source {
+	struct ols_context_data context;
+	struct ols_source_info info;
+  
+	ols_pad_t *srcpad;
+  
+	/* general exposed flags that can be set for the source */
+	uint32_t flags;
+	uint32_t default_flags;
+	uint32_t last_ols_ver;
+  
+	/* indicates ownership of the info.id buffer */
+	bool owns_info_id;
+  
+	/* signals to call the source update in the video thread */
+	long defer_update_count;
+  
+	/* ensures activate/deactivate are only called once */
+	volatile long activate_refs;
+  
+	/* source is in the process of being destroyed */
+	volatile long destroying;
+  
+	/* used to indicate that the source has been removed and all
+	 * references to it should be released (not exactly how I would prefer
+	 * to handle things but it's the best option) */
+	bool removed;
+  
+	/*  used to indicate if the source should show up when queried for user ui */
+	bool temp_removed;
+  
+	bool active;
+  
+	/* used to temporarily disable sources if needed */
+	bool enabled;
+  
+	uint64_t last_frame_ts;
+	uint64_t last_sys_timestamp;
+  
+	/* private data */
+	ols_data_t *private_settings;
+};
+  
 
 EXPORT void ols_register_source_s(const struct ols_source_info *info,
 				  size_t size);

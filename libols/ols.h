@@ -61,7 +61,14 @@ enum ols_icon_type {
   OLS_ICON_TYPE_TEXT,
   OLS_ICON_TYPE_CUSTOM,
 };
+enum ols_obj_type {
+  OLS_OBJ_TYPE_INVALID,
+  OLS_OBJ_TYPE_SOURCE,
+  OLS_OBJ_TYPE_PROCESS,
+  OLS_OBJ_TYPE_OUTPUT,
+};
 
+#include "ols-context.h"
 #include "ols-output.h"
 #include "ols-pad.h"
 #include "ols-process.h"
@@ -450,18 +457,12 @@ EXPORT ols_data_array_t *ols_save_sources_filtered(ols_save_source_filter_cb cb,
  *  will be removed in a future version! */
 EXPORT void ols_reset_source_uuids(void);
 
-enum ols_obj_type {
-  OLS_OBJ_TYPE_INVALID,
-  OLS_OBJ_TYPE_SOURCE,
-  OLS_OBJ_TYPE_PROCESS,
-  OLS_OBJ_TYPE_OUTPUT,
-};
+
 
 EXPORT enum ols_obj_type ols_obj_get_type(void *obj);
 EXPORT const char *ols_obj_get_id(void *obj);
 EXPORT bool ols_obj_invalid(void *obj);
 EXPORT void *ols_obj_get_data(void *obj);
-EXPORT bool ols_obj_is_private(void *obj);
 
 EXPORT void ols_apply_private_data(ols_data_t *settings);
 EXPORT void ols_set_private_data(ols_data_t *settings);
@@ -510,14 +511,11 @@ EXPORT const char *ols_source_get_display_name(const char *id);
 EXPORT ols_source_t *ols_source_create(const char *id, const char *name,
                                        ols_data_t *settings);
 
-EXPORT ols_source_t *ols_source_create_private(const char *id, const char *name,
-                                               ols_data_t *settings);
 
 /* if source has OLS_SOURCE_DO_NOT_DUPLICATE output flag set, only returns a
  * reference */
 EXPORT ols_source_t *ols_source_duplicate(ols_source_t *source,
-                                          const char *desired_name,
-                                          bool create_private);
+                                          const char *desired_name);
 /**
  * Adds/releases a reference to a source.  When the last reference is
  * released, the source is destroyed.
@@ -631,15 +629,11 @@ EXPORT uint32_t ols_source_get_flags(const ols_source_t *source);
 EXPORT ols_process_t *ols_process_create(const char *id, const char *name,
                                          ols_data_t *settings);
 
-EXPORT ols_process_t *ols_process_create_private(const char *id,
-                                                 const char *name,
-                                                 ols_data_t *settings);
 
 /* if source has OLS_SOURCE_DO_NOT_DUPLICATE output flag set, only returns a
  * reference */
 EXPORT ols_process_t *ols_process_duplicate(ols_process_t *process,
-                                            const char *desired_name,
-                                            bool create_private);
+                                            const char *desired_name);
 /**
  * Adds/releases a reference to a source.  When the last reference is
  * released, the source is destroyed.

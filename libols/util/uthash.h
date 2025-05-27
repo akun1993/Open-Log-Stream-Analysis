@@ -23,7 +23,7 @@
 
 #include <uthash/uthash.h>
 
-/* Use OBS allocator */
+/* Use OLS allocator */
 #undef uthash_malloc
 #undef uthash_free
 #define uthash_malloc(sz) bmalloc(sz)
