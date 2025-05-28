@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<students>
+    <student id="001">
+        <name>Mike</name>    
+        <mark course="Chinese">80</mark>
+    </student>
+    <student id="002">
+        <name>Linda</name>    
+        <mark course="Maths">85</mark>
+    </student>
+    <student id="003">
+        <name>Joe</name>    
+        <mark course="English">79</mark>
+    </student>
+    <student id="002">
+        <name>Linda</name>    
+        <mark course="Chinese">68</mark>
+    </student>
+    <student id="001">
+        <name>Mike</name>    
+        <mark course="English">65</mark>
+    </student>
+    <student id="003">
+        <name>Joe</name>    
+        <mark course="Chinese">85</mark>
+    </student>
+    <student id="003">
+        <name>Joe</name>    
+        <mark course="Maths">80</mark>
+    </student>
+    <student id="002">
+        <name>Linda</name>    
+        <mark course="English">70</mark>
+    </student>
+    <student id="001">
+        <name>Mike</name>    
+        <mark course="Maths">90</mark>
+    </student>
+</students>
