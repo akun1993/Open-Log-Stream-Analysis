@@ -247,13 +247,13 @@
     <xsl:template match="protocol/information">
         <table>
             <tbody>
-            <tr bgcolor="#9acd32">
+            <tr >
                 <!-- name() get the name of  tag. -->    
                 <td ><p>workshop_code:</p></td>
                 <td ><p>version:</p></td>
             </tr>
 
-            <tr bgcolor="#9acd32">
+            <tr>
                 <td ><p><xsl:value-of select="workshop_code/serial_number"/></p></td>
                 <!-- call template with more than one param. -->    
                 <xsl:call-template name="formatText">
@@ -273,7 +273,7 @@
         <xsl:for-each select="child::*">
         <table>
             <tbody>
-            <tr bgcolor="#9acd32">
+            <tr >
                 <!-- name() get the name of  tag. -->    
                 <xsl:variable name="tagName" select="name()"/>
                 <xsl:if test="$tagName = 'serial_number'">
@@ -309,7 +309,7 @@
         <xsl:for-each select="child::*">
         <table>
             <tbody>
-            <tr bgcolor="#9acd32">
+            <tr >
                 <!-- name() get the name of  tag. -->    
                 <td ><b><xsl:value-of select="name()"/></b></td>
                 <td ><b><xsl:value-of select="."/></b></td>
@@ -325,7 +325,7 @@
 
         <table>
             <tbody>
-            <tr bgcolor="#9acd32">
+            <tr >
                 <!-- name() get the name of  tag. -->    
                 <td>
                 <p>Communications Data </p>
@@ -342,7 +342,7 @@
 
                 <table>
                     <tbody>
-                    <tr bgcolor="#9acd32">
+                    <tr>
                         <!-- name() get the name of  tag. --> 
                         <td>   
                             <p class="default_style_bu_diagfunction">
@@ -364,30 +364,15 @@
 
                 <span class="treeView_content" id="{concat('content_',$ecu_id_tag)}">
                 <table class="default_style">
-                       <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">VW/Audi part number</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">04E906056DQ </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">Software version</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">3708 </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">Hardware part number</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">04E907309GB </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">Hardware version</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">H80 </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">ASAM/ODX file identification</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">EV_ECM15MPI01104E906056DQ </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">ASAM/ODX file version</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">001001 </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">[SO]_Param_VWTesteCodinInfor</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style"> </td>
-                                </tr>
-                                <tr>
-                                    <td valign="top" class="default_style" style="width:105mm"><span class="default_style_b"></span><span class="default_style_b">Coding</span></td><td valign="top" colspan="2" style="width:95mm" class="default_style">01 1A 40 36 04 64 0D 00 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 </td>
-                                </tr>
+                    <xsl:for-each select="current()/ecu_master/values">
+                    <tr>
+                    <td valign="top" class="default_style" style="width:105mm">
+                    <span class="default_style_b"></span>
+                    <span class="default_style_b"><xsl:value-of select="display_name"/></span>
+                    </td>
+                    <td valign="top" colspan="2" style="width:95mm" class="default_style"><xsl:value-of select="display_value"/> </td>
+                    </tr>
+                    </xsl:for-each>
                 </table>
                 </span>
 
