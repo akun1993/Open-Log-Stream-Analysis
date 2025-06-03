@@ -304,9 +304,9 @@ bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
   // } else {
   ret = (ols_pad_link_full(src, sink) == OLS_PAD_LINK_OK);
 
-  // if (!ret) {
-  //   g_slist_foreach(pads_created, remove_pad, NULL);
-  // }
+  if (!ret) {
+    blog(LOG_DEBUG, "pad link failed");
+  }
   // g_slist_free(pads_created);
 
   return ret;
@@ -764,8 +764,8 @@ ols_pad_chain_data_unchecked(ols_pad_t *pad, OlsPadProbeType type, void *data) {
   if (OLS_PAD_IS_EOS(pad))
     goto eos;
 
-  if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
-    goto wrong_mode;
+  // if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
+  //   goto wrong_mode;
 
   ACQUIRE_PARENT(pad, parent, no_parent);
   OLS_PAD_UNLOCK(pad);
@@ -826,8 +826,7 @@ out:
 
   /* ERRORS */
 flushing: {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "chaining, but pad was
-  // flushing"); pad->ABI.abi.last_flowret = OLS_FLOW_FLUSHING;
+  blog(LOG_ERROR, "chaining, but pad was flushing"); 
   OLS_PAD_UNLOCK(pad);
   // OLS_PAD_STREAM_UNLOCK(pad);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
@@ -835,7 +834,7 @@ flushing: {
   goto out;
 }
 eos: {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "chaining, but pad was EOS");
+  blog(LOG_WARNING,  "chaining, but pad was EOS");
   // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
   OLS_PAD_UNLOCK(pad);
   // OLS_PAD_STREAM_UNLOCK(pad);
@@ -844,8 +843,7 @@ eos: {
   goto out;
 }
 wrong_mode: {
-  // g_critical("chain on pad %s:%s but it was not in push mode",
-  //            OLS_DEBUG_PAD_NAME(pad));
+  blog(LOG_ERROR,"chain on pad %s but it was not in push mode",OLS_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
   OLS_PAD_UNLOCK(pad);
   // OLS_PAD_STREAM_UNLOCK(pad);
@@ -931,8 +929,8 @@ static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
   if (OLS_PAD_IS_EOS(pad))
     goto eos;
 
-  if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
-    goto wrong_mode;
+  // if (OLS_PAD_MODE(pad) != OLS_PAD_MODE_PUSH)
+  //   goto wrong_mode;
 
   if ((peer = OLS_PAD_PEER(pad)) == NULL)
     goto not_linked;
@@ -950,15 +948,14 @@ static OlsFlowReturn ols_pad_push_data(ols_pad_t *pad, OlsPadProbeType type,
   return ret;
 
 eos: {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but pad was EOS");
+   blog(LOG_ERROR,  "pushing on pad %s, but pad was EOS", OLS_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
   OLS_PAD_UNLOCK(pad);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
   return OLS_FLOW_EOS;
 }
 wrong_mode: {
-  // g_critical("pushing on pad %s:%s but it was not activated in push mode",
-  //            OLS_DEBUG_PAD_NAME(pad));
+  blog(LOG_ERROR,"pushing on pad %s but it was not activated in push mode",  OLS_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
   OLS_PAD_UNLOCK(pad);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
@@ -966,8 +963,7 @@ wrong_mode: {
 }
 
 not_linked: {
-  // OLS_CAT_LOG_OBJECT(OLS_CAT_SCHEDULING, pad, "pushing, but it was not
-  // linked"); pad->ABI.abi.last_flowret = OLS_FLOW_NOT_LINKED;
+  blog(LOG_ERROR, "pushing on pad %s, but it was not linked",OLS_PAD_NAME(pad));// pad->ABI.abi.last_flowret = OLS_FLOW_NOT_LINKED;
   OLS_PAD_UNLOCK(pad);
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
   return OLS_FLOW_NOT_LINKED;

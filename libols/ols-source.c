@@ -458,7 +458,7 @@ static void ols_base_src_loop(ols_pad_t *pad) {
   ret = ols_pad_push(pad, buf);
   if ((ret != OLS_FLOW_OK)) {
 
-    blog(LOG_WARNING, "pad push buf failed , ret = %d", ret);
+    //blog(LOG_WARNING, "pad push buf failed , ret = %d", ret);
     // goto pause;
   }
   /* Segment pending means that a new segment was configured

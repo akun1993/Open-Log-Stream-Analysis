@@ -8,6 +8,7 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
+#include "tinyxml2.h"
 
 using namespace std;
 
@@ -31,38 +32,34 @@ using namespace std;
 /* ------------------------------------------------------------------------- */
 
 /* clang-format off */
-static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
+static OlsFlowReturn output_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
 	blog(LOG_DEBUG, "script_chainlist_func");
 	return OLS_FLOW_OK;
 }
 
-static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
+static OlsFlowReturn output_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
 	//blog(LOG_DEBUG, "script_chain_func");
 	return OLS_FLOW_OK;
 }
 
-static OlsPadLinkReturn script_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+static OlsPadLinkReturn output_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	//blog(LOG_DEBUG, "script_link_func");
 	return OLS_PAD_LINK_OK;
 }
 
-static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	blog(LOG_DEBUG, "script_link_func");
-	return OLS_PAD_LINK_OK;
-}
 
 
-struct ScriptCallerProcess {
-	ols_process_t *process_ = nullptr;
+struct XmlOutput  {
+	ols_output_t *output_ = nullptr;
 	// ols_pad_t     *srcpad_  = nullptr;
 	// ols_pad_t     *sinkpad_  = nullptr;
 
 	/* --------------------------- */
 
-	inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
-		: process_(process)
+	inline XmlOutput(ols_output_t *process, ols_data_t *settings)
+		: output_(process)
 	{
-		ols_process_update(process_, settings);
+		//ols_output_update(process_, settings);
 		// srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
 		// sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
@@ -76,7 +73,7 @@ struct ScriptCallerProcess {
 		//ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
 	}
 
-	inline ~ScriptCallerProcess(){
+	inline ~XmlOutput(){
 
 	}
 
@@ -85,51 +82,84 @@ struct ScriptCallerProcess {
 	void Update(ols_data_t *settings);
 
 	ols_pad_t * createRecvPad(const char *caps);
-	ols_pad_t * createSendPad(const char *caps);
+
 };
 
 
-ols_pad_t * ScriptCallerProcess::createRecvPad(const char *caps){
+ols_pad_t * XmlOutput::createRecvPad(const char *caps){
 
-	ols_pad_t * sinkpad = ols_pad_new("script-process-sink",OLS_PAD_SINK);
+	ols_pad_t * sinkpad = ols_pad_new("xml-output-sink",OLS_PAD_SINK);
 
 	blog(LOG_DEBUG, "create recv pad success");
 
-	ols_pad_set_link_function(sinkpad,script_sink_link_func);
-	ols_pad_set_chain_function(sinkpad,script_sink_chain_func);
+	ols_pad_set_link_function(sinkpad,output_sink_link_func );
+	ols_pad_set_chain_function(sinkpad,output_sink_chain_func);
 
-	ols_process_add_pad(process_, sinkpad);
+	//ols_output_add_pad(output_, sinkpad);
 	return sinkpad;
 }
 
-ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
-	ols_pad_t  * srcpad = ols_pad_new("script-process-src",OLS_PAD_SRC);
-
-	ols_pad_set_link_function(srcpad,script_src_link_func);
 
 
-	blog(LOG_DEBUG, "create send pad success");
-
-	ols_process_add_pad(process_, srcpad);
-	return srcpad;
-}
-
- ols_pad_t *ScriptCallerProcess::requestNewPad(const char *name, const char *caps)
+ ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps)
 {
 
 	if(strcmp("sink",name) == 0){
 		return  createRecvPad(caps);
-	} else if(strcmp("src",name) == 0) {
-		return   createSendPad(caps);
 	}
 
 	return NULL;
 }
 
 
-void ScriptCallerProcess::Update(ols_data_t *settings)
+void XmlOutput::Update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
+
+	
+// <?xml version="1.0"?>
+// <Root>
+//     <Element attribute="value">This is a text node</Element>
+//     <SubElement subAttr="subValue">This is a sub text node</SubElement>
+// </Root>
+
+	   // 创建一个 XMLDocument 对象
+    tinyxml2::XMLDocument doc;
+ 
+    // 创建一个根节点 <Root>
+    tinyxml2::XMLElement* root = doc.NewElement("Root");
+    doc.InsertFirstChild(root);
+ 
+    // 创建一个子节点 <Element> 并设置属性 attribute="value"
+    tinyxml2::XMLElement* info = doc.NewElement("information");
+
+	tinyxml2::XMLElement* soc_ver = doc.NewElement("soc_version");
+	tinyxml2::XMLText* ver_text = doc.NewText("This is a text node");
+	soc_ver->InsertEndChild(ver_text);
+
+	info->InsertEndChild(soc_ver);
+
+    root->InsertEndChild(info);
+	
+    // 添加文本到 <Element> 节点
+    tinyxml2::XMLText* text = doc.NewText("This is a text node");
+    element->InsertEndChild(text);
+ 
+    // 创建另一个子节点 <SubElement> 并添加文本和属性
+    tinyxml2::XMLElement* subElement = doc.NewElement("SubElement");
+
+    root->InsertEndChild(subElement);
+    tinyxml2::XMLText* subText = doc.NewText("This is a sub text node");
+    subElement->InsertEndChild(subText);
+ 
+    // 保存文件到磁盘
+    tinyxml2::XMLError eResult = doc.SaveFile("example.xml");
+    if (eResult != tinyxml2::XML_SUCCESS) {
+        //std::cerr << "Error saving file: " << eResult << std::endl;
+        //return -1;
+    } else {
+        //std::cout << "File saved successfully." << std::endl;
+    }
 }
 
 
@@ -146,7 +176,7 @@ MODULE_EXPORT const char *ols_module_description(void)
 
 static ols_properties_t *get_properties(void *data)
 {
-	ScriptCallerProcess *s = reinterpret_cast<ScriptCallerProcess *>(data);
+	XmlOutput *s = reinterpret_cast<XmlOutput *>(data);
 	string path;
 
 	ols_properties_t *props = ols_properties_create();
@@ -175,15 +205,15 @@ bool ols_module_load(void)
 	};
 
 	si.create = [](ols_data_t *settings, ols_process_t *process) {
-		return (void *)new ScriptCallerProcess(process, settings);
+		return (void *)new XmlOutput(process, settings);
 	};
 
 	si.destroy = [](void *data) {
-		delete reinterpret_cast<ScriptCallerProcess *>(data);
+		delete reinterpret_cast<XmlOutput *>(data);
 	};
 
 	si.request_new_pad = [](void *data, const char *name ,const char *caps) {
-		return  reinterpret_cast<ScriptCallerProcess *>(data)->requestNewPad(name,caps) ;
+		return  reinterpret_cast<XmlOutput *>(data)->requestNewPad(name,caps) ;
 	}; ; 
 
 	si.get_defaults = [](ols_data_t *settings) {
@@ -192,7 +222,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<ScriptCallerProcess *>(data)->Update(settings);
+		reinterpret_cast<XmlOutput *>(data)->Update(settings);
 	};
 
 	ols_register_process(&si);

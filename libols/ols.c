@@ -1142,6 +1142,72 @@ ols_pad_t *ols_context_get_static_pad(struct ols_context_data *context,
   return result;
 }
 
+static ols_pad_t *_ols_context_request_pad(struct ols_context_data *context,
+                                           const char *name, const char
+                                           *caps) {
+  ols_pad_t *newpad = NULL;
+
+
+  /* Some sanity checking here */
+  if (name) {
+    ols_pad_t *pad;
+
+    pad = ols_context_get_static_pad(context, name);
+    if (pad) {
+      /* FIXME 2.0: Change this to return_val_if_fail() */
+      blog(LOG_ERROR,"Context %s already has a pad named %s, the behaviour of  _ols_context_request_pad() for existing pads is undefined!",context->name, name);
+    }
+  }
+
+
+  switch (context->type) {
+  case OLS_OBJ_TYPE_SOURCE: {
+      blog(LOG_ERROR,"Context %s is source type , have no method request new pad!",context->name);
+      break;
+    }
+  case OLS_OBJ_TYPE_PROCESS:{
+      if(((ols_process_t *)context)->info.request_new_pad ){
+        return ((ols_process_t *)context)->info.request_new_pad (context->data,name,caps);
+      }
+      break;
+  }
+   
+  case OLS_OBJ_TYPE_OUTPUT:{
+      if(((ols_output_t *)context)->info.request_new_pad ){
+        return ((ols_output_t *)context)->info.request_new_pad(context->data,name,caps);
+      }
+    }
+    break;
+  }
+
+  return NULL;
+}
+
+/**
+ * ols_object_request_pad: (virtual request_new_pad)
+ * @element: a #GstElement to find a request pad of.
+ * @templ: a #GstPadTemplate of which we want a pad of.
+ * @name: (transfer none) (allow-none): the name of the request #GstPad
+ * to retrieve. Can be %NULL.
+ * @caps: (transfer none) (allow-none): the caps of the pad we want to
+ * request. Can be %NULL.
+ *
+ * Retrieves a request pad from the element according to the provided template.
+ * Pad templates can be looked up using
+ * gst_element_factory_get_static_pad_templates().
+ *
+ * The pad should be released with gst_element_release_request_pad().
+ *
+ * Returns: (transfer full) (nullable): requested #GstPad if found,
+ *     otherwise %NULL.  Release after usage.
+ */
+ols_pad_t *ols_object_request_pad(struct ols_context_data *context,
+                                  const char *name, const char *caps) {
+  return _ols_context_request_pad(context, name, caps);
+}
+
+
+
 bool ols_context_link_pads_full(struct ols_context_data *src,
                                 const char *srcpadname,
                                 struct ols_context_data *dest,
@@ -1187,6 +1253,7 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
     OLS_OBJECT_LOCK(src);
     use_srcpads = true;
     srcpad = src->pads.num > 0 ? src->pads.array[0] : NULL;
+    blog(LOG_INFO,"no src pad name , get default");
     // if (srcpad)
     //   gst_object_ref (srcpad);
     OLS_OBJECT_UNLOCK(src);
@@ -1262,7 +1329,7 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
           temp = destpad;
           //gst_object_ref (temp);
         } else {
-          //temp = ols_context_ (dest, srcpad, NULL);
+          temp = ols_object_request_pad (dest, "sink",NULL);
           temprequest = true;
         }
 
@@ -1316,8 +1383,9 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
       blog (LOG_DEBUG, "trying dest pad %s:%s",OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME (destpad));
       if ((OLS_PAD_DIRECTION (destpad) == OLS_PAD_SINK) &&
           (OLS_PAD_PEER (destpad) == NULL)) {
+          
 
-        ols_pad_t *temp = NULL;//= gst_element_get_compatible_pad (src, destpad, NULL);
+        ols_pad_t *temp = ols_object_request_pad (src, "src", NULL);
         bool temprequest = false;
 
         if (temp ) {
@@ -1377,60 +1445,7 @@ bool ols_context_link(struct ols_context_data *src,
   return ols_context_link_pads(src, NULL, dest, NULL);
 }
 
-// static ols_pad_t *_ols_context_request_pad(struct ols_context_data *element,
-//                                            const char *name, const char
-//                                            *caps) {
-//   ols_pad_t *newpad = NULL;
-//   // GstElementClass *oclass;
 
-//   oclass = GST_ELEMENT_GET_CLASS(element);
-
-//   /* Some sanity checking here */
-//   if (name) {
-//     ols_pad_t *pad;
-
-//     pad = ols_context_get_static_pad(element, name);
-//     if (pad) {
-//       // gst_object_unref(pad);
-//       /* FIXME 2.0: Change this to g_return_val_if_fail() */
-//       // g_critical(
-//       //     "Element %s already has a pad named %s, the behaviour of "
-//       //     " gst_element_get_request_pad() for existing pads is
-//       undefined!",
-//       //     GST_ELEMENT_NAME(element), name);
-//     }
-//   }
-
-//   if (oclass->request_new_pad)
-//     newpad = (oclass->request_new_pad)(element, name, caps);
-
-//   // if (newpad) gst_object_ref(newpad);
-
-//   return newpad;
-// }
-
-/**
- * ols_object_request_pad: (virtual request_new_pad)
- * @element: a #GstElement to find a request pad of.
- * @templ: a #GstPadTemplate of which we want a pad of.
- * @name: (transfer none) (allow-none): the name of the request #GstPad
- * to retrieve. Can be %NULL.
- * @caps: (transfer none) (allow-none): the caps of the pad we want to
- * request. Can be %NULL.
- *
- * Retrieves a request pad from the element according to the provided template.
- * Pad templates can be looked up using
- * gst_element_factory_get_static_pad_templates().
- *
- * The pad should be released with gst_element_release_request_pad().
- *
- * Returns: (transfer full) (nullable): requested #GstPad if found,
- *     otherwise %NULL.  Release after usage.
- */
-// ols_pad_t *ols_object_request_pad(struct ols_context_data *context,
-//                                   const char *name, const char *caps) {
-//   return _ols_context_request_pad(context, name, caps);
-// }
 
 profiler_name_store_t *ols_get_profiler_name_store(void) {
   return ols->name_store;

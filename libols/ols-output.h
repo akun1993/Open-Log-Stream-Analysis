@@ -51,6 +51,13 @@ struct ols_output_info {
 
   ols_properties_t *(*get_properties)(void *data);
 
+  	/**
+	 * Gets a  pad  of this output
+	 *
+	 * @return         a new pad 
+	 */
+	ols_pad_t *(*request_new_pad)(void *data,const char *name, const char *caps);  
+
   uint64_t (*get_total_bytes)(void *data);
 
   int (*get_dropped_frames)(void *data);

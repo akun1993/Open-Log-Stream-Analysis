@@ -123,7 +123,7 @@ struct ols_source_info {
 	 *
 	 * @return         a new pad 
 	 */
-	ols_pad_t *(*get_new_pad)(void *data);
+	ols_pad_t *(*request_new_pad)(void *data);
 
 
 	/**

@@ -63,7 +63,7 @@ struct TextSource {
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
     ols_source_update(source, settings);
-    filename = "/home/V01/uidq8743/sv_user.log.00000356";
+    filename = "/home/zkun/TBoxLog/ICMLog/sv_user.log.00000019";
   }
 
   inline ~TextSource() {}
@@ -120,7 +120,7 @@ void TextSource::Update(ols_data_t *settings) { UNUSED_PARAMETER(settings); }
 
 int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
-  blog(LOG_DEBUG, "TextSource::FileSrcGetData");
+  //blog(LOG_DEBUG, "TextSource::FileSrcGetData");
 
   int ret;
 
@@ -255,7 +255,7 @@ static ols_properties_t *get_properties(void *data) {
   return props;
 }
 
-// static ols_pad_t *get_new_pad(void *data) {
+// static ols_pad_t *request_new_pad(void *data) {
 //   TextSource *s = reinterpret_cast<TextSource *>(data);
 
 //   return s->srcpad;
@@ -290,7 +290,7 @@ bool ols_module_load(void) {
   };
   si.destroy = [](void *data) { delete reinterpret_cast<TextSource *>(data); };
 
-  si.get_new_pad = NULL;
+  si.request_new_pad = NULL;
 
   si.get_defaults = [](ols_data_t *settings) {
     // defaults(settings, 1);
