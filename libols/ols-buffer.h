@@ -44,6 +44,7 @@ typedef struct ols_buffer ols_buffer_t;
 
 struct ols_buffer {
   ols_mini_object_t mini_object;
+  
   struct dstr data;
 };
 

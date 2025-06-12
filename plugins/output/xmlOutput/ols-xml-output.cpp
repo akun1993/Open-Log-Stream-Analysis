@@ -141,9 +141,7 @@ void XmlOutput::Update(ols_data_t *settings)
 
     root->InsertEndChild(info);
 	
-    // 添加文本到 <Element> 节点
-    tinyxml2::XMLText* text = doc.NewText("This is a text node");
-    element->InsertEndChild(text);
+
  
     // 创建另一个子节点 <SubElement> 并添加文本和属性
     tinyxml2::XMLElement* subElement = doc.NewElement("SubElement");
