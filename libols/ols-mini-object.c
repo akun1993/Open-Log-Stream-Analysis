@@ -301,3 +301,117 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
     }
   }
 }
+
+/**
+ * ols_mini_object_replace:
+ * @olddata: (inout) (transfer full) (nullable): pointer to a pointer to a
+ *     mini-object to be replaced
+ * @newdata: (allow-none): pointer to new mini-object
+ *
+ * Atomically modifies a pointer to point to a new mini-object.
+ * The reference count of @olddata is decreased and the reference count of
+ * @newdata is increased.
+ *
+ * Either @newdata and the value pointed to by @olddata may be %NULL.
+ *
+ * Returns: %TRUE if @newdata was different from @olddata
+ */
+bool ols_mini_object_replace (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
+{
+  ols_mini_object_t *olddata_val;
+
+  g_return_val_if_fail (olddata != NULL, false);
+
+  blog ( "replace %p (%d) with %p (%d)",
+      *olddata, *olddata ? (*olddata)->refcount : 0,
+      newdata, newdata ? newdata->refcount : 0);
+
+  olddata_val = g_atomic_pointer_get ((void *) olddata);
+
+  if (UNLIKELY (olddata_val == newdata))
+    return false;
+
+  if (newdata)
+    ols_mini_object_ref (newdata);
+
+  while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *) olddata, olddata_val, newdata))) {
+    olddata_val = g_atomic_pointer_get ((void *) olddata);
+    if (UNLIKELY (olddata_val == newdata))
+      break;
+  }
+
+  if (olddata_val)
+    ols_mini_object_unref (olddata_val);
+
+  return olddata_val != newdata;
+}
+
+/**
+ * gst_mini_object_steal: (skip)
+ * @olddata: (inout) (transfer full): pointer to a pointer to a mini-object to
+ *     be stolen
+ *
+ * Replace the current #GstMiniObject pointer to by @olddata with %NULL and
+ * return the old value.
+ *
+ * Returns: (nullable): the #GstMiniObject at @oldata
+ */
+ols_mini_object_t *
+ols_mini_object_steal (ols_mini_object_t ** olddata)
+{
+  ols_mini_object_t *olddata_val;
+
+  g_return_val_if_fail (olddata != NULL, NULL);
+
+  blog ( "steal %p (%d)",
+      *olddata, *olddata ? (*olddata)->refcount : 0);
+
+  do {
+    olddata_val = g_atomic_pointer_get ((void *) olddata);
+    if (olddata_val == NULL)
+      break;
+  } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
+              olddata, olddata_val, NULL)));
+
+  return olddata_val;
+}
+
+/**
+ * gst_mini_object_take:
+ * @olddata: (inout) (transfer full): pointer to a pointer to a mini-object to
+ *     be replaced
+ * @newdata: pointer to new mini-object
+ *
+ * Modifies a pointer to point to a new mini-object. The modification
+ * is done atomically. This version is similar to gst_mini_object_replace()
+ * except that it does not increase the refcount of @newdata and thus
+ * takes ownership of @newdata.
+ *
+ * Either @newdata and the value pointed to by @olddata may be %NULL.
+ *
+ * Returns: %TRUE if @newdata was different from @olddata
+ */
+bool
+ols_mini_object_take (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
+{
+  ols_mini_object_t *olddata_val;
+
+  g_return_val_if_fail (olddata != NULL, false);
+
+  blog ( "take %p (%d) with %p (%d)",
+      *olddata, *olddata ? (*olddata)->refcount : 0,
+      newdata, newdata ? newdata->refcount : 0);
+
+  do {
+    olddata_val = g_atomic_pointer_get ((void *) olddata);
+    if (UNLIKELY (olddata_val == newdata))
+      break;
+  } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
+              olddata, olddata_val, newdata)));
+
+  if (olddata_val)
+    ols_mini_object_unref (olddata_val);
+
+  return olddata_val != newdata;
+}
+

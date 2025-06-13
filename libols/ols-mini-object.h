@@ -125,12 +125,42 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
 ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object);
 
-// bool ols_mini_object_replace(ols_mini_object_t **olddata,
-//                              ols_mini_object_t *newdata);
 
-// void ols_clear_mini_object(ols_mini_object_t **object_ptr);
-// bool ols_mini_object_take(ols_mini_object_t **olddata,
-//                           ols_mini_object_t *newdata);
+void  ols_mini_object_weak_ref (ols_mini_object_t *object, void * data);
+
+void  ols_mini_object_weak_unref	(ols_mini_object_t *object,void * data);
+
+/* locking */
+
+bool   ols_mini_object_lock            (ols_mini_object_t *object, OlsLockFlags flags);
+
+
+void  ols_mini_object_unlock          (ols_mini_object_t *object, OlsLockFlags flags);
+
+
+/* copy */
+
+
+ols_mini_object_t * ols_mini_object_copy(const ols_mini_object_t *mini_object) ;//G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT
+
+
+
+// void            gst_mini_object_set_qdata       (GstMiniObject *object, GQuark quark,
+//                                                  gpointer data, GDestroyNotify destroy);
+
+// gpointer        gst_mini_object_get_qdata       (GstMiniObject *object, GQuark quark);
+
+
+// gpointer        gst_mini_object_steal_qdata     (GstMiniObject *object, GQuark quark);
+
+
+bool        ols_mini_object_replace         (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
+
+
+bool        ols_mini_object_take            (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
+
+ols_mini_object_t * ols_mini_object_steal   (ols_mini_object_t **olddata) ;//G_GNUC_WARN_UNUSED_RESULT
+
 
 struct ols_mini_object {
   miniType type;
