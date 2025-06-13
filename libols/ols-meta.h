@@ -2,7 +2,7 @@
 #include "ols-mini-object.h"
 #include "util/dstr.h"
 #include "ols-ref.h"
-
+#include "ols-buffer.h"
 
 #ifdef __cplusplus
     extern "C" {

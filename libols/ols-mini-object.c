@@ -316,35 +316,35 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
  *
  * Returns: %TRUE if @newdata was different from @olddata
  */
-bool ols_mini_object_replace (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
-{
-  ols_mini_object_t *olddata_val;
+// bool ols_mini_object_replace (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
+// {
+//   ols_mini_object_t *olddata_val;
 
-  g_return_val_if_fail (olddata != NULL, false);
+//   g_return_val_if_fail (olddata != NULL, false);
 
-  blog ( "replace %p (%d) with %p (%d)",
-      *olddata, *olddata ? (*olddata)->refcount : 0,
-      newdata, newdata ? newdata->refcount : 0);
+//   blog ( "replace %p (%d) with %p (%d)",
+//       *olddata, *olddata ? (*olddata)->refcount : 0,
+//       newdata, newdata ? newdata->refcount : 0);
 
-  olddata_val = g_atomic_pointer_get ((void *) olddata);
+//   olddata_val = g_atomic_pointer_get ((void *) olddata);
 
-  if (UNLIKELY (olddata_val == newdata))
-    return false;
+//   if (UNLIKELY (olddata_val == newdata))
+//     return false;
 
-  if (newdata)
-    ols_mini_object_ref (newdata);
+//   if (newdata)
+//     ols_mini_object_ref (newdata);
 
-  while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *) olddata, olddata_val, newdata))) {
-    olddata_val = g_atomic_pointer_get ((void *) olddata);
-    if (UNLIKELY (olddata_val == newdata))
-      break;
-  }
+//   while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *) olddata, olddata_val, newdata))) {
+//     olddata_val = g_atomic_pointer_get ((void *) olddata);
+//     if (UNLIKELY (olddata_val == newdata))
+//       break;
+//   }
 
-  if (olddata_val)
-    ols_mini_object_unref (olddata_val);
+//   if (olddata_val)
+//     ols_mini_object_unref (olddata_val);
 
-  return olddata_val != newdata;
-}
+//   return olddata_val != newdata;
+// }
 
 /**
  * gst_mini_object_steal: (skip)
@@ -356,25 +356,25 @@ bool ols_mini_object_replace (ols_mini_object_t ** olddata, ols_mini_object_t * 
  *
  * Returns: (nullable): the #GstMiniObject at @oldata
  */
-ols_mini_object_t *
-ols_mini_object_steal (ols_mini_object_t ** olddata)
-{
-  ols_mini_object_t *olddata_val;
+// ols_mini_object_t *
+// ols_mini_object_steal (ols_mini_object_t ** olddata)
+// {
+//   ols_mini_object_t *olddata_val;
 
-  g_return_val_if_fail (olddata != NULL, NULL);
+//   g_return_val_if_fail (olddata != NULL, NULL);
 
-  blog ( "steal %p (%d)",
-      *olddata, *olddata ? (*olddata)->refcount : 0);
+//   blog ( "steal %p (%d)",
+//       *olddata, *olddata ? (*olddata)->refcount : 0);
 
-  do {
-    olddata_val = g_atomic_pointer_get ((void *) olddata);
-    if (olddata_val == NULL)
-      break;
-  } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
-              olddata, olddata_val, NULL)));
+//   do {
+//     olddata_val = g_atomic_pointer_get ((void *) olddata);
+//     if (olddata_val == NULL)
+//       break;
+//   } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
+//               olddata, olddata_val, NULL)));
 
-  return olddata_val;
-}
+//   return olddata_val;
+// }
 
 /**
  * gst_mini_object_take:
@@ -391,27 +391,27 @@ ols_mini_object_steal (ols_mini_object_t ** olddata)
  *
  * Returns: %TRUE if @newdata was different from @olddata
  */
-bool
-ols_mini_object_take (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
-{
-  ols_mini_object_t *olddata_val;
+// bool
+// ols_mini_object_take (ols_mini_object_t ** olddata, ols_mini_object_t * newdata)
+// {
+//   ols_mini_object_t *olddata_val;
 
-  g_return_val_if_fail (olddata != NULL, false);
+//   g_return_val_if_fail (olddata != NULL, false);
 
-  blog ( "take %p (%d) with %p (%d)",
-      *olddata, *olddata ? (*olddata)->refcount : 0,
-      newdata, newdata ? newdata->refcount : 0);
+//   blog ( "take %p (%d) with %p (%d)",
+//       *olddata, *olddata ? (*olddata)->refcount : 0,
+//       newdata, newdata ? newdata->refcount : 0);
 
-  do {
-    olddata_val = g_atomic_pointer_get ((void *) olddata);
-    if (UNLIKELY (olddata_val == newdata))
-      break;
-  } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
-              olddata, olddata_val, newdata)));
+//   do {
+//     olddata_val = g_atomic_pointer_get ((void *) olddata);
+//     if (UNLIKELY (olddata_val == newdata))
+//       break;
+//   } while (UNLIKELY (!g_atomic_pointer_compare_and_exchange ((void *)
+//               olddata, olddata_val, newdata)));
 
-  if (olddata_val)
-    ols_mini_object_unref (olddata_val);
+//   if (olddata_val)
+//     ols_mini_object_unref (olddata_val);
 
-  return olddata_val != newdata;
-}
+//   return olddata_val != newdata;
+// }
 

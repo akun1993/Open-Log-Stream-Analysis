@@ -46,6 +46,23 @@ typedef uint32_t miniType;
 #define OLS_MINI_OBJECT_FLAG_UNSET(obj, flag)                                  \
   (OLS_MINI_OBJECT_FLAGS(obj) &= ~(flag))
 
+
+  /**
+ * OLS_MINI_OBJECT_REFCOUNT:
+ * @obj: a #GstMiniObject
+ *
+ * Get access to the reference count field of the mini-object.
+ */
+#define OLS_MINI_OBJECT_REFCOUNT(obj)           ((OLS_MINI_OBJECT_CAST(obj))->refcount)
+/**
+ * OLS_MINI_OBJECT_REFCOUNT_VALUE:
+ * @obj: a #GstMiniObject
+ *
+ * Get the reference count value of the mini-object.
+ */
+#define OLS_MINI_OBJECT_REFCOUNT_VALUE(obj)     (os_atomic_load_long (&(OLS_MINI_OBJECT_CAST(obj))->refcount))
+
+
 /**
  * OlsMiniObjectFlags:
  * @OLS_MINI_OBJECT_FLAG_LOCKABLE: the object can be locked and unlocked with
@@ -123,12 +140,10 @@ void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
 ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object);
 void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
-ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object);
 
+// void  ols_mini_object_weak_ref (ols_mini_object_t *object, void * data);
 
-void  ols_mini_object_weak_ref (ols_mini_object_t *object, void * data);
-
-void  ols_mini_object_weak_unref	(ols_mini_object_t *object,void * data);
+// void  ols_mini_object_weak_unref	(ols_mini_object_t *object,void * data);
 
 /* locking */
 
@@ -154,12 +169,12 @@ ols_mini_object_t * ols_mini_object_copy(const ols_mini_object_t *mini_object) ;
 // gpointer        gst_mini_object_steal_qdata     (GstMiniObject *object, GQuark quark);
 
 
-bool        ols_mini_object_replace         (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
+// bool        ols_mini_object_replace         (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
 
 
-bool        ols_mini_object_take            (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
+// bool        ols_mini_object_take            (ols_mini_object_t **olddata, ols_mini_object_t *newdata);
 
-ols_mini_object_t * ols_mini_object_steal   (ols_mini_object_t **olddata) ;//G_GNUC_WARN_UNUSED_RESULT
+// ols_mini_object_t * ols_mini_object_steal   (ols_mini_object_t **olddata) ;//G_GNUC_WARN_UNUSED_RESULT
 
 
 struct ols_mini_object {
