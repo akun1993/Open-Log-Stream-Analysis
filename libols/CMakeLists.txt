@@ -58,6 +58,9 @@ target_sources(
           ols-buffer.h
           ols-buffer-list.c
           ols-buffer-list.h
+          ols-meta.h
+          ols-meta-txt.h
+          ols-meta-txt.c
           ols.hpp)
 
 target_sources(

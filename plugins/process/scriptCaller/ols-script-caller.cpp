@@ -8,6 +8,7 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
+#include "ols-meta-txt.h"
 
 using namespace std;
 
@@ -32,12 +33,21 @@ using namespace std;
 
 /* clang-format off */
 static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
+
+	
+
 	blog(LOG_DEBUG, "script_chainlist_func");
 	return OLS_FLOW_OK;
 }
 
 static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
-	//blog(LOG_DEBUG, "script_chain_func");
+
+
+	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
+
+	
+
+	blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
 	return OLS_FLOW_OK;
 }
 

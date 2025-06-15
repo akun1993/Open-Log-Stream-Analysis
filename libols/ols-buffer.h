@@ -4,6 +4,14 @@
 #include "util/dstr.h"
 #include <stdint.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+struct ols_meta;
+
 struct ols_buffer;
 typedef struct ols_buffer ols_buffer_t;
 
@@ -44,8 +52,10 @@ typedef struct ols_buffer ols_buffer_t;
 
 struct ols_buffer {
   ols_mini_object_t mini_object;
+
+  struct ols_meta *meta;
   
-  struct dstr data;
+  
 };
 
 #ifndef OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS
@@ -90,3 +100,10 @@ ols_buffer_t *ols_buffer_copy(const ols_buffer_t *buf);
 #endif /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
 ols_buffer_t *ols_buffer_copy_deep(const ols_buffer_t *buf);
+
+void ols_buffer_set_meta(ols_buffer_t *buf,  struct ols_meta *meta);
+
+#ifdef __cplusplus
+}
+#endif
+

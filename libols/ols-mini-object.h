@@ -2,6 +2,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
 struct ols_mini_object;
 typedef struct ols_mini_object ols_mini_object_t;
 
@@ -194,3 +198,7 @@ struct ols_mini_object {
   // uint32_t priv_uint;
   // void *priv_pointer;
 };
+
+#ifdef __cplusplus
+}
+#endif

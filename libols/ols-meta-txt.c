@@ -2,70 +2,62 @@
 
 
 static ols_txt_file_t *
-_ols_txt_file_copy (const ols_txt_file_t * caps)
+_ols_txt_file_copy (const ols_txt_file_t * txt_file)
 {
   ols_txt_file_t *new_txt_file;
 
   uint32_t i, n;
 
-  g_return_val_if_fail (GST_IS_CAPS (caps), NULL);
+  //g_return_val_if_fail (GST_IS_CAPS (caps), NULL);
 
   new_txt_file = ols_txt_file_new_empty ();
+  new_txt_file->data = txt_file->data;
+  new_txt_file->size = txt_file->size;
 
-  GST_CAPS_FLAGS (newcaps) = GST_CAPS_FLAGS (caps);
-  n = GST_CAPS_LEN (caps);
+  new_txt_file->line = txt_file->line;
+  new_txt_file->file = txt_file->file;
 
-  GST_CAT_DEBUG_OBJECT (GST_CAT_PERFORMANCE, caps, "doing copy %p -> %p",
-      caps, newcaps);
+ // GST_CAPS_FLAGS (newcaps) = GST_CAPS_FLAGS (caps);
+ // n = GST_CAPS_LEN (caps);
+
+  blog (LOG_INFO, "doing copy %p -> %p",txt_file, new_txt_file);
 
   return new_txt_file;
 }
 
 /* creation/deletion */
 static void
-_ols_txt_file_free (ols_txt_file_t * caps)
+_ols_txt_file_free (ols_txt_file_t * txt_file)
 {
-  GstStructure *structure;
-  GstCapsFeatures *features;
-  guint i, len;
 
-  /* The refcount must be 0, but since we're only called by gst_caps_unref,
-   * don't bother testing. */
-  len = GST_CAPS_LEN (caps);
   /* This can be used to get statistics about caps sizes */
+
   /*GST_CAT_INFO (GST_CAT_CAPS, "caps size: %d", len); */
-  for (i = 0; i < len; i++) {
-    structure = gst_caps_get_structure_unchecked (caps, i);
-    gst_structure_set_parent_refcount (structure, NULL);
-    gst_structure_free (structure);
-    features = gst_caps_get_features_unchecked (caps, i);
-    if (features) {
-      gst_caps_features_set_parent_refcount (features, NULL);
-      gst_caps_features_free (features);
-    }
-  }
-  g_array_free (GST_CAPS_ARRAY (caps), TRUE);
 
 #ifdef DEBUG_REFCOUNT
   GST_CAT_TRACE (GST_CAT_CAPS, "freeing caps %p", caps);
 #endif
-  g_slice_free1 (sizeof (GstCapsImpl), caps);
+ // bfree (sizeof (GstCapsImpl), caps);
+ if(txt_file->data){
+  bfree(txt_file->data);
+  txt_file->size = 0;
+ }
+ dstr_free(&txt_file->file);
 }
 
 static void
-ols_txt_file_init (ols_txt_file_t * caps)
+ols_txt_file_init (ols_txt_file_t * txt_file,size_t buff_size)
 {
-  ols_mini_object_init (OLS_MINI_OBJECT_CAST (caps), 0, _gst_caps_type,
-      (OlsMiniObjectCopyFunction) _ols_txt_file_copy, NULL,
-      (OlsMiniObjectFreeFunction) _ols_txt_file_free);
+  ols_mini_object_init (OLS_MINI_OBJECT_CAST (txt_file), 0, 1,
+      (ols_mini_object_copy_function) _ols_txt_file_copy, NULL,
+      (ols_mini_object_free_function) _ols_txt_file_free);
 
-  /* the 32 has been determined by logging caps sizes in _gst_caps_free
-   * but g_ptr_array uses 16 anyway if it expands once, so this does not help
-   * in practice
-   * GST_CAPS_ARRAY (caps) = g_ptr_array_sized_new (32);
-   */
-  GST_CAPS_ARRAY (caps) =
-      g_array_new (FALSE, TRUE, sizeof (GstCapsArrayElement));
+  if(buff_size > 0){
+    txt_file->data = bzalloc(buff_size);
+    txt_file->size = buff_size;
+
+  }
+
 }
 
 /**
@@ -83,13 +75,29 @@ ols_txt_file_new_empty (void)
 {
   ols_txt_file_t *txt_file;
 
-  txt_file = (ols_txt_file_t *) g_slice_new (GstCapsImpl);
+  txt_file = (ols_txt_file_t *) bzalloc (sizeof(ols_txt_file_t));
 
-  ols_txt_file_init (txt_file);
+  ols_txt_file_init (txt_file,0);
 
 #ifdef DEBUG_REFCOUNT
   GST_CAT_TRACE (GST_CAT_CAPS, "created caps %p", caps);
 #endif
 
   return txt_file;
+}
+
+ols_txt_file_t *ols_txt_file_with_buffer (size_t buf_size){
+
+  ols_txt_file_t *txt_file;
+
+  txt_file = (ols_txt_file_t *) bzalloc (sizeof(ols_txt_file_t));
+
+  ols_txt_file_init (txt_file,buf_size);
+
+#ifdef DEBUG_REFCOUNT
+  GST_CAT_TRACE (GST_CAT_CAPS, "created caps %p", caps);
+#endif
+
+  return txt_file;
+
 }

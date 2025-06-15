@@ -1,4 +1,5 @@
 #include "ols-buffer.h"
+#include "ols-meta.h"
 
 static void _ols_buffer_free(ols_buffer_t *buffer);
 static ols_buffer_t *_ols_buffer_copy(const ols_buffer_t *buffer);
@@ -12,7 +13,7 @@ static void ols_buffer_init(ols_buffer_t *buffer) {
 
   // OLS_BUFFER(buffer)->pool = NULL;
   // S_BUFFER_MEM_LEN(buffer) = 0;
-  dstr_init(&buffer->data);
+ // dstr_init(&buffer->data);
 }
 
 static void _ols_buffer_free(ols_buffer_t *buffer) {
@@ -50,7 +51,7 @@ static void _ols_buffer_free(ols_buffer_t *buffer) {
 #ifdef USE_POISONING
   memset(buffer, 0xff, sizeof(GstBufferImpl));
 #endif
-  dstr_free(&buffer->data);
+  //dstr_free(&buffer->data);
   bfree(buffer);
 }
 
@@ -95,7 +96,7 @@ static ols_buffer_t *ols_buffer_copy_with_flags(const ols_buffer_t *buffer,
   /* create a fresh new buffer */
   copy = ols_buffer_new();
 
-  dstr_copy_dstr(&copy->data, &buffer->data);
+  //dstr_copy_dstr(&copy->data, &buffer->data);
 
   return copy;
 }
@@ -117,3 +118,10 @@ static ols_buffer_t *_ols_buffer_copy(const ols_buffer_t *buffer) {
 ols_buffer_t *ols_buffer_copy_deep(const ols_buffer_t *buffer) {
   return ols_buffer_copy_with_flags(buffer, OLS_BUFFER_COPY_DEEP);
 }
+
+void ols_buffer_set_meta(ols_buffer_t *buf,  struct ols_meta *meta){
+
+  buf->meta = meta;
+}
+
+
