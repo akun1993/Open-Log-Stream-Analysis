@@ -369,9 +369,9 @@ void ols_python_parse_data(ols_script_t *s, const char *data, int len) {
   lock_python();
 
   PyObject *args = Py_BuildValue("(s)", data);
-  printf("parse object %p args %p\n",python_script->parse,args);
+  //printf("parse object %p args %p\n",python_script->parse,args);
   PyObject *py_ret = PyObject_CallObject(python_script->parse, args);
-  printf("parse object %p args %p py ret %p\n",python_script->parse,args,py_ret);
+  //printf("parse object %p args %p py ret %p\n",python_script->parse,args,py_ret);
   py_error();
   Py_XDECREF(py_ret);
   Py_XDECREF(args);

@@ -9,6 +9,7 @@
 #include <util/task.h>
 #include <util/util.hpp>
 #include "ols-meta-txt.h"
+#include "ols-scripting.h"
 
 using namespace std;
 
@@ -29,41 +30,10 @@ using namespace std;
     val = max_val;
 #endif
 
-/* ------------------------------------------------------------------------- */
-
-/* clang-format off */
-static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
-
-	
-
-	blog(LOG_DEBUG, "script_chainlist_func");
-	return OLS_FLOW_OK;
-}
-
-static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
-
-
-	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
-
-	
-
-	blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
-	return OLS_FLOW_OK;
-}
-
-static OlsPadLinkReturn script_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	//blog(LOG_DEBUG, "script_link_func");
-	return OLS_PAD_LINK_OK;
-}
-
-static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	blog(LOG_DEBUG, "script_link_func");
-	return OLS_PAD_LINK_OK;
-}
-
 
 struct ScriptCallerProcess {
 	ols_process_t *process_ = nullptr;
+	ols_script_t  *script_ = nullptr;
 	// ols_pad_t     *srcpad_  = nullptr;
 	// ols_pad_t     *sinkpad_  = nullptr;
 
@@ -73,6 +43,11 @@ struct ScriptCallerProcess {
 		: process_(process)
 	{
 		ols_process_update(process_, settings);
+
+		script_ = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/parse_log_2.py",NULL);
+
+
+
 		// srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
 		// sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
@@ -96,7 +71,49 @@ struct ScriptCallerProcess {
 
 	ols_pad_t * createRecvPad(const char *caps);
 	ols_pad_t * createSendPad(const char *caps);
+
+	void onDataBuff(ols_buffer_t *buffer);
 };
+
+/* ------------------------------------------------------------------------- */
+
+/* clang-format off */
+static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
+
+	
+
+	blog(LOG_DEBUG, "script_chainlist_func");
+	return OLS_FLOW_OK;
+}
+
+static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
+
+
+	
+
+	ScriptCallerProcess *script_caller = reinterpret_cast<ScriptCallerProcess *>(parent->data);
+
+	script_caller->onDataBuff(buffer);
+
+
+	
+
+	//blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
+	return OLS_FLOW_OK;
+}
+
+static OlsPadLinkReturn script_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+	//blog(LOG_DEBUG, "script_link_func");
+	return OLS_PAD_LINK_OK;
+}
+
+static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+	blog(LOG_DEBUG, "script_link_func");
+	return OLS_PAD_LINK_OK;
+}
+
+
+
 
 
 ols_pad_t * ScriptCallerProcess::createRecvPad(const char *caps){
@@ -136,6 +153,18 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 	return NULL;
 }
 
+
+void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
+
+	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
+
+	if(script_){
+		ols_scripting_prase(script_,(const char *)ols_txt->data,ols_txt->size);
+		//ols_txt->dat
+	}
+	
+
+}
 
 void ScriptCallerProcess::Update(ols_data_t *settings)
 {
