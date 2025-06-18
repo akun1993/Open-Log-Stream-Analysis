@@ -13,21 +13,9 @@
 using namespace std;
 
 #define warning(format, ...)                                                   \
-  blog(LOG_WARNING, "[%s] " format, ols_process_get_name(source), ##__VA_ARGS__)
+  blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
-#define warn_stat(call)                                                        \
-  do {                                                                         \
-    if (stat != Ok)                                                            \
-      warning("%s: %s failed (%d)", __FUNCTION__, call, (int)stat);            \
-  } while (false)
 
-#ifndef clamp
-#define clamp(val, min_val, max_val)                                           \
-  if (val < min_val)                                                           \
-    val = min_val;                                                             \
-  else if (val > max_val)                                                      \
-    val = max_val;
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -190,13 +178,13 @@ static ols_properties_t *get_properties(void *data)
 
 bool ols_module_load(void)
 {
-	ols_process_info si = {};
-	si.id = "script_caller";
-	si.type = OLS_PROCESS_TYPE_INPUT;
+	ols_output_info si = {};
+	si.id = "xml_output";
+	//si.type = OLS_PROCESS_TYPE_INPUT;
 	// si.output_flags = OLS_SOURCE_ | OLS_SOURCE_CUSTOM_DRAW |
 	// 		  OLS_SOURCE_CAP_OLSOLETE | OLS_SOURCE_SRGB;
 	si.get_properties = get_properties;
-	si.icon_type = OLS_ICON_TYPE_TEXT;
+	//si.icon_type = OLS_ICON_TYPE_TEXT;
 
 	si.get_name = [](void *) {
 		return ols_module_text("TextFile");
@@ -223,7 +211,7 @@ bool ols_module_load(void)
 		reinterpret_cast<XmlOutput *>(data)->Update(settings);
 	};
 
-	ols_register_process(&si);
+	ols_register_output(&si);
 
 
 	return true;
