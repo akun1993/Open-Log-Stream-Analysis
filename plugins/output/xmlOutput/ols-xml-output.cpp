@@ -154,10 +154,10 @@ void XmlOutput::Update(ols_data_t *settings)
 
 
 OLS_DECLARE_MODULE()
-OLS_MODULE_USE_DEFAULT_LOCALE("ols-script-caller", "en-US")
+OLS_MODULE_USE_DEFAULT_LOCALE("ols-xml-output", "en-US")
 MODULE_EXPORT const char *ols_module_description(void)
 {
-	return "script caller";
+	return "xml output";
 }
 
 static ols_properties_t *get_properties(void *data)
@@ -187,10 +187,10 @@ bool ols_module_load(void)
 	//si.icon_type = OLS_ICON_TYPE_TEXT;
 
 	si.get_name = [](void *) {
-		return ols_module_text("TextFile");
+		return ols_module_text("XmlOutput");
 	};
 
-	si.create = [](ols_data_t *settings, ols_process_t *process) {
+	si.create = [](ols_data_t *settings, ols_output_t *process) {
 		return (void *)new XmlOutput(process, settings);
 	};
 
