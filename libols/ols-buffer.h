@@ -1,14 +1,13 @@
 
 #pragma once
+#include "ols-meta-result.h"
 #include "ols-mini-object.h"
 #include "util/dstr.h"
 #include <stdint.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 struct ols_meta;
 
@@ -54,8 +53,8 @@ struct ols_buffer {
   ols_mini_object_t mini_object;
 
   struct ols_meta *meta;
-  
-  
+
+  struct ols_meta_result *result;
 };
 
 #ifndef OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS
@@ -101,9 +100,8 @@ ols_buffer_t *ols_buffer_copy(const ols_buffer_t *buf);
 
 ols_buffer_t *ols_buffer_copy_deep(const ols_buffer_t *buf);
 
-void ols_buffer_set_meta(ols_buffer_t *buf,  struct ols_meta *meta);
+void ols_buffer_set_meta(ols_buffer_t *buf, struct ols_meta *meta);
 
 #ifdef __cplusplus
 }
 #endif
-

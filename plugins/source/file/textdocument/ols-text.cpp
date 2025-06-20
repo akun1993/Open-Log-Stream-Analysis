@@ -1,4 +1,5 @@
 
+#include "ols-meta-txt.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -9,7 +10,6 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
-#include "ols-meta-txt.h"
 
 using namespace std;
 
@@ -64,7 +64,7 @@ struct TextSource {
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
     ols_source_update(source, settings);
-    filename = "/home/zkun/TBoxLog/ICMLog/sv_user.log.00000019";
+    filename = "/home/V01/uidq8743/sv_user.log.00000356";
   }
 
   inline ~TextSource() {}
@@ -121,21 +121,22 @@ void TextSource::Update(ols_data_t *settings) { UNUSED_PARAMETER(settings); }
 
 int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
-  //blog(LOG_DEBUG, "TextSource::FileSrcGetData");
+  // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
 
-  ols_txt_file_t * ols_txt = ols_txt_file_with_buffer (1024);
+  ols_txt_file_t *ols_txt = ols_txt_file_with_buffer(1024);
 
   errno = 0;
-  char *data = os_fgets(file, (char *)OSL_TXTFILE_BUFF(ols_txt), OSL_TXTFILE_BUFF_SIZE(ols_txt));
+  char *data = os_fgets(file, (char *)OSL_TXTFILE_BUFF(ols_txt),
+                        OSL_TXTFILE_BUFF_SIZE(ols_txt));
   if (UNLIKELY(data == NULL)) {
     goto eos;
   }
 
- // ols_txt->file = ;
+  // ols_txt->file = ;
 
   ols_txt->line = line_cnt;
 
-  ols_buffer_set_meta(buf,OLS_META_CAST(ols_txt));
+  ols_buffer_set_meta(buf, OLS_META_CAST(ols_txt));
 
   ++line_cnt;
 

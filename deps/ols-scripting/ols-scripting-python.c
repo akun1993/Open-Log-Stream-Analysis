@@ -136,10 +136,9 @@ static bool load_python_script(struct ols_python_script *data) {
   if (py_error() || ret != 0)
     goto fail;
 
-
   data->parse = PyObject_GetAttrString(py_module, "parse_str");
-	if (!data->parse)
-		PyErr_Clear();
+  if (!data->parse)
+    PyErr_Clear();
 
   static PyMethodDef global_funcs[] = {{"script_path",
                                         py_get_current_script_path, METH_NOARGS,
@@ -360,23 +359,64 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
+struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
+                                             int len) {
+  struct ols_meta_result result;
+  memset(&result, 0, sizeof(result));
 
-void ols_python_parse_data(ols_script_t *s, const char *data, int len) {
   struct ols_python_script *python_script = (struct ols_python_script *)s;
   if (!s->loaded || !python_loaded)
-    return;
+    return result;
 
   lock_python();
 
+  printf("data %s len %d\n", data, strlen(data));
+
   PyObject *args = Py_BuildValue("(s)", data);
-  //printf("parse object %p args %p\n",python_script->parse,args);
-  PyObject *py_ret = PyObject_CallObject(python_script->parse, args);
-  //printf("parse object %p args %p py ret %p\n",python_script->parse,args,py_ret);
+  // printf("parse object %p args %p\n",python_script->parse,args);
+  PyObject *pValue = PyObject_CallObject(python_script->parse, args);
+  // printf("parse object %p args %p py ret
+  // %p\n",python_script->parse,args,py_ret);
+
+  // 检查是否有错误发生
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  } else {
+
+    if (PyList_Check(pValue)) {
+      Py_ssize_t size;
+      PyObject *item;
+
+      size = PyList_Size(pValue);
+
+      for (Py_ssize_t i = 0; i < size; ++i) {
+        item = PyList_GetItem(pValue, i);
+
+        if (PyUnicode_Check(pValue)) {
+          char *cstr;
+          cstr = PyUnicode_AsUTF8(item);
+          printf("PyList_Check %s\n", cstr);
+        } else {
+          printf("can not parse result %p \n", item);
+        }
+
+        Py_XDECREF(item);
+      }
+    } else if (PyUnicode_Check(pValue)) {
+
+      const char *cstr = PyUnicode_AsUTF8(pValue);
+      printf("PyUnicode_AsUTF8 %s\n", cstr);
+    }
+  }
+
   py_error();
-  Py_XDECREF(py_ret);
+
+  Py_XDECREF(pValue);
   Py_XDECREF(args);
 
   unlock_python();
+
+  return result;
 }
 
 void ols_python_script_unload(ols_script_t *s) {
@@ -562,11 +602,11 @@ bool ols_scripting_load_python(const char *python_path) {
   dstr_free(&resource_path);
 #else
   char *absolute_script_path = os_get_abs_path_ptr(SCRIPT_DIR);
-  printf("script dir %s\n",absolute_script_path);
+  printf("script dir %s\n", absolute_script_path);
   add_to_python_path(absolute_script_path);
   bfree(absolute_script_path);
 #endif
-  //bool success= true;
+  // bool success= true;
   py_olspython = PyImport_ImportModule("olspython");
   bool success = !py_error();
   if (!success) {

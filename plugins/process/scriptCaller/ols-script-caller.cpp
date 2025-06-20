@@ -1,4 +1,6 @@
 
+#include "ols-meta-txt.h"
+#include "ols-scripting.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -8,8 +10,6 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
-#include "ols-meta-txt.h"
-#include "ols-scripting.h"
 
 using namespace std;
 
@@ -30,49 +30,45 @@ using namespace std;
     val = max_val;
 #endif
 
-
 struct ScriptCallerProcess {
-	ols_process_t *process_ = nullptr;
-	ols_script_t  *script_ = nullptr;
-	// ols_pad_t     *srcpad_  = nullptr;
-	// ols_pad_t     *sinkpad_  = nullptr;
+  ols_process_t *process_ = nullptr;
+  ols_script_t *script_ = nullptr;
+  // ols_pad_t     *srcpad_  = nullptr;
+  // ols_pad_t     *sinkpad_  = nullptr;
 
-	/* --------------------------- */
+  /* --------------------------- */
 
-	inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
-		: process_(process)
-	{
-		ols_process_update(process_, settings);
+  inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
+      : process_(process) {
+    ols_process_update(process_, settings);
 
-		script_ = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/parse_log_2.py",NULL);
+    script_ = ols_script_create(
+        "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/python_script/"
+        "parse_log_2.py",
+        NULL);
 
+    // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
+    // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
+    // ols_pad_set_link_function(sinkpad_,script_link_func);
+    // ols_pad_set_chain_function(sinkpad_,script_chain_func);
 
-		// srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
-		// sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
+    // blog(LOG_DEBUG, "ols_context_add_pad");
+    // ols_process_add_pad(process_, sinkpad_);
 
+    // ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
+  }
 
-		// ols_pad_set_link_function(sinkpad_,script_link_func);
-		// ols_pad_set_chain_function(sinkpad_,script_chain_func);
+  inline ~ScriptCallerProcess() {}
 
-		// blog(LOG_DEBUG, "ols_context_add_pad");
-		// ols_process_add_pad(process_, sinkpad_);
+  ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-		//ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
-	}
+  void Update(ols_data_t *settings);
 
-	inline ~ScriptCallerProcess(){
+  ols_pad_t *createRecvPad(const char *caps);
+  ols_pad_t *createSendPad(const char *caps);
 
-	}
-
-	ols_pad_t *requestNewPad(const char *name, const char *caps);
-
-	void Update(ols_data_t *settings);
-
-	ols_pad_t * createRecvPad(const char *caps);
-	ols_pad_t * createSendPad(const char *caps);
-
-	void onDataBuff(ols_buffer_t *buffer);
+  void onDataBuff(ols_buffer_t *buffer);
 };
 
 /* ------------------------------------------------------------------------- */

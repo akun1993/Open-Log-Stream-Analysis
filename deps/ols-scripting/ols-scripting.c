@@ -22,8 +22,8 @@
 #include <util/threading.h>
 
 #include "ols-scripting-callback.h"
-#include "ols-scripting-internal.h"
 #include "ols-scripting-config.h"
+#include "ols-scripting-internal.h"
 
 #if defined(LUAJIT_FOUND)
 extern ols_script_t *ols_lua_script_create(const char *path,
@@ -33,7 +33,8 @@ extern void ols_lua_script_unload(ols_script_t *s);
 extern void ols_lua_script_destroy(ols_script_t *s);
 extern void ols_lua_load(void);
 extern void ols_lua_unload(void);
-extern void ols_lua_parse_data(ols_script_t *s, const char *data, int len);
+extern struct ols_meta_result ols_lua_parse_data(ols_script_t *s,
+                                                 const char *data, int len);
 
 #endif
 
@@ -41,7 +42,8 @@ extern void ols_lua_parse_data(ols_script_t *s, const char *data, int len);
 extern ols_script_t *ols_python_script_create(const char *path,
                                               ols_data_t *settings);
 
-extern void ols_python_parse_data(ols_script_t *s, const char *data, int len);                                              
+extern struct ols_meta_result ols_python_parse_data(ols_script_t *s,
+                                                    const char *data, int len);
 extern bool ols_python_script_load(ols_script_t *s);
 extern void ols_python_script_unload(ols_script_t *s);
 extern void ols_python_script_destroy(ols_script_t *s);
@@ -252,21 +254,23 @@ ols_script_t *ols_script_create(const char *path, ols_data_t *settings) {
   return script;
 }
 
-void ols_scripting_prase(ols_script_t *script, const char *data, int len) {
+struct ols_meta_result ols_scripting_prase(ols_script_t *script,
+                                           const char *data, int len) {
 
-  switch (script->type)
-  {
+  struct ols_meta_result result;
+  memset(&result, 0, sizeof(result));
+  switch (script->type) {
   case OLS_SCRIPT_LANG_LUA:
-    ols_lua_parse_data(script,data,len);
+    result = ols_lua_parse_data(script, data, len);
     /* code */
     break;
   case OLS_SCRIPT_LANG_PYTHON:
-    ols_python_parse_data(script,data,len);
+    result = ols_python_parse_data(script, data, len);
     break;
   default:
     break;
   }
-
+  return result;
 }
 
 const char *ols_script_get_description(const ols_script_t *script) {
