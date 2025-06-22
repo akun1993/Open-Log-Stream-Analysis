@@ -107,6 +107,10 @@ target_sources(
           util/threading.h
           util/utf8.c
           util/utf8.h
+          util/time-parse.c
+          util/time-parse.h   
+          util/str-util.c
+          util/str-util.h                     
           util/uthash.h
           util/util.hpp
           util/util_uint128.h

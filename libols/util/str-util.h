@@ -1,0 +1,21 @@
+#pragma once
+
+#include "c99defs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+EXPORT int str_strncmp(const char *s1, const char *s2, size_t n);
+EXPORT bool str_is_utf8(const unsigned char *data, size_t length);
+EXPORT char *str_strncat(char * front,const char * back,size_t count);
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
+
+

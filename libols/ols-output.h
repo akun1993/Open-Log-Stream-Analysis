@@ -93,8 +93,6 @@ struct ols_output {
   uint32_t starting_drawn_count;
   uint32_t starting_lagged_count;
 
-  ols_pad_t *sinkpad;
-
   int total_frames;
 
   bool valid;

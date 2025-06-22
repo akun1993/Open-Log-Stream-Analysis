@@ -59,29 +59,12 @@ static const char *output_signals[] = {
     NULL,
 };
 
-static OlsFlowReturn output_default_chain(ols_pad_t *pad, ols_object_t *parent,
-                                          ols_buffer_t *buffer)
-{
-  struct ols_process *process = (struct ols_process *)parent;
-  UNUSED_PARAMETER(pad);
-  UNUSED_PARAMETER(buffer);
-  // process->info.analysis(buffer);
-  // for (int i = 0; i < process->context.numsrcpads; ++i) {
-  //   ols_pad_t *pad = process->context.srcpads.array + i;
-
-  //   ols_pad_push(pad, buffer);
-  // }
-}
-
 static bool init_output_handlers(struct ols_output *output, const char *name,
                                  ols_data_t *settings)
 {
   if (!ols_context_data_init(&output->context, OLS_OBJ_TYPE_OUTPUT, settings,
                              name, NULL))
     return false;
-
-  ols_pad_set_chain_function(output->sinkpad,
-                             (ols_pad_chain_function)output_default_chain);
 
   signal_handler_add_array(output->context.signals, output_signals);
   return true;

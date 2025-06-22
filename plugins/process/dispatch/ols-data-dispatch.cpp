@@ -1,6 +1,5 @@
 
 #include "ols-meta-txt.h"
-#include "ols-scripting.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -10,10 +9,6 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
-#include <util/time-parse.h>
-#include <util/str-util.h>
-#include <ctype.h>
-#include <stdio.h>
 
 using namespace std;
 
@@ -34,22 +29,18 @@ using namespace std;
     val = max_val;
 #endif
 
-struct ScriptCallerProcess {
+struct DataDispatch {
   ols_process_t *process_ = nullptr;
-  ols_script_t *script_ = nullptr;
+
   // ols_pad_t     *srcpad_  = nullptr;
   // ols_pad_t     *sinkpad_  = nullptr;
 
   /* --------------------------- */
 
-  inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
+  inline DataDispatch(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
     ols_process_update(process_, settings);
 	
-    script_ = ols_script_create(
-        "/home/zkun/OpenSource/Open-Log-Stream-Analysis/python_script/"
-        "parse_log_2.py",
-        NULL);
 
     // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
     // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
@@ -63,7 +54,7 @@ struct ScriptCallerProcess {
     // ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
   }
 
-  inline ~ScriptCallerProcess() {}
+  inline ~DataDispatch() {}
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
@@ -78,39 +69,30 @@ struct ScriptCallerProcess {
 /* ------------------------------------------------------------------------- */
 
 /* clang-format off */
-static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
+static OlsFlowReturn dispatch_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
 
 	
 
-	blog(LOG_DEBUG, "script_chainlist_func");
+	blog(LOG_DEBUG, "dispatch_chainlist_func");
 	return OLS_FLOW_OK;
 }
 
-static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
+static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
 
 
 	
 
-	ScriptCallerProcess *script_caller = reinterpret_cast<ScriptCallerProcess *>(parent->data);
-
-	
-
-	script_caller->onDataBuff(buffer);
-
-
-	
-
-	//blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
+	//blog(LOG_DEBUG, "dispatch_sink_chain_func %s",ols_txt->data );
 	return OLS_FLOW_OK;
 }
 
-static OlsPadLinkReturn script_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	//blog(LOG_DEBUG, "script_link_func");
+static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+	//blog(LOG_DEBUG, "dispatch_sink_link_func");
 	return OLS_PAD_LINK_OK;
 }
 
-static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	blog(LOG_DEBUG, "script_link_func");
+static OlsPadLinkReturn dispatch_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+	blog(LOG_DEBUG, "dispatch_src_link_func");
 	return OLS_PAD_LINK_OK;
 }
 
@@ -118,23 +100,23 @@ static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent
 
 
 
-ols_pad_t * ScriptCallerProcess::createRecvPad(const char *caps){
+ols_pad_t * DataDispatch::createRecvPad(const char *caps){
 
-	ols_pad_t * sinkpad = ols_pad_new("script-process-sink",OLS_PAD_SINK);
+	ols_pad_t * sinkpad = ols_pad_new("dispatch-sink",OLS_PAD_SINK);
 
 	blog(LOG_DEBUG, "create recv pad success");
 
-	ols_pad_set_link_function(sinkpad,script_sink_link_func);
-	ols_pad_set_chain_function(sinkpad,script_sink_chain_func);
+	ols_pad_set_link_function(sinkpad,dispatch_sink_link_func);
+	ols_pad_set_chain_function(sinkpad,dispatch_sink_chain_func);
 
 	ols_process_add_pad(process_, sinkpad);
 	return sinkpad;
 }
 
-ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
-	ols_pad_t  * srcpad = ols_pad_new("script-process-src",OLS_PAD_SRC);
+ols_pad_t * DataDispatch::createSendPad(const char *caps){
+	ols_pad_t  * srcpad = ols_pad_new("dispatch-src",OLS_PAD_SRC);
 
-	ols_pad_set_link_function(srcpad,script_src_link_func);
+	ols_pad_set_link_function(srcpad,dispatch_src_link_func);
 
 
 	blog(LOG_DEBUG, "create send pad success");
@@ -143,7 +125,7 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 	return srcpad;
 }
 
- ols_pad_t *ScriptCallerProcess::requestNewPad(const char *name, const char *caps)
+ ols_pad_t *DataDispatch::requestNewPad(const char *name, const char *caps)
 {
 
 	if(strcmp("sink",name) == 0){
@@ -156,85 +138,13 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 }
 
 
+void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
-void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
-
-	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
-
-	if(str_strncmp((const char *)ols_txt->data,"****",4) == 0){
-		printf("data is %s \n",(const char *)ols_txt->data);
-	} 
-
-	const char *p = (const char *)ols_txt->data;
-	//05-22 11:17:45.265  3006 16061 V DSVFSALib:
-	if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
-		char time_buf[64] = "2025-";
-
-		str_strncat(time_buf,p,18);
-		int64_t sec;
-		int64_t fs;
-		const char *err;
-		if(parse("%Y-%m-%d %H:%M:%E*S", time_buf, & sec,
-           & fs,&err) ){
-			printf("%ld %ld \n",sec,fs);
-		} 
-		
-		p += 18;
-
-		while(isspace(*p)){
-			p++;
-		}
-		
-		int pid = 0;
-		while(isdigit(*p)){
-			
-			pid = pid * 10 + (*p - '0');
-			p++;
-		}
-		printf("pid is %d \n",pid);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		int tid = 0;
-
-		while(isdigit(*p)){
-			tid = tid * 10 + (*p - '0');
-			p++;
-		}
-		printf("tid is %d \n",tid);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		printf("log lv is %c \n",*p++);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		char tag[64] = {'\0'};
-		int tag_idx = 0;
-		while(*p != ':'){
-			tag[tag_idx++] = *p++;
-		}
-		
-		printf("tag is %s \n",tag);
-	}
-
-	//(const char *)ols_txt->data
-
-	if(script_){
-		ols_scripting_prase(script_,(const char *)ols_txt->data,ols_txt->size);
-		//ols_txt->dat
-	}
 	
 
 }
 
-void ScriptCallerProcess::Update(ols_data_t *settings)
+void DataDispatch::Update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
 }
@@ -245,15 +155,15 @@ void ScriptCallerProcess::Update(ols_data_t *settings)
 
 
 OLS_DECLARE_MODULE()
-OLS_MODULE_USE_DEFAULT_LOCALE("ols-script-caller", "en-US")
+OLS_MODULE_USE_DEFAULT_LOCALE("ols-data-dispatch", "en-US")
 MODULE_EXPORT const char *ols_module_description(void)
 {
-	return "script caller";
+	return "Data dispatch";
 }
 
 static ols_properties_t *get_properties(void *data)
 {
-	ScriptCallerProcess *s = reinterpret_cast<ScriptCallerProcess *>(data);
+	DataDispatch *s = reinterpret_cast<DataDispatch *>(data);
 	string path;
 
 	ols_properties_t *props = ols_properties_create();
@@ -270,7 +180,7 @@ static ols_properties_t *get_properties(void *data)
 bool ols_module_load(void)
 {
 	ols_process_info si = {};
-	si.id = "script_caller";
+	si.id = "data_dispatch";
 	si.type = OLS_PROCESS_TYPE_INPUT;
 	// si.output_flags = OLS_SOURCE_ | OLS_SOURCE_CUSTOM_DRAW |
 	// 		  OLS_SOURCE_CAP_OLSOLETE | OLS_SOURCE_SRGB;
@@ -278,19 +188,19 @@ bool ols_module_load(void)
 	si.icon_type = OLS_ICON_TYPE_TEXT;
 
 	si.get_name = [](void *) {
-		return ols_module_text("ScriptCaller");
+		return ols_module_text("DataDispatch");
 	};
 
 	si.create = [](ols_data_t *settings, ols_process_t *process) {
-		return (void *)new ScriptCallerProcess(process, settings);
+		return (void *)new DataDispatch(process, settings);
 	};
 
 	si.destroy = [](void *data) {
-		delete reinterpret_cast<ScriptCallerProcess *>(data);
+		delete reinterpret_cast<DataDispatch *>(data);
 	};
 
 	si.request_new_pad = [](void *data, const char *name ,const char *caps) {
-		return  reinterpret_cast<ScriptCallerProcess *>(data)->requestNewPad(name,caps) ;
+		return  reinterpret_cast<DataDispatch *>(data)->requestNewPad(name,caps) ;
 	}; ; 
 
 	si.get_defaults = [](ols_data_t *settings) {
@@ -299,7 +209,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<ScriptCallerProcess *>(data)->Update(settings);
+		reinterpret_cast<DataDispatch *>(data)->Update(settings);
 	};
 
 	ols_register_process(&si);

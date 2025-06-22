@@ -112,7 +112,13 @@ int main(int argc, char **argv) {
 
   ols_process_t *process = ols_process_create("script_caller", "test_process", nullptr);
 
+  ols_output_t *xml_output = ols_output_create("xml_output", "test_output", nullptr);
+  
+
   ols_context_link(&source->context,&process->context);
+
+
+  ols_context_link(&process->context,&xml_output->context);
 
   //source->link->process2->link->output;
 
