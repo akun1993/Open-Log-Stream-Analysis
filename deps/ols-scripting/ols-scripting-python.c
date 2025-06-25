@@ -359,9 +359,6 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
-
-
-
 struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
                                              int len) {
   struct ols_meta_result result;
@@ -371,14 +368,14 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
   if (!s->loaded || !python_loaded)
     return result;
 
-  if(strlen(data) == 0){
+  if (strlen(data) == 0) {
     printf("not utf8 data %s len %d\n", data, strlen(data));
     return;
   }
 
   lock_python();
 
-  //printf("data %s len %d\n", data, strlen(data));
+  // printf("data %s len %d\n", data, strlen(data));
 
   PyObject *args = Py_BuildValue("(s)", data);
   // printf("parse object %p args %p\n",python_script->parse,args);
@@ -399,21 +396,29 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
 
       for (Py_ssize_t i = 0; i < size; ++i) {
         item = PyList_GetItem(pValue, i);
+        PyIter_Check(pValue);
 
-        if (PyUnicode_Check(pValue)) {
-          char *cstr;
-          cstr = PyUnicode_AsUTF8(item);
-          //printf("PyList_Check %s\n", cstr);
+        if (PyUnicode_Check(item)) {
+
+          Py_ssize_t len = 0;
+          char *desc = NULL;
+          PyObject *bytes = NULL;
+
+          bytes = PyUnicode_AsUTF8String(item);
+          PyBytes_AsStringAndSize(bytes, &desc, &len);
+
+          Py_DECREF(bytes);
+
+          // printf("PyList_Check %s\n", cstr);
         } else {
-          //printf("can not parse result %s \n",  PyUnicode_AsUTF8(item));
-        }
 
-        //Py_XDECREF(item);
+          // printf("PyList_Check %s\n", cstr);
+        }
       }
     } else if (PyUnicode_Check(pValue)) {
 
       const char *cstr = PyUnicode_AsUTF8(pValue);
-      //printf("PyUnicode_AsUTF8 %s\n", cstr);
+      // printf("PyUnicode_AsUTF8 %s\n", cstr);
     }
   }
 

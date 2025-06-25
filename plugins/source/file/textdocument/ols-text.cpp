@@ -64,7 +64,7 @@ struct TextSource {
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
     ols_source_update(source, settings);
-    filename = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/test/sv_user.log_copy.00000356";
+    filename = "../../../../../test/sv_user.log.00000356";
   }
 
   inline ~TextSource() {}

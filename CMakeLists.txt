@@ -43,7 +43,6 @@ if(OS_WINDOWS)
 
 elseif(OS_POSIX)
   option(LINUX_PORTABLE "Build portable version (Linux)" OFF)
-  option(USE_XDG "Utilize XDG Base Directory Specification (Linux)" ON)
 
   if(OS_LINUX)
     option(BUILD_FOR_PPA "Build for PPA distribution" OFF)

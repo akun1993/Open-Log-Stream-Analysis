@@ -2,18 +2,18 @@
 #include "ols-meta-txt.h"
 #include "ols-scripting.h"
 #include <algorithm>
+#include <ctype.h>
 #include <locale>
 #include <memory>
 #include <ols-module.h>
+#include <stdio.h>
 #include <string>
 #include <sys/stat.h>
 #include <util/platform.h>
-#include <util/task.h>
-#include <util/util.hpp>
-#include <util/time-parse.h>
 #include <util/str-util.h>
-#include <ctype.h>
-#include <stdio.h>
+#include <util/task.h>
+#include <util/time-parse.h>
+#include <util/util.hpp>
 
 using namespace std;
 
@@ -45,11 +45,10 @@ struct ScriptCallerProcess {
   inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
     ols_process_update(process_, settings);
-	
-    script_ = ols_script_create(
-        "/home/zkun/OpenSource/Open-Log-Stream-Analysis/python_script/"
-        "parse_log_2.py",
-        NULL);
+
+    script_ = ols_script_create("../../../../../python_script/"
+                                "parse_log_2.py",
+                                NULL);
 
     // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
     // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
@@ -80,25 +79,14 @@ struct ScriptCallerProcess {
 /* clang-format off */
 static OlsFlowReturn script_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
 
-	
-
 	blog(LOG_DEBUG, "script_chainlist_func");
 	return OLS_FLOW_OK;
 }
 
 static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
 
-
-	
-
 	ScriptCallerProcess *script_caller = reinterpret_cast<ScriptCallerProcess *>(parent->data);
-
-	
-
 	script_caller->onDataBuff(buffer);
-
-
-	
 
 	//blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
 	return OLS_FLOW_OK;
@@ -113,10 +101,6 @@ static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent
 	blog(LOG_DEBUG, "script_link_func");
 	return OLS_PAD_LINK_OK;
 }
-
-
-
-
 
 ols_pad_t * ScriptCallerProcess::createRecvPad(const char *caps){
 
@@ -156,7 +140,6 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 }
 
 
-
 void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
@@ -191,7 +174,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 			pid = pid * 10 + (*p - '0');
 			p++;
 		}
-		printf("pid is %d \n",pid);
+		//printf("pid is %d \n",pid);
 
 		while(isspace(*p)){
 			p++;
@@ -203,13 +186,13 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 			tid = tid * 10 + (*p - '0');
 			p++;
 		}
-		printf("tid is %d \n",tid);
+		//printf("tid is %d \n",tid);
 
 		while(isspace(*p)){
 			p++;
 		}
 
-		printf("log lv is %c \n",*p++);
+		//printf("log lv is %c \n",*p++);
 
 		while(isspace(*p)){
 			p++;
@@ -220,8 +203,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 		while(*p != ':'){
 			tag[tag_idx++] = *p++;
 		}
-		
-		printf("tag is %s \n",tag);
+		//printf("tag is %s \n",tag);
 	}
 
 	//(const char *)ols_txt->data
@@ -261,10 +243,6 @@ static ols_properties_t *get_properties(void *data)
 
 	return props;
 }
-
-  // ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
-
-  // ols_scripting_prase(script,"parse this log in python",sizeof("parse this log in python") - 1);
 
 
 bool ols_module_load(void)
