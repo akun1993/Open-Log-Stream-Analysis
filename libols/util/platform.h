@@ -48,6 +48,8 @@ EXPORT size_t os_fread_utf8(FILE *file, char **pstr);
 
 EXPORT char *os_fgets(FILE *file, char *pstr, size_t len);
 
+EXPORT ssize_t os_fgetline(FILE *file, char *pstr, size_t maxlen);
+
 /* functions purely for convenience */
 EXPORT char *os_quick_read_utf8_file(const char *path);
 EXPORT bool os_quick_write_utf8_file(const char *path, const char *str,

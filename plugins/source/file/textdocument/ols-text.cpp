@@ -126,15 +126,15 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
   ols_txt_file_t *ols_txt = ols_txt_file_with_buffer(1024);
 
   errno = 0;
-  char *data = os_fgets(file, (char *)OSL_TXTFILE_BUFF(ols_txt),
-                        OSL_TXTFILE_BUFF_SIZE(ols_txt));
-  if (UNLIKELY(data == NULL)) {
+  ssize_t size = os_fgetline(file, (char *)OSL_TXTFILE_BUFF(ols_txt),OSL_TXTFILE_BUFF_CAPACITY(ols_txt));
+  if (UNLIKELY(size == -1)) {
     goto eos;
   }
 
   // ols_txt->file = ;
 
   ols_txt->line = line_cnt;
+  ols_txt->len = size;
 
   ols_buffer_set_meta(buf, OLS_META_CAST(ols_txt));
 

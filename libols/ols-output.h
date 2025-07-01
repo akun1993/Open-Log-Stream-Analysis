@@ -17,8 +17,7 @@
 
 #pragma once
 #include "ols-ref.h"
-#include "ols-context.h"
-
+#include "ols.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,12 +50,12 @@ struct ols_output_info {
 
   ols_properties_t *(*get_properties)(void *data);
 
-  	/**
-	 * Gets a  pad  of this output
-	 *
-	 * @return         a new pad 
-	 */
-	ols_pad_t *(*request_new_pad)(void *data,const char *name, const char *caps);  
+  /**
+   * Gets a  pad  of this output
+   *
+   * @return         a new pad
+   */
+  ols_pad_t *(*request_new_pad)(void *data, const char *name, const char *caps);
 
   uint64_t (*get_total_bytes)(void *data);
 
@@ -65,7 +64,6 @@ struct ols_output_info {
   void *type_data;
   void (*free_type_data)(void *type_data);
 };
-
 
 struct ols_weak_output {
   struct ols_weak_ref ref;

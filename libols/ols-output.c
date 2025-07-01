@@ -503,3 +503,12 @@ bool ols_output_reconnecting(const ols_output_t *output)
 
   return reconnecting(output);
 }
+
+bool ols_output_add_pad(ols_output_t *output, ols_pad_t *pad){
+  if(! output || !pad){
+    blog(LOG_ERROR,"output add pad with args NULL");
+    return false;
+  }
+
+  return ols_context_add_pad(&output->context,pad);
+}

@@ -802,6 +802,9 @@ EXPORT proc_handler_t *ols_output_get_proc_handler(const ols_output_t *output);
 EXPORT void ols_output_set_reconnect_settings(ols_output_t *output,
                                               int retry_count, int retry_sec);
 
+// /** Add pad to output */
+EXPORT bool ols_output_add_pad(ols_output_t *output, ols_pad_t *pad);
+
 /* ------------------------------------------------------------------------- */
 /* Get source icon type */
 EXPORT enum ols_icon_type ols_source_get_icon_type(const char *id);

@@ -134,3 +134,5 @@ if (tinyxml2_INSTALL_PKGCONFIG)
         COMPONENT tinyxml2_development
     )
 endif ()
+
+setup_binary_target(tinyxml2)

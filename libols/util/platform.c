@@ -203,9 +203,46 @@ size_t os_fread_utf8(FILE *file, char **pstr) {
   return len;
 }
 
-EXPORT char *os_fgets(FILE *file, char *pstr, size_t len) {
+char *os_fgets(FILE *file, char *pstr, size_t len) {
   return fgets(pstr, len, file);
 }
+
+
+ssize_t os_fgetline(FILE *file, char *pstr, size_t maxlen) {
+    if (file == NULL) {
+        return -1;  // 无效参数检查
+    }
+ 
+    size_t length = 0;     // 当前已读取的字符数
+    int c;
+ 
+    // 逐个字符读取直到换行符或者文件结束符
+    while ((c = fgetc(file)) != EOF) {
+        // 如果当前字符是换行符，停止读取
+        if (c == '\n') {
+            break;
+        }
+ 
+        // 检查当前缓冲区是否足够存储读取的字符
+        if (length + 1 >= maxlen) {
+          break;
+        }
+ 
+        // 将当前字符存储到缓冲区
+        (pstr)[length++] = (char)c;
+    }
+ 
+    // 如果没有读取到任何字符并且文件结束，则返回 -1
+    if (length == 0 && c == EOF) {
+        return -1;
+    }
+ 
+    // 添加字符串结束符
+    pstr[length] = '\0';
+ 
+    return length;
+}
+
 
 char *os_quick_read_mbs_file(const char *path) {
   FILE *f = os_fopen(path, "rb");

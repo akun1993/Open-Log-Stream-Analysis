@@ -11,8 +11,9 @@ _ols_txt_file_copy (const ols_txt_file_t * txt_file)
   //g_return_val_if_fail (GST_IS_CAPS (caps), NULL);
 
   new_txt_file = ols_txt_file_new_empty ();
-  new_txt_file->data = txt_file->data;
-  new_txt_file->size = txt_file->size;
+  new_txt_file->buff = txt_file->buff;
+  new_txt_file->capacity = txt_file->capacity;
+  new_txt_file->len = txt_file->len;
 
   new_txt_file->line = txt_file->line;
   new_txt_file->file = txt_file->file;
@@ -38,10 +39,11 @@ _ols_txt_file_free (ols_txt_file_t * txt_file)
   GST_CAT_TRACE (GST_CAT_CAPS, "freeing caps %p", caps);
 #endif
  // bfree (sizeof (GstCapsImpl), caps);
- if(txt_file->data){
-  bfree(txt_file->data);
-  txt_file->size = 0;
+ if(txt_file->buff){
+  bfree(txt_file->buff);
+  txt_file->capacity = 0;
  }
+ txt_file->len = 0;
  dstr_free(&txt_file->file);
 }
 
@@ -53,8 +55,8 @@ ols_txt_file_init (ols_txt_file_t * txt_file,size_t buff_size)
       (ols_mini_object_free_function) _ols_txt_file_free);
 
   if(buff_size > 0){
-    txt_file->data = bzalloc(buff_size);
-    txt_file->size = buff_size;
+    txt_file->buff = bzalloc(buff_size);
+    txt_file->capacity = buff_size;
 
   }
 

@@ -407,6 +407,9 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
           bytes = PyUnicode_AsUTF8String(item);
           PyBytes_AsStringAndSize(bytes, &desc, &len);
 
+          char *info = bstrdup_n(desc, len);
+          da_push_back(result.info, &info);
+
           Py_DECREF(bytes);
 
           // printf("PyList_Check %s\n", cstr);

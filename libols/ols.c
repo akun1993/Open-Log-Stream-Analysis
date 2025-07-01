@@ -1128,7 +1128,7 @@ ols_pad_t *ols_context_get_static_pad(struct ols_context_data *context,
   OLS_OBJECT_LOCK(context);
   for (size_t i = 0; i < context->pads.num; i++) {
     ols_pad_t *pad = context->pads.array[i];
-    if (pad) {
+    if (pad && OLS_PAD_NAME(pad)) {
       bool eq = strcmp(OLS_PAD_NAME(pad), name) == 0;
 
       if (eq) {
@@ -1425,6 +1425,42 @@ bool ols_context_link_pads_full(struct ols_context_data *src,
     //   gst_object_unref (destpad);
     // }
     destpad = NULL;
+  }
+
+
+  if(!srcpad && ! destpad){
+
+
+    srcpad = ols_object_request_pad (src, "src",NULL);
+    if(!srcpad){
+      blog (LOG_ERROR, "request src pad name %s on  %s  failed","src", src->name);
+      return false;
+    }
+
+    destpad = ols_object_request_pad (dest, "sink",NULL);
+    if(!destpad){
+      blog (LOG_ERROR, "request dest pad name %s on  %s  failed","sink", dest->name);
+      ols_pad_destory(srcpad);
+      return false;
+    }
+
+    if (pad_link_maybe_ghosting (srcpad, destpad)) {
+      blog (LOG_DEBUG, "linked pad %s:%s to pad %s:%s",
+        OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME(srcpad), OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME(destpad));
+      // if (destpad)
+      //   gst_object_unref (destpad);
+      // gst_object_unref (srcpad);
+      // gst_object_unref (temp);
+      return true;
+    } else {
+
+      ols_pad_destory(destpad);
+      ols_pad_destory(srcpad);
+      blog (LOG_ERROR, "linked pad %s:%s to pad %s:%s failed",
+        OLS_PAD_PARENT(srcpad) ? OLS_PAD_PARENT(srcpad)->name: "NULL",OLS_PAD_NAME(srcpad), OLS_PAD_PARENT(destpad) ? OLS_PAD_PARENT(destpad)->name: "NULL",OLS_PAD_NAME(destpad));
+      return false;
+    }
+
   }
 
   blog (LOG_DEBUG, "no link possible from %s to %s",src->name, dest->name);

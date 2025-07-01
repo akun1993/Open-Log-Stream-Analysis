@@ -1,4 +1,5 @@
 
+#include "tinyxml2.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -8,7 +9,7 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
-#include "tinyxml2.h"
+#include "ols-meta-txt.h"
 
 using namespace std;
 
@@ -16,28 +17,7 @@ using namespace std;
   blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
 
-
-/* ------------------------------------------------------------------------- */
-
-/* clang-format off */
-static OlsFlowReturn output_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
-	blog(LOG_DEBUG, "script_chainlist_func");
-	return OLS_FLOW_OK;
-}
-
-static OlsFlowReturn output_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
-	//blog(LOG_DEBUG, "script_chain_func");
-	return OLS_FLOW_OK;
-}
-
-static OlsPadLinkReturn output_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	//blog(LOG_DEBUG, "script_link_func");
-	return OLS_PAD_LINK_OK;
-}
-
-
-
-struct XmlOutput  {
+  struct XmlOutput  {
 	ols_output_t *output_ = nullptr;
 	// ols_pad_t     *srcpad_  = nullptr;
 	// ols_pad_t     *sinkpad_  = nullptr;
@@ -47,18 +27,7 @@ struct XmlOutput  {
 	inline XmlOutput(ols_output_t *process, ols_data_t *settings)
 		: output_(process)
 	{
-		//ols_output_update(process_, settings);
-		// srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
-		// sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
-
-		// ols_pad_set_link_function(sinkpad_,script_link_func);
-		// ols_pad_set_chain_function(sinkpad_,script_chain_func);
-
-		// blog(LOG_DEBUG, "ols_context_add_pad");
-		// ols_process_add_pad(process_, sinkpad_);
-
-		//ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
 	}
 
 	inline ~XmlOutput(){
@@ -71,7 +40,30 @@ struct XmlOutput  {
 
 	ols_pad_t * createRecvPad(const char *caps);
 
+	void onDataBuff(ols_buffer_t *buffer);
 };
+
+/* ------------------------------------------------------------------------- */
+
+/* clang-format off */
+static OlsFlowReturn output_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
+	blog(LOG_DEBUG, "output_chainlist_func");
+	return OLS_FLOW_OK;
+}
+
+static OlsFlowReturn output_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
+	//blog(LOG_DEBUG, "output_sink_chain_func");
+
+	XmlOutput *xml_output = reinterpret_cast<XmlOutput *>(parent->data);
+	xml_output->onDataBuff(buffer);
+
+	return OLS_FLOW_OK;
+}
+
+static OlsPadLinkReturn output_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
+	//blog(LOG_DEBUG, "output_sink_link_func");
+	return OLS_PAD_LINK_OK;
+}
 
 
 ols_pad_t * XmlOutput::createRecvPad(const char *caps){
@@ -83,11 +75,22 @@ ols_pad_t * XmlOutput::createRecvPad(const char *caps){
 	ols_pad_set_link_function(sinkpad,output_sink_link_func );
 	ols_pad_set_chain_function(sinkpad,output_sink_chain_func);
 
-	//ols_output_add_pad(output_, sinkpad);
+	ols_output_add_pad(output_, sinkpad);
 	return sinkpad;
 }
 
+void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
+	ols_txt_file_t * meta_txt = (ols_txt_file_t *) buffer->meta;
+
+	ols_meta_result *meta_result = buffer->result;
+
+	//printf("tag is %s line = %d \n",meta_result->tag.array, meta_txt->line);
+	for(size_t i = 0; i < meta_result->info.num; ++i){
+		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
+	}
+	
+}
 
  ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps)
 {
@@ -189,6 +192,15 @@ bool ols_module_load(void)
 	si.get_name = [](void *) {
 		return ols_module_text("XmlOutput");
 	};
+
+	si.start = [](void *data){
+		return true;
+	};
+
+	si.stop = [](void *data, uint64_t ts){
+		return ;
+	};
+
 
 	si.create = [](ols_data_t *settings, ols_output_t *process) {
 		return (void *)new XmlOutput(process, settings);

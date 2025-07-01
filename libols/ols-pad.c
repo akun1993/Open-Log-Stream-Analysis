@@ -94,8 +94,10 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
   return result;
 }
 
-static void ols_pad_init(ols_pad_t *pad) {
+static void ols_pad_init(ols_pad_t *pad,const char *name) {
   // pad->priv = ols_pad_get_instance_private(pad);
+
+  OLS_PAD_NAME(pad) =  bstrdup(name);
 
   OLS_PAD_DIRECTION(pad) = OLS_PAD_UNKNOWN;
 
@@ -176,11 +178,30 @@ ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction) {
   ols_pad_t *pad = (ols_pad_t *)bzalloc(sizeof(ols_pad_t));
 
   if (pad) {
-    ols_pad_init(pad);
+    ols_pad_init(pad,name);
     pad->direction = direction;
   }
 
   return pad;
+}
+
+void ols_pad_destory( ols_pad_t *pad) {
+
+  if(!pad){
+    return;
+  }
+  
+  bfree(pad->name);
+
+  pthread_cond_destroy(&pad->block_cond);
+  
+  pthread_mutex_destroy(&pad->mutex);
+
+
+  pthread_mutex_destroy(&pad->stream_rec_lock);
+
+  bfree(pad);
+
 }
 
 bool ols_pad_start_task(ols_pad_t *pad, os_task_t func, void *user_data) {
@@ -297,6 +318,8 @@ join_failed: {
 
 bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
   // GSList *pads_created = NULL;
+  
+  
   bool ret;
 
   // if (!prepare_link_maybe_ghosting(&src, &sink, &pads_created)) {

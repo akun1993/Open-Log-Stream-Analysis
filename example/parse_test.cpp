@@ -1,10 +1,11 @@
+
 #include "ols-module.h"
 #include "ols-scripting.h"
 #include <stdio.h>
 #include <string>
 #include <util/platform.h>
-#include "ols-context.h"
 
+#include "ols-context.h"
 int GetConfigPath(char *path, size_t size, const char *name) {
 #if ALLOW_PORTABLE_MODE
   if (portable_mode) {
@@ -110,22 +111,21 @@ int main(int argc, char **argv) {
 
   ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
 
-  ols_process_t *process = ols_process_create("script_caller", "test_process", nullptr);
+  ols_process_t *process =
+      ols_process_create("script_caller", "test_process", nullptr);
 
-  ols_output_t *xml_output = ols_output_create("xml_output", "test_output", nullptr);
-  
+  ols_output_t *xml_output =
+      ols_output_create("xml_output", "test_output", nullptr);
 
-  ols_context_link(&source->context,&process->context);
+  ols_context_link(&source->context, &process->context);
 
+  ols_context_link(&process->context, &xml_output->context);
 
-  ols_context_link(&process->context,&xml_output->context);
-
-  //source->link->process2->link->output;
+  // source->link->process2->link->output;
 
   printf("source create at address %p\n", source);
 
   ols_source_set_active(source, true);
-
 
   int c;
   printf("Enter characters, I shall repeat them.\n");

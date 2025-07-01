@@ -15,37 +15,36 @@
 
 #if !defined(HAS_STRPTIME)
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__VXWORKS__)
-#define HAS_STRPTIME 1  // Assume everyone else has strptime().
+#define HAS_STRPTIME 1 // Assume everyone else has strptime().
 #endif
 #endif
 
 #if defined(HAS_STRPTIME) && HAS_STRPTIME
 #if !defined(_XOPEN_SOURCE) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
-#define _XOPEN_SOURCE 500  // Exposes definitions for SUSv2 (UNIX 98).
+#define _XOPEN_SOURCE 500 // Exposes definitions for SUSv2 (UNIX 98).
 #endif
 #endif
-
 
 // Include time.h directly since, by C++ standards, ctime doesn't have to
 // declare strptime.
-#include <time.h>
 #include <ctype.h>
+#include <limits.h>
+#include <locale.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <locale.h>
 
 #if !HAS_STRPTIME
 // Build a strptime() using C++11's std::get_time().
-char* strptime(const char* s, const char* fmt, std::tm* tm) {
+char *strptime(const char *s, const char *fmt, std::tm *tm) {
   std::istringstream input(s);
   input >> std::get_time(tm, fmt);
-  if (input.fail()) return nullptr;
-  return const_cast<char*>(s) +
+  if (input.fail())
+    return nullptr;
+  return const_cast<char *>(s) +
          (input.eof() ? strlen(s) : static_cast<std::size_t>(input.tellg()));
 }
 #endif
@@ -130,13 +129,12 @@ int ToWeek(const civil_day& cd, weekday week_start) {
 #endif
 
 char require_32_bit_integer_at_least[sizeof(int) >= sizeof(int32_t) ? 1 : -1];
-int getJulianDayNumber(int year, int month, int day)
-{
-  (void) require_32_bit_integer_at_least; // no warning please
+int getJulianDayNumber(int year, int month, int day) {
+  (void)require_32_bit_integer_at_least; // no warning please
   int a = (14 - month) / 12;
   int y = year + 4800 - a;
   int m = month + 12 * a - 3;
-  return day + (153*m + 2) / 5 + y*365 + y/4 - y/100 + y/400 - 32045;
+  return day + (153 * m + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
 }
 
 const int kJulianDayOf1970_01_01 = 2440588;
@@ -146,7 +144,7 @@ const char kDigits[] = "0123456789";
 // Formats a 64-bit integer in the given field width.  Note that it is up
 // to the caller of Format64() [and Format02d()/FormatOffset()] to ensure
 // that there is sufficient space before ep to hold the conversion.
-char* Format64(char* ep, int width, int64_t v) {
+char *Format64(char *ep, int width, int64_t v) {
   bool neg = false;
   if (v < 0) {
     --width;
@@ -168,26 +166,28 @@ char* Format64(char* ep, int width, int64_t v) {
     --width;
     *--ep = kDigits[v % 10];
   } while (v /= 10);
-  while (--width >= 0) *--ep = '0';  // zero pad
-  if (neg) *--ep = '-';
+  while (--width >= 0)
+    *--ep = '0'; // zero pad
+  if (neg)
+    *--ep = '-';
   return ep;
 }
 
 // Formats [0 .. 99] as %02d.
-char* Format02d(char* ep, int v) {
+char *Format02d(char *ep, int v) {
   *--ep = kDigits[v % 10];
   *--ep = kDigits[(v / 10) % 10];
   return ep;
 }
 
 // Formats a UTC offset, like +00:00.
-char* FormatOffset(char* ep, int offset, const char* mode) {
+char *FormatOffset(char *ep, int offset, const char *mode) {
   // TODO: Follow the RFC3339 "Unknown Local Offset Convention" and
   // generate a "negative zero" when we're formatting a zero offset
   // as the result of a failed load_time_zone().
   char sign = '+';
   if (offset < 0) {
-    offset = -offset;  // bounded by 24h so no overflow
+    offset = -offset; // bounded by 24h so no overflow
     sign = '-';
   }
   const int seconds = offset % 60;
@@ -202,11 +202,13 @@ char* FormatOffset(char* ep, int offset, const char* mode) {
   } else {
     // If we're not rendering seconds, sub-minute negative offsets
     // should get a positive sign (e.g., offset=-10s => "+00:00").
-    if (hours == 0 && minutes == 0) sign = '+';
+    if (hours == 0 && minutes == 0)
+      sign = '+';
   }
   if (!ccc || minutes != 0 || seconds != 0) {
     ep = Format02d(ep, minutes);
-    if (sep != '\0') *--ep = sep;
+    if (sep != '\0')
+      *--ep = sep;
   }
   ep = Format02d(ep, hours);
   *--ep = sign;
@@ -232,10 +234,9 @@ void FormatTM(std::string* out, const std::string& fmt, const std::tm& tm) {
 }
 #endif
 
-
 // Used for %E#S/%E#f specifiers and for data values in parse().
 
-const char* ParseInt(const char* dp, int width, int min, int max, int* vp) {
+const char *ParseInt(const char *dp, int width, int min, int max, int *vp) {
   if (dp != NULL) {
     const int kmin = INT_MIN;
     bool erange = false;
@@ -246,15 +247,16 @@ const char* ParseInt(const char* dp, int width, int min, int max, int* vp) {
       if (width <= 0 || --width != 0) {
         ++dp;
       } else {
-        dp = NULL;  // width was 1
+        dp = NULL; // width was 1
       }
     }
-    const char*  bp;
+    const char *bp;
     if (bp = dp) {
-      const char* cp;
+      const char *cp;
       while (cp = strchr(kDigits, *dp)) {
         int d = (int)(cp - kDigits);
-        if (d >= 10) break;
+        if (d >= 10)
+          break;
         if (value < kmin / 10) {
           erange = true;
           break;
@@ -266,11 +268,13 @@ const char* ParseInt(const char* dp, int width, int min, int max, int* vp) {
         }
         value -= d;
         dp += 1;
-        if (width > 0 && --width == 0) break;
+        if (width > 0 && --width == 0)
+          break;
       }
       if (dp != bp && !erange && (neg || value != kmin)) {
         if (!neg || value != 0) {
-          if (!neg) value = -value;  // make positive
+          if (!neg)
+            value = -value; // make positive
           if (min <= value && value <= max) {
             *vp = value;
           } else {
@@ -287,8 +291,8 @@ const char* ParseInt(const char* dp, int width, int min, int max, int* vp) {
   return dp;
 }
 
-
-const char* ParseInt64(const char* dp, int width, int64_t min, int64_t max, int64_t* vp) {
+const char *ParseInt64(const char *dp, int width, int64_t min, int64_t max,
+                       int64_t *vp) {
   if (dp != NULL) {
     const int64_t kmin = LONG_MIN;
     bool erange = false;
@@ -299,15 +303,16 @@ const char* ParseInt64(const char* dp, int width, int64_t min, int64_t max, int6
       if (width <= 0 || --width != 0) {
         ++dp;
       } else {
-        dp = NULL;  // width was 1
+        dp = NULL; // width was 1
       }
     }
-    const char*  bp;
+    const char *bp;
     if (bp = dp) {
-      const char* cp;
+      const char *cp;
       while (cp = strchr(kDigits, *dp)) {
         int d = (int)(cp - kDigits);
-        if (d >= 10) break;
+        if (d >= 10)
+          break;
         if (value < kmin / 10) {
           erange = true;
           break;
@@ -319,11 +324,13 @@ const char* ParseInt64(const char* dp, int width, int64_t min, int64_t max, int6
         }
         value -= d;
         dp += 1;
-        if (width > 0 && --width == 0) break;
+        if (width > 0 && --width == 0)
+          break;
       }
       if (dp != bp && !erange && (neg || value != kmin)) {
         if (!neg || value != 0) {
-          if (!neg) value = -value;  // make positive
+          if (!neg)
+            value = -value; // make positive
           if (min <= value && value <= max) {
             *vp = value;
           } else {
@@ -342,7 +349,7 @@ const char* ParseInt64(const char* dp, int width, int64_t min, int64_t max, int6
 
 // The number of base-10 digits that can be represented by a signed 64-bit
 // integer.  That is, 10^kDigits10_64 <= 2^63 - 1 < 10^(kDigits10_64 + 1).
-#define kDigits10_64  (18)
+#define kDigits10_64 (18)
 
 // 10^n for everything that can be represented by a signed 64-bit integer.
 static const int64_t kExp10[kDigits10_64 + 1] = {
@@ -388,7 +395,6 @@ static const int64_t kExp10[kDigits10_64 + 1] = {
 // not support the tm_gmtoff and tm_zone extensions to std::tm.
 //
 // Requires that zero() <= fs < seconds(1).
-
 
 #if 0
 std::string format(const std::string& format, const time_point<seconds>& tp,
@@ -638,7 +644,7 @@ std::string format(const std::string& format, const time_point<seconds>& tp,
 }
 #endif
 
-const char* ParseOffset(const char* dp, const char* mode, int* offset) {
+const char *ParseOffset(const char *dp, const char *mode, int *offset) {
   if (dp != NULL) {
     const char first = *dp++;
     if (first == '+' || first == '-') {
@@ -646,23 +652,27 @@ const char* ParseOffset(const char* dp, const char* mode, int* offset) {
       int hours = 0;
       int minutes = 0;
       int seconds = 0;
-      const char* ap = ParseInt(dp, 2, 0, 23, &hours);
+      const char *ap = ParseInt(dp, 2, 0, 23, &hours);
       if (ap != NULL && ap - dp == 2) {
         dp = ap;
-        if (sep != '\0' && *ap == sep) ++ap;
-        const char* bp = ParseInt(ap, 2, 0, 59, &minutes);
+        if (sep != '\0' && *ap == sep)
+          ++ap;
+        const char *bp = ParseInt(ap, 2, 0, 59, &minutes);
         if (bp != NULL && bp - ap == 2) {
           dp = bp;
-          if (sep != '\0' && *bp == sep) ++bp;
-          const char* cp = ParseInt(bp, 2, 0, 59, &seconds);
-          if (cp != NULL && cp - bp == 2) dp = cp;
+          if (sep != '\0' && *bp == sep)
+            ++bp;
+          const char *cp = ParseInt(bp, 2, 0, 59, &seconds);
+          if (cp != NULL && cp - bp == 2)
+            dp = cp;
         }
         *offset = ((hours * 60 + minutes) * 60) + seconds;
-        if (first == '-') *offset = -*offset;
+        if (first == '-')
+          *offset = -*offset;
       } else {
         dp = NULL;
       }
-    } else if (first == 'Z' || first == 'z') {  // Zulu
+    } else if (first == 'Z' || first == 'z') { // Zulu
       *offset = 0;
     } else {
       dp = NULL;
@@ -671,27 +681,29 @@ const char* ParseOffset(const char* dp, const char* mode, int* offset) {
   return dp;
 }
 
-const char* ParseZone(const char* dp, char * zone) {
-  //zone->clear();
+const char *ParseZone(const char *dp, char *zone) {
+  // zone->clear();
   int idx = 0;
   if (dp != NULL) {
     while (*dp != '\0' && !isspace(*dp)) {
       zone[idx++] = *dp++;
-    } 
-    if (idx == 0) dp = NULL;
+    }
+    if (idx == 0)
+      dp = NULL;
   }
   return dp;
 }
 
-const char* ParseSubSeconds(const char* dp, int64_t * subseconds) {
+const char *ParseSubSeconds(const char *dp, int64_t *subseconds) {
   if (dp != NULL) {
     int64_t v = 0;
     int64_t exp = 0;
-    const char* const bp = dp;
-    const char* cp;
+    const char *const bp = dp;
+    const char *cp;
     while (cp = strchr(kDigits, *dp)) {
       int d = (int)(cp - kDigits);
-      if (d >= 10) break;
+      if (d >= 10)
+        break;
       if (exp < 15) {
         exp += 1;
         v *= 10;
@@ -700,8 +712,8 @@ const char* ParseSubSeconds(const char* dp, int64_t * subseconds) {
       ++dp;
     }
     if (dp != bp) {
-      //v *= kExp10[15 - exp];
-      printf("subsec %ld \n",v);
+      // v *= kExp10[15 - exp];
+      // printf("subsec %ld \n",v);
       *subseconds = v;
     } else {
       dp = NULL;
@@ -742,7 +754,6 @@ bool FromWeek(int week_num, weekday week_start, year_t* year, std::tm* tm) {
 }
 #endif
 
-
 // Uses strptime(3) to parse the given input.  Supports the same extended
 // format specifiers as format(), although %E#S and %E*S are treated
 // identically (and similarly for %E#f and %E*f).  %Ez and %E*z also accept
@@ -757,14 +768,14 @@ bool FromWeek(int week_num, weekday week_start, year_t* year, std::tm* tm) {
 //
 // We also handle the %z specifier to accommodate platforms that do not
 // support the tm_gmtoff extension to std::tm.  %Z is parsed but ignored.
-bool parse(const char * format, const char * input, int64_t* sec,
-           int64_t* fs,const char **err) {
+bool parse(const char *format, const char *input, int64_t *sec, int64_t *fs,
+           const char **err) {
   // The unparsed input.
-  const char* data = input;  // NUL terminated
+  const char *data = input; // NUL terminated
 
   // Skips leading whitespace.
-  while (isspace(*data)) ++data;
-
+  while (isspace(*data))
+    ++data;
 
   // uint16_t year, month, day, hour, min, sec;
   // uint32_t rdn, sod, nsec;
@@ -777,23 +788,22 @@ bool parse(const char * format, const char * input, int64_t* sec,
   int year = 1970;
 
   int tm_year = 1970 - 1900;
-  int tm_mon = 1 - 1;  // Jan
+  int tm_mon = 1 - 1; // Jan
   int tm_mday = 1;
   int tm_hour = 0;
   int tm_min = 0;
   int tm_sec = 0;
-  int tm_wday = 4;  // Thu
+  int tm_wday = 4; // Thu
   int tm_yday = 0;
   int tm_isdst = 0;
 
   int64_t subseconds = 0;
   bool saw_offset = false;
 
-  int offset = 0;  // No offset from passed tz.
+  int offset = 0; // No offset from passed tz.
   char zone[64] = "UTC";
 
-
-  const char* fmt = format;  // NUL terminated
+  const char *fmt = format; // NUL terminated
   bool twelve_hour = false;
   bool afternoon = false;
   // int week_num = -1;
@@ -805,8 +815,10 @@ bool parse(const char * format, const char * input, int64_t* sec,
   // Steps through format, one specifier at a time.
   while (data != NULL && *fmt != '\0') {
     if (isspace(*fmt)) {
-      while (isspace(*data)) ++data;
-      while (isspace(*++fmt)) continue;
+      while (isspace(*data))
+        ++data;
+      while (isspace(*++fmt))
+        continue;
       continue;
     }
 
@@ -820,168 +832,180 @@ bool parse(const char * format, const char * input, int64_t* sec,
       continue;
     }
 
-    const char* percent = fmt;
+    const char *percent = fmt;
     if (*++fmt == '\0') {
       data = NULL;
       continue;
     }
     switch (*fmt++) {
-      case 'Y':
-        // Symmetrically with FormatTime(), directly handing %Y avoids the
-        // tm.tm_year overflow problem.  However, tm.tm_year will still be
-        // used by other specifiers like %D.
-        data = ParseInt(data, 0, kyearmin, kyearmax, &year);
-        if (data != NULL) saw_year = true;
+    case 'Y':
+      // Symmetrically with FormatTime(), directly handing %Y avoids the
+      // tm.tm_year overflow problem.  However, tm.tm_year will still be
+      // used by other specifiers like %D.
+      data = ParseInt(data, 0, kyearmin, kyearmax, &year);
+      if (data != NULL)
+        saw_year = true;
+      continue;
+    case 'm':
+      data = ParseInt(data, 2, 1, 12, &tm_mon);
+      if (data != NULL)
+        tm_mon -= 1;
+      // week_num = -1;
+      continue;
+    case 'd':
+    case 'e':
+      data = ParseInt(data, 2, 1, 31, &tm_mday);
+      // week_num = -1;
+      continue;
+    // case 'U':
+    //   data = ParseInt(data, 0, 0, 53, &week_num);
+    //   week_start = weekday::sunday;
+    //   continue;
+    // case 'W':
+    //   data = ParseInt(data, 0, 0, 53, &week_num);
+    //   week_start = weekday::monday;
+    //   continue;
+    case 'u':
+      data = ParseInt(data, 0, 1, 7, &tm_wday);
+      if (data != NULL)
+        tm_wday %= 7;
+      continue;
+    case 'w':
+      data = ParseInt(data, 0, 0, 6, &tm_wday);
+      continue;
+    case 'H':
+      data = ParseInt(data, 2, 0, 23, &tm_hour);
+      twelve_hour = false;
+      continue;
+    case 'M':
+      data = ParseInt(data, 2, 0, 59, &tm_min);
+      continue;
+    case 'S':
+      data = ParseInt(data, 2, 0, 60, &tm_sec);
+      continue;
+    case 'I':
+    case 'l':
+    case 'r': // probably uses %I
+      twelve_hour = true;
+      break;
+    case 'R': // uses %H
+    case 'T': // uses %H
+    case 'c': // probably uses %H
+    case 'X': // probably uses %H
+      twelve_hour = false;
+      break;
+    case 'z':
+      data = ParseOffset(data, "", &offset);
+      if (data != NULL)
+        saw_offset = true;
+      continue;
+    case 'Z': // ignored; zone abbreviations are ambiguous
+      data = ParseZone(data, zone);
+      continue;
+    case 's':
+      data = ParseInt64(data, 0, LONG_MIN, LONG_MAX, &percent_s);
+      if (data != NULL)
+        saw_percent_s = true;
+      continue;
+    case ':':
+      if (fmt[0] == 'z' ||
+          (fmt[0] == ':' &&
+           (fmt[1] == 'z' || (fmt[1] == ':' && fmt[2] == 'z')))) {
+        data = ParseOffset(data, ":", &offset);
+        if (data != NULL)
+          saw_offset = true;
+        fmt += (fmt[0] == 'z') ? 1 : (fmt[1] == 'z') ? 2 : 3;
         continue;
-      case 'm':
-        data = ParseInt(data, 2, 1, 12, &tm_mon);
-        if (data != NULL) tm_mon -= 1;
-        //week_num = -1;
+      }
+      break;
+    case '%':
+      data = (*data == '%' ? data + 1 : NULL);
+      continue;
+    case 'E':
+      if (fmt[0] == 'T') {
+        if (*data == 'T' || *data == 't') {
+          ++data;
+          ++fmt;
+        } else {
+          data = NULL;
+        }
         continue;
-      case 'd':
-      case 'e':
-        data = ParseInt(data, 2, 1, 31, &tm_mday);
-        //week_num = -1;
+      }
+      if (fmt[0] == 'z' || (fmt[0] == '*' && fmt[1] == 'z')) {
+        data = ParseOffset(data, ":", &offset);
+        if (data != NULL)
+          saw_offset = true;
+        fmt += (fmt[0] == 'z') ? 1 : 2;
         continue;
-      // case 'U':
-      //   data = ParseInt(data, 0, 0, 53, &week_num);
-      //   week_start = weekday::sunday;
-      //   continue;
-      // case 'W':
-      //   data = ParseInt(data, 0, 0, 53, &week_num);
-      //   week_start = weekday::monday;
-      //   continue;
-      case 'u':
-        data = ParseInt(data, 0, 1, 7, &tm_wday);
-        if (data != NULL) tm_wday %= 7;
-        continue;
-      case 'w':
-        data = ParseInt(data, 0, 0, 6, &tm_wday);
-        continue;
-      case 'H':
-        data = ParseInt(data, 2, 0, 23, &tm_hour);
-        twelve_hour = false;
-        continue;
-      case 'M':
-        data = ParseInt(data, 2, 0, 59, &tm_min);
-        continue;
-      case 'S':
+      }
+      if (fmt[0] == '*' && fmt[1] == 'S') {
         data = ParseInt(data, 2, 0, 60, &tm_sec);
-        continue;
-      case 'I':
-      case 'l':
-      case 'r':  // probably uses %I
-        twelve_hour = true;
-        break;
-      case 'R':  // uses %H
-      case 'T':  // uses %H
-      case 'c':  // probably uses %H
-      case 'X':  // probably uses %H
-        twelve_hour = false;
-        break;
-      case 'z':
-        data = ParseOffset(data, "", &offset);
-        if (data != NULL) saw_offset = true;
-        continue;
-      case 'Z':  // ignored; zone abbreviations are ambiguous
-        data = ParseZone(data, zone);
-        continue;
-      case 's':
-        data =
-            ParseInt64(data, 0,LONG_MIN,LONG_MAX, &percent_s);
-        if (data != NULL) saw_percent_s = true;
-        continue;
-      case ':':
-        if (fmt[0] == 'z' ||
-            (fmt[0] == ':' &&
-             (fmt[1] == 'z' || (fmt[1] == ':' && fmt[2] == 'z')))) {
-          data = ParseOffset(data, ":", &offset);
-          if (data != NULL) saw_offset = true;
-          fmt += (fmt[0] == 'z') ? 1 : (fmt[1] == 'z') ? 2 : 3;
-          continue;
+        if (data != NULL && *data == '.') {
+          data = ParseSubSeconds(data + 1, &subseconds);
         }
-        break;
-      case '%':
-        data = (*data == '%' ? data + 1 : NULL);
+        fmt += 2;
         continue;
-      case 'E':
-        if (fmt[0] == 'T') {
-          if (*data == 'T' || *data == 't') {
-            ++data;
-            ++fmt;
+      }
+      if (fmt[0] == '*' && fmt[1] == 'f') {
+        if (data != NULL && isdigit(*data)) {
+          data = ParseSubSeconds(data, &subseconds);
+        }
+        fmt += 2;
+        continue;
+      }
+      if (fmt[0] == '4' && fmt[1] == 'Y') {
+        const char *bp = data;
+        data = ParseInt(data, 4, -999, 9999, &year);
+        if (data != NULL) {
+          if (data - bp == 4) {
+            saw_year = true;
           } else {
-            data = NULL;
+            data = NULL; // stopped too soon
           }
-          continue;
         }
-        if (fmt[0] == 'z' || (fmt[0] == '*' && fmt[1] == 'z')) {
-          data = ParseOffset(data, ":", &offset);
-          if (data != NULL) saw_offset = true;
-          fmt += (fmt[0] == 'z') ? 1 : 2;
-          continue;
-        }
-        if (fmt[0] == '*' && fmt[1] == 'S') {
-          data = ParseInt(data, 2, 0, 60, &tm_sec);
-          if (data != NULL && *data == '.') {
-            data = ParseSubSeconds(data + 1, &subseconds);
-          }
-          fmt += 2;
-          continue;
-        }
-        if (fmt[0] == '*' && fmt[1] == 'f') {
-          if (data != NULL && isdigit(*data)) {
-            data = ParseSubSeconds(data, &subseconds);
-          }
-          fmt += 2;
-          continue;
-        }
-        if (fmt[0] == '4' && fmt[1] == 'Y') {
-          const char* bp = data;
-          data = ParseInt(data, 4, -999, 9999, &year);
-          if (data != NULL) {
-            if (data - bp == 4) {
-              saw_year = true;
-            } else {
-              data = NULL;  // stopped too soon
+        fmt += 2;
+        continue;
+      }
+      if (isdigit(*fmt)) {
+        int n = 0; // value ignored
+        const char *np;
+        if (np = ParseInt(fmt, 0, 0, 1024, &n)) {
+          if (*np == 'S') {
+            data = ParseInt(data, 2, 0, 60, &tm_sec);
+            if (data != NULL && *data == '.') {
+              data = ParseSubSeconds(data + 1, &subseconds);
             }
+            fmt = ++np;
+            continue;
           }
-          fmt += 2;
-          continue;
-        }
-        if (isdigit(*fmt)) {
-          int n = 0;  // value ignored
-          const char* np;
-          if (np = ParseInt(fmt, 0, 0, 1024, &n)) {
-            if (*np == 'S') {
-              data = ParseInt(data, 2, 0, 60, &tm_sec);
-              if (data != NULL && *data == '.') {
-                data = ParseSubSeconds(data + 1, &subseconds);
-              }
-              fmt = ++np;
-              continue;
+          if (*np == 'f') {
+            if (data != NULL && isdigit(*data)) {
+              data = ParseSubSeconds(data, &subseconds);
             }
-            if (*np == 'f') {
-              if (data != NULL && isdigit(*data)) {
-                data = ParseSubSeconds(data, &subseconds);
-              }
-              fmt = ++np;
-              continue;
-            }
+            fmt = ++np;
+            continue;
           }
         }
-        if (*fmt == 'c') twelve_hour = false;  // probably uses %H
-        if (*fmt == 'X') twelve_hour = false;  // probably uses %H
-        if (*fmt != '\0') ++fmt;
-        break;
-      case 'O':
-        if (*fmt == 'H') twelve_hour = false;
-        if (*fmt == 'I') twelve_hour = true;
-        if (*fmt != '\0') ++fmt;
-        break;
+      }
+      if (*fmt == 'c')
+        twelve_hour = false; // probably uses %H
+      if (*fmt == 'X')
+        twelve_hour = false; // probably uses %H
+      if (*fmt != '\0')
+        ++fmt;
+      break;
+    case 'O':
+      if (*fmt == 'H')
+        twelve_hour = false;
+      if (*fmt == 'I')
+        twelve_hour = true;
+      if (*fmt != '\0')
+        ++fmt;
+      break;
     }
 
-    // Parses the current specifier.
-    #if 0
+// Parses the current specifier.
+#if 0
     const char* orig_data = data;
 
     std::string spec(percent, static_cast<std::size_t>(fmt - percent));
@@ -1002,7 +1026,7 @@ bool parse(const char * format, const char * input, int64_t* sec,
       ParseTM(test_data, "%I%p", &tmp);
       afternoon = (tmp.tm_hour == 13);
     }
-    #endif
+#endif
   }
 
   // Adjust a 12-hour tm_hour value if it should be in the afternoon.
@@ -1011,20 +1035,22 @@ bool parse(const char * format, const char * input, int64_t* sec,
   }
 
   if (data == NULL) {
-    if (err != NULL) *err = "Failed to parse input";
+    if (err != NULL)
+      *err = "Failed to parse input";
     return false;
   }
 
   // Skip any remaining whitespace.
-  while (isspace(*data)) ++data;
+  while (isspace(*data))
+    ++data;
 
   // parse() must consume the entire input string.
   if (*data != '\0') {
-    if (err != NULL) *err = "Illegal trailing data in input string";
+    if (err != NULL)
+      *err = "Illegal trailing data in input string";
     return false;
   }
 
-  
   // If we saw %s then we ignore anything else and return that time.
   if (saw_percent_s) {
     *sec = percent_s;
@@ -1035,8 +1061,7 @@ bool parse(const char * format, const char * input, int64_t* sec,
   // If we saw %z, %Ez, or %E*z then we want to interpret the parsed fields
   // in UTC and then shift by that offset.  Otherwise we want to interpret
   // the fields directly in the passed time_zone.
-  //time_zone ptz = saw_offset ? utc_time_zone() ;
-
+  // time_zone ptz = saw_offset ? utc_time_zone() ;
 
   // Allows a leap second of 60 to normalize forward to the following ":00".
   if (tm_sec == 60) {
@@ -1049,7 +1074,8 @@ bool parse(const char * format, const char * input, int64_t* sec,
     year = tm_year;
     if (year > kyearmax - 1900) {
       // Platform-dependent, maybe unreachable.
-      if (err != NULL) *err = "Out-of-range year";
+      if (err != NULL)
+        *err = "Out-of-range year";
       return false;
     }
     year += 1900;
@@ -1065,17 +1091,21 @@ bool parse(const char * format, const char * input, int64_t* sec,
 
   tm_mon = tm_mon + 1;
 
-  //printf("year %d month %d day %d hour %d min %d sec %d msec %ld offset %d\n",year,tm_mon,tm_mday,tm_hour,tm_min,tm_sec,subseconds,offset );
-  //printf("kJulianDayOf1970_01_01 is %d \n",kJulianDayOf1970_01_01);
+  // printf("year %d month %d day %d hour %d min %d sec %d msec %ld offset
+  // %d\n",year,tm_mon,tm_mday,tm_hour,tm_min,tm_sec,subseconds,offset );
+  // printf("kJulianDayOf1970_01_01 is %d \n",kJulianDayOf1970_01_01);
 
-  *sec =  (int64_t)(getJulianDayNumber(year,tm_mon,tm_mday) - kJulianDayOf1970_01_01) * 86400 + (tm_hour * 3600 + tm_min * 60 + tm_sec) - offset;
+  *sec = (int64_t)(getJulianDayNumber(year, tm_mon, tm_mday) -
+                   kJulianDayOf1970_01_01) *
+             86400 +
+         (tm_hour * 3600 + tm_min * 60 + tm_sec) - offset;
   *fs = subseconds;
 
-  //printf("sec  is %ld \n",*sec);
+  // printf("sec  is %ld \n",*sec);
 
   return true;
 
-  #if 0
+#if 0
   civil_second cs(year, month, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
   // parse() should not allow normalization. Due to the restricted field
@@ -1093,12 +1123,9 @@ bool parse(const char * format, const char * input, int64_t* sec,
     return false;
   }
    cs -= offset;
-  #endif
- 
+#endif
 
-
-
-  #if 0
+#if 0
   const auto tp = ptz.lookup(cs).pre;
   // Checks for overflow/underflow and returns an error as necessary.
   if (tp == time_point<seconds>::max()) {
@@ -1115,10 +1142,7 @@ bool parse(const char * format, const char * input, int64_t* sec,
       return false;
     }
   }
-  #endif
-
-
-
+#endif
 }
 
 #if 0

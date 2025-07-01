@@ -143,75 +143,156 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
-
-	if(str_strncmp((const char *)ols_txt->data,"****",4) == 0){
-		printf("data is %s \n",(const char *)ols_txt->data);
-	} 
-
-	const char *p = (const char *)ols_txt->data;
-	//05-22 11:17:45.265  3006 16061 V DSVFSALib:
-	if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
-		char time_buf[64] = "2025-";
-
-		str_strncat(time_buf,p,18);
-		int64_t sec;
-		int64_t fs;
-		const char *err;
-		if(parse("%Y-%m-%d %H:%M:%E*S", time_buf, & sec,
-           & fs,&err) ){
-			printf("%ld %ld \n",sec,fs);
-		} 
+	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
+	if(str_strncmp((const char *)ols_txt->buff,"****",4) == 0){
+		//printf("data is %s \n",(const char *)ols_txt->buff);
+	} else {
+		const char *p = (const char *)ols_txt->buff;
 		
-		p += 18;
+		size_t buff_len = ols_txt->len;
+        
+		size_t parse_len = 0;
 
-		while(isspace(*p)){
-			p++;
-		}
+		//05-22 11:17:45.265  3006 16061 V DSVFSALib:
+		if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
 		
-		int pid = 0;
-		while(isdigit(*p)){
+			char time_buf[64] = "2025-";
+	
+			str_strncat(time_buf,p,18);
+			int64_t sec;
+			int64_t fs;
+			const char *err;
+			if(parse("%Y-%m-%d %H:%M:%E*S", time_buf, & sec,
+			   & fs,&err) ){
+				//printf("%ld %ld \n",sec,fs);
+			} else {
+				//printf("%ld %ld \n",sec,fs);
+				printf("parse time failed ,not a standard line \n");
+				return;
+			}
 			
-			pid = pid * 10 + (*p - '0');
-			p++;
+			p += 18;
+			parse_len += 18;
+
+			if(!isspace(*p)){
+				return;
+			}
+	
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isdigit(*p)){
+				return;
+			}
+			
+
+			int pid = 0;
+			while(isdigit(*p) && parse_len < buff_len){
+				
+				pid = pid * 10 + (*p - '0');
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isspace(*p)){
+				return;
+			}			
+			//printf("pid is %d \n",pid);
+	
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isdigit(*p)){
+				return;
+			}
+	
+			int tid = 0;
+	
+			while(isdigit(*p) && parse_len < buff_len){
+				tid = tid * 10 + (*p - '0');
+				p++;
+				parse_len++;
+			}
+			//printf("tid is %d \n",tid);
+	
+			if(parse_len >= buff_len ||  !isspace(*p)){
+				return;
+			}
+
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			
+	
+			if(parse_len >= buff_len || !isalpha(*p)){
+				return;
+			}
+
+			int log_lv = *p++;
+			parse_len++;
+
+			if(parse_len >= buff_len || !isspace(*p)){
+				return;
+			}
+			
+			//printf("log lv is %c \n",*p++);
+			
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isalpha(*p)){
+				return;
+			}			
+	
+			char tag[64] = {'\0'};
+			int tag_idx = 0;
+			int tag_len = 0;
+			while(*p != ':' && parse_len < buff_len && tag_len < 64){
+				tag[tag_idx++] = *p++;
+				parse_len++;
+				tag_len++;
+			}
+
+			if(parse_len >= buff_len){
+				return;
+			}					
+	
+			str_rtrim(tag,tag_idx);
+
+			if(script_ ){
+				ols_meta_result result = ols_scripting_prase(script_,(const char *)ols_txt->buff,ols_txt->len);
+		
+				buffer->result = (ols_meta_result *)bzalloc(sizeof(ols_meta_result));
+		
+				*buffer->result = result;
+
+				dstr_copy(&buffer->result->tag,tag);
+				
+		
+				for (int i = 0; i < process_->context.numsrcpads; ++i) {
+					ols_pad_t *pad = process_->context.srcpads.array[i];
+				
+					ols_pad_push(pad, buffer);
+				  }
+		
+				//ols_txt->dat
+			}
+			//printf("tag is %s \n",tag);
 		}
-		//printf("pid is %d \n",pid);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		int tid = 0;
-
-		while(isdigit(*p)){
-			tid = tid * 10 + (*p - '0');
-			p++;
-		}
-		//printf("tid is %d \n",tid);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		//printf("log lv is %c \n",*p++);
-
-		while(isspace(*p)){
-			p++;
-		}
-
-		char tag[64] = {'\0'};
-		int tag_idx = 0;
-		while(*p != ':'){
-			tag[tag_idx++] = *p++;
-		}
-		//printf("tag is %s \n",tag);
 	}
+
 
 	//(const char *)ols_txt->data
 
-	if(script_){
-		ols_scripting_prase(script_,(const char *)ols_txt->data,ols_txt->size);
-		//ols_txt->dat
-	}
+
 	
 
 }
