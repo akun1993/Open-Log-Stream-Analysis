@@ -26,7 +26,12 @@ struct ols_txt_file {
   size_t   len;
 
   struct dstr file; //
-  int line;
+  struct dstr tag;
+  uint64_t msec;
+  int32_t line;
+  int32_t pid;
+  int32_t tid;
+  uint8_t log_lv;
 };
 
 EXPORT ols_txt_file_t *ols_txt_file_new_empty(void);

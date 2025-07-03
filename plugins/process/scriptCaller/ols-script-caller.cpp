@@ -50,16 +50,7 @@ struct ScriptCallerProcess {
                                 "parse_log_2.py",
                                 NULL);
 
-    // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
-    // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
 
-    // ols_pad_set_link_function(sinkpad_,script_link_func);
-    // ols_pad_set_chain_function(sinkpad_,script_chain_func);
-
-    // blog(LOG_DEBUG, "ols_context_add_pad");
-    // ols_process_add_pad(process_, sinkpad_);
-
-    // ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
   }
 
   inline ~ScriptCallerProcess() {}

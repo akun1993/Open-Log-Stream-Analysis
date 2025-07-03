@@ -18,6 +18,13 @@ _ols_txt_file_copy (const ols_txt_file_t * txt_file)
   new_txt_file->line = txt_file->line;
   new_txt_file->file = txt_file->file;
 
+
+  new_txt_file->log_lv = txt_file->log_lv;
+  new_txt_file->pid = txt_file->pid;
+  new_txt_file->tid = txt_file->tid;
+  new_txt_file->msec = txt_file->msec;
+  new_txt_file->tag = txt_file->tag;
+
  // GST_CAPS_FLAGS (newcaps) = GST_CAPS_FLAGS (caps);
  // n = GST_CAPS_LEN (caps);
 
@@ -45,6 +52,7 @@ _ols_txt_file_free (ols_txt_file_t * txt_file)
  }
  txt_file->len = 0;
  dstr_free(&txt_file->file);
+ dstr_free(&txt_file->tag);
 }
 
 static void
@@ -54,6 +62,10 @@ ols_txt_file_init (ols_txt_file_t * txt_file,size_t buff_size)
       (ols_mini_object_copy_function) _ols_txt_file_copy, NULL,
       (ols_mini_object_free_function) _ols_txt_file_free);
 
+  dstr_init(&txt_file->file);
+  dstr_init(&txt_file->tag);
+      
+    
   if(buff_size > 0){
     txt_file->buff = bzalloc(buff_size);
     txt_file->capacity = buff_size;

@@ -7,7 +7,8 @@
 #include <string>
 #include <sys/stat.h>
 #include <util/platform.h>
-#include <util/task.h>
+#include <util/str-util.h>
+#include <util/time-parse.h>
 #include <util/util.hpp>
 
 using namespace std;
@@ -32,6 +33,9 @@ using namespace std;
 struct DataDispatch {
   ols_process_t *process_ = nullptr;
 
+  int year_ {1970};
+
+
   // ols_pad_t     *srcpad_  = nullptr;
   // ols_pad_t     *sinkpad_  = nullptr;
 
@@ -41,17 +45,6 @@ struct DataDispatch {
       : process_(process) {
     ols_process_update(process_, settings);
 	
-
-    // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
-    // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
-
-    // ols_pad_set_link_function(sinkpad_,script_link_func);
-    // ols_pad_set_chain_function(sinkpad_,script_chain_func);
-
-    // blog(LOG_DEBUG, "ols_context_add_pad");
-    // ols_process_add_pad(process_, sinkpad_);
-
-    // ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
   }
 
   inline ~DataDispatch() {}
@@ -140,7 +133,177 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 
 void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
+
+	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
+	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
+	if(str_strncmp((const char *)ols_txt->buff,"**",2) == 0){
+		//printf("data is %s \n",(const char *)ols_txt->buff);
+		const char *result ;
+		if((result = strstr((const char *)ols_txt->buff, "Log Start"))  != nullptr){
+			while(*result != ':'){
+				++result;
+			}
+
+			++result;
+
+			while(isspace(*result)){
+				++result;
+			}
+
+			int year = 0;
+			while (isdigit(*result))
+			{
+				year = year * 10 + (*result  - '0');
+				/* code */
+			}
+			if(year != 0 && year < 9999){ 
+				year_ = year;
+			}
+
+		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
+			//begin of cold start 
+		}
+
+	} else {
+		const char *p = (const char *)ols_txt->buff;
+		
+		size_t buff_len = ols_txt->len;
+        
+		size_t parse_len = 0;
+		//05-22 11:17:45.265  3006 16061 V DSVFSALib:
+		if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
+		
+			char time_buf[64] = {'\0'};
+			sprintf(time_buf, "%d", year_);
 	
+			str_strncat(time_buf,p,18);
+			int64_t sec;
+			int64_t msec;
+			const char *err;
+			if(parse("%Y-%m-%d %H:%M:%E*S", time_buf, & sec,
+			   & msec,&err) ){
+				//printf("%ld %ld \n",sec,fs);
+			} else {
+				//printf("%ld %ld \n",sec,fs);
+				printf("parse time failed ,not a standard line \n");
+				return;
+			}
+
+			ols_txt->msec = sec * 1000 + msec;
+			
+			p += 18;
+			parse_len += 18;
+
+			if(!isspace(*p)){
+				return;
+			}
+	
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isdigit(*p)){
+				return;
+			}
+			
+			//parse process id
+			int pid = 0;
+			while(isdigit(*p) && parse_len < buff_len){
+				
+				pid = pid * 10 + (*p - '0');
+				p++;
+				parse_len++;
+			}
+
+			ols_txt->pid = pid;
+
+			if(parse_len >= buff_len || !isspace(*p)){
+				return;
+			}			
+	
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isdigit(*p)){
+				return;
+			}
+	
+			int tid = 0;
+	
+			while(isdigit(*p) && parse_len < buff_len){
+				tid = tid * 10 + (*p - '0');
+				p++;
+				parse_len++;
+			}
+			//printf("tid is %d \n",tid);
+
+			ols_txt->tid = tid;
+	
+			if(parse_len >= buff_len ||  !isspace(*p)){
+				return;
+			}
+
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+	
+			if(parse_len >= buff_len || !isalpha(*p)){
+				return;
+			}
+
+			ols_txt->log_lv = *p++;
+			parse_len++;
+
+			if(parse_len >= buff_len || !isspace(*p)){
+				return;
+			}
+			
+			//printf("log lv is %c \n",*p++);
+			
+			while(isspace(*p) && parse_len < buff_len){
+				p++;
+				parse_len++;
+			}
+
+			if(parse_len >= buff_len || !isalpha(*p)){
+				return;
+			}			
+	
+			//char tag[64] = {'\0'};
+
+			const char *tag_beg = p;
+
+			int tag_len = 0; //only support tag length less than 256
+			while(*p != ':' && parse_len < buff_len && tag_len < 256){
+				parse_len++;
+				tag_len++;
+			}
+
+			if(parse_len >= buff_len){
+				return;
+			}
+			
+			if(*p == ':') --p;
+
+			while(tag_len > 0 && isspace(*p)){
+				--p;
+				--tag_len;
+			}
+
+			dstr_ncopy(&ols_txt->tag,tag_beg,tag_len);
+
+			for (int i = 0; i < process_->context.numsrcpads; ++i) {
+				ols_pad_t *pad = process_->context.srcpads.array[i];
+			
+				ols_pad_push(pad, buffer);
+			}			
+    		//printf("tag is %s \n",tag);
+		}
+	}
 
 }
 

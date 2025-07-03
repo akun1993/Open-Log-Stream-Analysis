@@ -19,8 +19,8 @@ using namespace std;
 
   struct XmlOutput  {
 	ols_output_t *output_ = nullptr;
-	// ols_pad_t     *srcpad_  = nullptr;
-	// ols_pad_t     *sinkpad_  = nullptr;
+	tinyxml2::XMLDocument xmldoc_;
+	tinyxml2::XMLElement* root_ = nullptr;
 
 	/* --------------------------- */
 
@@ -41,6 +41,8 @@ using namespace std;
 	ols_pad_t * createRecvPad(const char *caps);
 
 	void onDataBuff(ols_buffer_t *buffer);
+
+	void initOutfile();
 };
 
 /* ------------------------------------------------------------------------- */
@@ -103,52 +105,24 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 }
 
 
+void XmlOutput::initOutfile(){
+
+	tinyxml2::XMLDeclaration* decl = xmldoc_.NewDeclaration("xml version='1.0' encoding='UTF-8' standalone='yes'");
+	xmldoc_.InsertFirstChild(decl);
+
+	tinyxml2::XMLDeclaration* decl2 = xmldoc_.NewDeclaration("xml-stylesheet type=\"text/xsl\" href=\"Anything.xsl\"");
+	xmldoc_.InsertAfterChild(decl,decl2);
+
+	root_ = xmldoc_.NewElement("protocol");
+	xmldoc_.InsertEndChild(root_);
+
+}
+
 void XmlOutput::Update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
 
-	
-// <?xml version="1.0"?>
-// <Root>
-//     <Element attribute="value">This is a text node</Element>
-//     <SubElement subAttr="subValue">This is a sub text node</SubElement>
-// </Root>
-
-	   // 创建一个 XMLDocument 对象
-    tinyxml2::XMLDocument doc;
- 
-    // 创建一个根节点 <Root>
-    tinyxml2::XMLElement* root = doc.NewElement("Root");
-    doc.InsertFirstChild(root);
- 
-    // 创建一个子节点 <Element> 并设置属性 attribute="value"
-    tinyxml2::XMLElement* info = doc.NewElement("information");
-
-	tinyxml2::XMLElement* soc_ver = doc.NewElement("soc_version");
-	tinyxml2::XMLText* ver_text = doc.NewText("This is a text node");
-	soc_ver->InsertEndChild(ver_text);
-
-	info->InsertEndChild(soc_ver);
-
-    root->InsertEndChild(info);
-	
-
- 
-    // 创建另一个子节点 <SubElement> 并添加文本和属性
-    tinyxml2::XMLElement* subElement = doc.NewElement("SubElement");
-
-    root->InsertEndChild(subElement);
-    tinyxml2::XMLText* subText = doc.NewText("This is a sub text node");
-    subElement->InsertEndChild(subText);
- 
-    // 保存文件到磁盘
-    tinyxml2::XMLError eResult = doc.SaveFile("example.xml");
-    if (eResult != tinyxml2::XML_SUCCESS) {
-        //std::cerr << "Error saving file: " << eResult << std::endl;
-        //return -1;
-    } else {
-        //std::cout << "File saved successfully." << std::endl;
-    }
+   
 }
 
 
