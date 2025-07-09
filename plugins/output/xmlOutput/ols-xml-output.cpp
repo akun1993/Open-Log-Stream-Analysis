@@ -1,4 +1,5 @@
 
+#include "ols-meta-txt.h"
 #include "tinyxml2.h"
 #include <algorithm>
 #include <locale>
@@ -9,40 +10,33 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
-#include "ols-meta-txt.h"
 
 using namespace std;
 
 #define warning(format, ...)                                                   \
   blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
+struct XmlOutput {
+  ols_output_t *output_ = nullptr;
+  tinyxml2::XMLDocument xmldoc_;
+  tinyxml2::XMLElement *root_ = nullptr;
 
-  struct XmlOutput  {
-	ols_output_t *output_ = nullptr;
-	tinyxml2::XMLDocument xmldoc_;
-	tinyxml2::XMLElement* root_ = nullptr;
+  /* --------------------------- */
 
-	/* --------------------------- */
+  inline XmlOutput(ols_output_t *process, ols_data_t *settings)
+      : output_(process) {}
 
-	inline XmlOutput(ols_output_t *process, ols_data_t *settings)
-		: output_(process)
-	{
+  inline ~XmlOutput() {}
 
-	}
+  ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-	inline ~XmlOutput(){
+  void Update(ols_data_t *settings);
 
-	}
+  ols_pad_t *createRecvPad(const char *caps);
 
-	ols_pad_t *requestNewPad(const char *name, const char *caps);
+  void onDataBuff(ols_buffer_t *buffer);
 
-	void Update(ols_data_t *settings);
-
-	ols_pad_t * createRecvPad(const char *caps);
-
-	void onDataBuff(ols_buffer_t *buffer);
-
-	void initOutfile();
+  void initOutfile();
 };
 
 /* ------------------------------------------------------------------------- */

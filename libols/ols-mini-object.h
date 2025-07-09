@@ -17,14 +17,14 @@ typedef uint32_t miniType;
 
 /**
  * OLS_MINI_OBJECT_FLAGS:
- * @obj: MiniObject to return flags for.
+ * @obj: ols_mini_object_t to return flags for.
  *
  * This macro returns the entire set of flags for the mini-object.
  */
 #define OLS_MINI_OBJECT_FLAGS(obj) (OLS_MINI_OBJECT_CAST(obj)->flags)
 /**
  * OLS_MINI_OBJECT_FLAG_IS_SET:
- * @obj: MiniObject to check for flags.
+ * @obj: ols_mini_object_t to check for flags.
  * @flag: Flag to check for
  *
  * This macro checks to see if the given flag is set.
@@ -42,7 +42,7 @@ typedef uint32_t miniType;
   (OLS_MINI_OBJECT_FLAGS(obj) |= (flag))
 /**
  * OLS_MINI_OBJECT_FLAG_UNSET:
- * @obj: MiniObject to unset flag in.
+ * @obj: ols_mini_object_t to unset flag in.
  * @flag: Flag to set, must be a single bit in uint32_t.
  *
  * This macro unsets the given bits.
@@ -53,14 +53,14 @@ typedef uint32_t miniType;
 
   /**
  * OLS_MINI_OBJECT_REFCOUNT:
- * @obj: a #GstMiniObject
+ * @obj: a #ols_mini_object_t
  *
  * Get access to the reference count field of the mini-object.
  */
 #define OLS_MINI_OBJECT_REFCOUNT(obj)           ((OLS_MINI_OBJECT_CAST(obj))->refcount)
 /**
  * OLS_MINI_OBJECT_REFCOUNT_VALUE:
- * @obj: a #GstMiniObject
+ * @obj: a #ols_mini_object_t
  *
  * Get the reference count value of the mini-object.
  */
@@ -146,13 +146,11 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
 
 // void  ols_mini_object_weak_ref (ols_mini_object_t *object, void * data);
-
 // void  ols_mini_object_weak_unref	(ols_mini_object_t *object,void * data);
 
 /* locking */
 
 bool   ols_mini_object_lock            (ols_mini_object_t *object, OlsLockFlags flags);
-
 
 void  ols_mini_object_unlock          (ols_mini_object_t *object, OlsLockFlags flags);
 

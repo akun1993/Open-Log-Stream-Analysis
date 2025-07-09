@@ -61,6 +61,32 @@ extern "C" {
 #define PRETTY_FUNCTION_NAME ""
 #endif
 
+
+/* Provide simple macro statement wrappers (adapted from Perl):
+ *  G_STMT_START { statements; } G_STMT_END;
+ *  can be used as a single statement, as in
+ *  if (x) G_STMT_START { ... } G_STMT_END; else ...
+ *
+ *  For gcc we will wrap the statements within `({' and `})' braces.
+ *  For SunOS they will be wrapped within `if (1)' and `else (void) 0',
+ *  and otherwise within `do' and `while (0)'.
+ */
+#if !(defined (O_STMT_START) && defined (O_STMT_END))
+#  if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__cplusplus)
+#    define O_STMT_START	(void) __extension__ (
+#    define O_STMT_END		)
+#  else
+#    if (defined (sun) || defined (__sun__))
+#      define O_STMT_START	if (1)
+#      define O_STMT_END	else (void)0
+#    else
+#      define O_STMT_START	do
+#      define O_STMT_END	while (0)
+#    endif
+#  endif
+#endif
+
+
 enum {
   /**
    * Use if there's a problem that can potentially affect the program,

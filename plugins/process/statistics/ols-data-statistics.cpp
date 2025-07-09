@@ -29,27 +29,20 @@ using namespace std;
     val = max_val;
 #endif
 
+struct TagStatistics {
+
+  uint32_t lineCnt;
+  uint32_t bytes;
+};
+
 struct DataStatistics {
   ols_process_t *process_ = nullptr;
-
 
   /* --------------------------- */
 
   inline DataStatistics(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
     ols_process_update(process_, settings);
-	
-
-    // srcpad_ = ols_pad_new("script-process-src",OLS_PAD_SRC);
-    // sinkpad_ = ols_pad_new("script-process-sink",OLS_PAD_SINK);
-
-    // ols_pad_set_link_function(sinkpad_,script_link_func);
-    // ols_pad_set_chain_function(sinkpad_,script_chain_func);
-
-    // blog(LOG_DEBUG, "ols_context_add_pad");
-    // ols_process_add_pad(process_, sinkpad_);
-
-    // ols_pad_set_chain_list_function(sinkpad,script_chainlist_func);
   }
 
   inline ~DataStatistics() {}
@@ -68,8 +61,6 @@ struct DataStatistics {
 
 /* clang-format off */
 static OlsFlowReturn statistics_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
-
-	
 
 	blog(LOG_DEBUG, "statistics_chainlist_func");
 	return OLS_FLOW_OK;
@@ -90,9 +81,6 @@ static OlsPadLinkReturn statistics_src_link_func(ols_pad_t *pad,ols_object_t *pa
 	blog(LOG_DEBUG, "stattistics_src_link_func");
 	return OLS_PAD_LINK_OK;
 }
-
-
-
 
 
 ols_pad_t * DataStatistics::createRecvPad(const char *caps){
@@ -120,15 +108,13 @@ ols_pad_t * DataStatistics::createSendPad(const char *caps){
 	return srcpad;
 }
 
- ols_pad_t *DataStatistics::requestNewPad(const char *name, const char *caps)
+ols_pad_t *DataStatistics::requestNewPad(const char *name, const char *caps)
 {
-
 	if(strcmp("sink",name) == 0){
 		return  createRecvPad(caps);
 	} else if(strcmp("src",name) == 0) {
 		return   createSendPad(caps);
 	}
-
 	return NULL;
 }
 
@@ -167,10 +153,6 @@ static ols_properties_t *get_properties(void *data)
 
 	return props;
 }
-
-  // ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
-
-  // ols_scripting_prase(script,"parse this log in python",sizeof("parse this log in python") - 1);
 
 
 bool ols_module_load(void)

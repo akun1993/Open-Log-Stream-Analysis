@@ -359,8 +359,7 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
-struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
-                                             int len) {
+struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_txt_file_t * txt_info) {
   struct ols_meta_result result;
   memset(&result, 0, sizeof(result));
 
@@ -368,16 +367,12 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, const char *data,
   if (!s->loaded || !python_loaded)
     return result;
 
-  if (strlen(data) == 0) {
-    printf("not utf8 data %s len %d\n", data, strlen(data));
-    return;
-  }
 
   lock_python();
 
   // printf("data %s len %d\n", data, strlen(data));
 
-  PyObject *args = Py_BuildValue("(s)", data);
+  PyObject *args = Py_BuildValue("(liiiss)", txt_info->msec,txt_info->pid,txt_info->tid,txt_info->log_lv,txt_info->tag.array,(const char *)txt_info->buff + txt_info->data_offset);
   // printf("parse object %p args %p\n",python_script->parse,args);
   PyObject *pValue = PyObject_CallObject(python_script->parse, args);
   // printf("parse object %p args %p py ret

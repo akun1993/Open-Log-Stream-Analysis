@@ -1,5 +1,6 @@
 #include "ols-mini-object.h"
 #include "util/threading.h"
+#include "util/base.h"
 
 #define SHARE_ONE (1 << 16)
 #define SHARE_TWO (2 << 16)
@@ -10,12 +11,6 @@
 #define LOCK_MASK ((SHARE_ONE - 1) - FLAG_MASK)
 #define LOCK_FLAG_MASK (SHARE_ONE - 1)
 
-enum {
-  PRIV_DATA_STATE_LOCKED = 0,
-  PRIV_DATA_STATE_NO_PARENT = 1,
-  PRIV_DATA_STATE_ONE_PARENT = 2,
-  PRIV_DATA_STATE_PARENTS_OR_QDATA = 3,
-};
 
 /**
  * ols_mini_object_init: (skip)
@@ -43,9 +38,6 @@ void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
   mini_object->dispose = dispose_func;
   mini_object->free = free_func;
 
-  //   g_atomic_int_set((int32_t *)&mini_object->priv_uint,
-  //                    PRIV_DATA_STATE_NO_PARENT);
-  //   mini_object->priv_pointer = NULL;
 
   // OLS_TRACER_MINI_OBJECT_CREATED(mini_object);
 }
@@ -137,8 +129,7 @@ lock_failed : {
   return false;
 }
 }
-// static inline bool os_atomic_compare_exchange_long(volatile long *val,
-// 						   long *old_ptr, long new_val)
+
 /**
  * ols_mini_object_unlock:
  * @object: the mini-object to unlock
@@ -197,62 +188,24 @@ void ols_mini_object_unlock(ols_mini_object_t *object, OlsLockFlags flags) {
 ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object) {
   int32_t old_refcount, new_refcount;
 
-  // g_return_val_if_fail(mini_object != NULL, NULL);
+  // return_val_if_fail(mini_object != NULL, NULL);
   /* we can't assert that the refcount > 0 since the _free functions
    * increments the refcount from 0 to 1 again to allow resurrecting
    * the object
-   g_return_val_if_fail (mini_object->refcount > 0, NULL);
+   * return_val_if_fail (mini_object->refcount > 0, NULL);
    */
 
-  old_refcount = os_atomic_inc_long(&mini_object->refcount);
+  old_refcount = os_atomic_load_long(&mini_object->refcount);
   new_refcount = old_refcount + 1;
+  
+  blog(LOG_INFO, "%p ref %d->%d", mini_object,  old_refcount,    new_refcount);
 
-  //   OLS_CAT_TRACE(OLS_CAT_REFCOUNTING, "%p ref %d->%d", mini_object,
-  //   old_refcount,
-  //                 new_refcount);
-
+  os_atomic_inc_long(&mini_object->refcount);
   //   OLS_TRACER_MINI_OBJECT_REFFED(mini_object, new_refcount);
 
   return mini_object;
 }
 
-static void free_priv_data(ols_mini_object_t *obj) {
-  UNUSED_PARAMETER(obj);
-  //   uint32_t i;
-  //   int32_t priv_state = g_atomic_int_get((int32_t *)&obj->priv_uint);
-  //   PrivData *priv_data;
-
-  //   if (priv_state != PRIV_DATA_STATE_PARENTS_OR_QDATA) {
-  //     if (priv_state == PRIV_DATA_STATE_LOCKED) {
-  //       g_warning("%s: object finalizing but has locked private data
-  //       (object:%p)",
-  //                 G_STRFUNC, obj);
-  //     } else if (priv_state == PRIV_DATA_STATE_ONE_PARENT) {
-  //       g_warning(
-  //           "%s: object finalizing but still has parent (object:%p,
-  //           parent:%p)", G_STRFUNC, obj, obj->priv_pointer);
-  //     }
-
-  //     return;
-  //   }
-
-  //   priv_data = obj->priv_pointer;
-
-  //   for (i = 0; i < priv_data->n_qdata; i++) {
-  //     if (QDATA_QUARK(priv_data, i) == weak_ref_quark)
-  //       QDATA_NOTIFY(priv_data, i)(QDATA_DATA(priv_data, i), obj);
-  //     if (QDATA_DESTROY(priv_data, i))
-  //       QDATA_DESTROY(priv_data, i)(QDATA_DATA(priv_data, i));
-  //   }
-  //   g_free(priv_data->qdata);
-
-  //   if (priv_data->n_parents)
-  //     g_warning("%s: object finalizing but still has %d parents (object:%p)",
-  //               G_STRFUNC, priv_data->n_parents, obj);
-  //   g_free(priv_data->parents);
-
-  //   g_free(priv_data);
-}
 
 /**
  * ols_mini_object_unref: (skip)
@@ -264,37 +217,31 @@ static void free_priv_data(ols_mini_object_t *obj) {
 void ols_mini_object_unref(ols_mini_object_t *mini_object) {
   int32_t old_refcount, new_refcount;
 
-  // g_return_if_fail(mini_object != NULL);
-  // g_return_if_fail(OLS_MINI_OBJECT_REFCOUNT_VALUE(mini_object) > 0);
+  // return_if_fail(OLS_MINI_OBJECT_REFCOUNT_VALUE(mini_object) > 0);
 
-  old_refcount = os_atomic_dec_long(&mini_object->refcount);
-  new_refcount = old_refcount - 1;
+  old_refcount = os_atomic_load_long(&mini_object->refcount);
+  new_refcount = os_atomic_load_long(&mini_object->refcount) - 1;
 
-  // g_return_if_fail(old_refcount > 0);
+  // return_if_fail(old_refcount > 0);
+  blog(LOG_INFO, "%p unref %d->%d", mini_object,  old_refcount,    new_refcount);
 
-  //   OLS_CAT_TRACE(OLS_CAT_REFCOUNTING, "%p unref %d->%d", mini_object,
-  //                 old_refcount, new_refcount);
-
-  //  OLS_TRACER_MINI_OBJECT_UNREFFED(mini_object, new_refcount);
-
-  if (new_refcount == 0) {
+  if ((os_atomic_dec_long(&mini_object->refcount)) == 0) {
     bool do_free;
-
+    
     if (mini_object->dispose)
       do_free = mini_object->dispose(mini_object);
     else
       do_free = true;
 
+
     /* if the subclass recycled the object (and returned FALSE) we don't
      * want to free the instance anymore */
     if (do_free) {
+
+      blog(LOG_INFO, "lockstate  %d lock mask %d ", mini_object->lockstate,LOCK_MASK);
       /* there should be no outstanding locks */
-      if ((os_atomic_load_long(&mini_object->lockstate) & LOCK_MASK) < 4) {
-        return;
-      }
-
-      free_priv_data(mini_object);
-
+      return_if_fail((os_atomic_load_long(&mini_object->lockstate) & LOCK_MASK) < 4);
+ 
       // OLS_TRACER_MINI_OBJECT_DESTROYED(mini_object);
       if (mini_object->free)
         mini_object->free(mini_object);

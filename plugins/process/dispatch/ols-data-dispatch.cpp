@@ -33,8 +33,7 @@ using namespace std;
 struct DataDispatch {
   ols_process_t *process_ = nullptr;
 
-  int year_ {1970};
-
+  int year_{1970};
 
   // ols_pad_t     *srcpad_  = nullptr;
   // ols_pad_t     *sinkpad_  = nullptr;
@@ -44,7 +43,6 @@ struct DataDispatch {
   inline DataDispatch(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
     ols_process_update(process_, settings);
-	
   }
 
   inline ~DataDispatch() {}
@@ -73,7 +71,8 @@ static OlsFlowReturn dispatch_chainlist_func(ols_pad_t *pad,ols_object_t *parent
 static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
 
 
-	
+	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
+	dispatch->onDataBuff(buffer);
 
 	//blog(LOG_DEBUG, "dispatch_sink_chain_func %s",ols_txt->data );
 	return OLS_FLOW_OK;
@@ -81,6 +80,8 @@ static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *paren
 
 static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	//blog(LOG_DEBUG, "dispatch_sink_link_func");
+
+
 	return OLS_PAD_LINK_OK;
 }
 
@@ -133,29 +134,35 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 
 void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
-
 	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
 	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
+
+	size_t buff_len = ols_txt->len;
+	size_t parse_len = 0;
+
 	if(str_strncmp((const char *)ols_txt->buff,"**",2) == 0){
 		//printf("data is %s \n",(const char *)ols_txt->buff);
 		const char *result ;
 		if((result = strstr((const char *)ols_txt->buff, "Log Start"))  != nullptr){
-			while(*result != ':'){
+			while(*result != ':' && parse_len < buff_len ){
 				++result;
+				++parse_len;
 			}
-
 			++result;
+			++parse_len;
 
-			while(isspace(*result)){
+			while(isspace(*result) && parse_len < buff_len){
 				++result;
+				++parse_len;
 			}
 
 			int year = 0;
-			while (isdigit(*result))
-			{
+			while (isdigit(*result) && parse_len < buff_len){
 				year = year * 10 + (*result  - '0');
-				/* code */
+				++result;
+				++parse_len;
 			}
+
 			if(year != 0 && year < 9999){ 
 				year_ = year;
 			}
@@ -167,14 +174,11 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 	} else {
 		const char *p = (const char *)ols_txt->buff;
 		
-		size_t buff_len = ols_txt->len;
-        
-		size_t parse_len = 0;
 		//05-22 11:17:45.265  3006 16061 V DSVFSALib:
 		if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
 		
 			char time_buf[64] = {'\0'};
-			sprintf(time_buf, "%d", year_);
+			sprintf(time_buf, "%d-", year_);
 	
 			str_strncat(time_buf,p,18);
 			int64_t sec;
@@ -272,8 +276,6 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			if(parse_len >= buff_len || !isalpha(*p)){
 				return;
 			}			
-	
-			//char tag[64] = {'\0'};
 
 			const char *tag_beg = p;
 
@@ -281,12 +283,15 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			while(*p != ':' && parse_len < buff_len && tag_len < 256){
 				parse_len++;
 				tag_len++;
+				p++;
 			}
 
 			if(parse_len >= buff_len){
 				return;
 			}
 			
+			ols_txt->data_offset = parse_len;
+
 			if(*p == ':') --p;
 
 			while(tag_len > 0 && isspace(*p)){
@@ -295,7 +300,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			dstr_ncopy(&ols_txt->tag,tag_beg,tag_len);
-
+			
 			for (int i = 0; i < process_->context.numsrcpads; ++i) {
 				ols_pad_t *pad = process_->context.srcpads.array[i];
 			

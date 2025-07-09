@@ -398,10 +398,6 @@ typedef enum {
 
 /* creating pads */
 ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction);
-// GstPad*			gst_pad_new_from_template
-// (GstPadTemplate *templ, const gchar *name); GstPad*
-// gst_pad_new_from_static_template	(GstStaticPadTemplate *templ, const
-// gchar *name);
 
 
 void ols_pad_destory( ols_pad_t *pad) ;

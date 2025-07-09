@@ -5,10 +5,10 @@ def printHello(my_str):
     print(my_str)
     #sys.stderr("python system print error")
 
-def AdditionFc(a, b):
-    print("Now is in python module")
-    print("{} + {} = {}".format(a, b, a+b))
-    return a + b    
+def AdditionFc(timeStamp, pid,tid,log_lv,tag_str , log_str):
+    print("Now is in python module tag ",tag_str, "  val str ",log_str)
+    print("{} + {} + {} + {} = {}".format(timeStamp, pid,tid,log_lv, timeStamp+pid + tid + log_lv))
+    return timeStamp+pid + tid + log_lv
 
 
 def OnRcvLine(line):

@@ -131,8 +131,6 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
     goto eos;
   }
 
-  // ols_txt->file = ;
-
   ols_txt->line = line_cnt;
   ols_txt->len = size;
 
