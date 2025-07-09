@@ -23,8 +23,14 @@ struct XmlOutput {
 
   /* --------------------------- */
 
-  inline XmlOutput(ols_output_t *process, ols_data_t *settings)
-      : output_(process) {}
+	tinyxml2::XMLElement* infos_ = nullptr;
+
+	tinyxml2::XMLElement* applications_ = nullptr;
+
+	tinyxml2::XMLElement* apps_ = nullptr;
+
+
+	/* --------------------------- */
 
   inline ~XmlOutput() {}
 
