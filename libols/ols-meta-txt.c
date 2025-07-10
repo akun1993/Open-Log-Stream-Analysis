@@ -65,7 +65,6 @@ ols_meta_txt_init (ols_meta_txt_t * txt_file,size_t buff_size)
   dstr_init(&txt_file->file);
   dstr_init(&txt_file->tag);
       
-    
   if(buff_size > 0){
     txt_file->buff = bzalloc(buff_size);
     txt_file->capacity = buff_size;
