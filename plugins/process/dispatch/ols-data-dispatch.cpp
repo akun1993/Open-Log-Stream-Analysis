@@ -134,7 +134,7 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 
 void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
-	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
+	ols_meta_txt_t * ols_txt = (ols_meta_txt_t *) buffer->meta;
 	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
 
 	size_t buff_len = ols_txt->len;

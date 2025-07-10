@@ -1,6 +1,7 @@
 #include "ols-mini-object.h"
 #include "util/threading.h"
 #include "util/base.h"
+#include "util/debug.h"
 
 #define SHARE_ONE (1 << 16)
 #define SHARE_TWO (2 << 16)
@@ -238,7 +239,7 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
      * want to free the instance anymore */
     if (do_free) {
 
-      blog(LOG_INFO, "lockstate  %d lock mask %d ", mini_object->lockstate,LOCK_MASK);
+      blog(LOG_INFO, "lockstate  %zd lock mask %d ", mini_object->lockstate,LOCK_MASK);
       /* there should be no outstanding locks */
       return_if_fail((os_atomic_load_long(&mini_object->lockstate) & LOCK_MASK) < 4);
  

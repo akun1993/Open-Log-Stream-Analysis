@@ -17,26 +17,31 @@ using namespace std;
   blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
 struct XmlOutput {
-  ols_output_t *output_ = nullptr;
-  tinyxml2::XMLDocument xmldoc_;
-  tinyxml2::XMLElement *root_ = nullptr;
+   ols_output_t *output_ = nullptr;
+   tinyxml2::XMLDocument xmldoc_;
+   tinyxml2::XMLElement *root_ = nullptr;
 
-  /* --------------------------- */
+   tinyxml2::XMLElement* infos_ = nullptr;
 
-	tinyxml2::XMLElement* infos_ = nullptr;
+   tinyxml2::XMLElement* applications_ = nullptr;
 
-	tinyxml2::XMLElement* applications_ = nullptr;
-
-	tinyxml2::XMLElement* apps_ = nullptr;
+   tinyxml2::XMLElement* apps_ = nullptr;
 
 
 	/* --------------------------- */
+
+
+	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
+	: output_(output) {
+		update( settings);
+		initOutfile();
+	}
 
   inline ~XmlOutput() {}
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-  void Update(ols_data_t *settings);
+  void update(ols_data_t *settings);
 
   ols_pad_t *createRecvPad(const char *caps);
 
@@ -83,7 +88,7 @@ ols_pad_t * XmlOutput::createRecvPad(const char *caps){
 
 void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
-	ols_txt_file_t * meta_txt = (ols_txt_file_t *) buffer->meta;
+	ols_meta_txt_t * meta_txt = (ols_meta_txt_t *) buffer->meta;
 
 	ols_meta_result *meta_result = buffer->result;
 
@@ -118,7 +123,7 @@ void XmlOutput::initOutfile(){
 
 }
 
-void XmlOutput::Update(ols_data_t *settings)
+void XmlOutput::update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
 
@@ -176,8 +181,8 @@ bool ols_module_load(void)
 	};
 
 
-	si.create = [](ols_data_t *settings, ols_output_t *process) {
-		return (void *)new XmlOutput(process, settings);
+	si.create = [](ols_data_t *settings, ols_output_t *output) {
+		return (void *)new XmlOutput(output, settings);
 	};
 
 	si.destroy = [](void *data) {
@@ -194,7 +199,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<XmlOutput *>(data)->Update(settings);
+		reinterpret_cast<XmlOutput *>(data)->update(settings);
 	};
 
 	ols_register_output(&si);

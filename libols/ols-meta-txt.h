@@ -37,11 +37,11 @@ EXPORT ols_meta_txt_t *ols_meta_txt_new_with_buffer(size_t buf_size);
 
 /* refcounting */
 static inline ols_meta_txt_t *ols_meta_txt_ref(ols_meta_txt_t *buf) {
-  return (ols_meta_txt_t *)ols_mini_object_ref(OLS_MINI_OBJECT_CAST(buf));
+  return (ols_meta_txt_t *)ols_meta_ref(OLS_META_CAST(buf));
 }
 
 static inline void ols_meta_txt_unref(ols_meta_txt_t *buf) {
-  ols_mini_object_unref(OLS_MINI_OBJECT_CAST(buf));
+  ols_meta_unref(OLS_META_CAST(buf));
 }
 
 /* copy meta txt */
@@ -64,10 +64,10 @@ typedef enum {
 } OlsMetaTxtCopyFlags;
 
 static inline ols_meta_txt_t *ols_meta_txt_copy(const ols_meta_txt_t *buf) {
-  return OLS_META_TXT(ols_mini_object_copy(OLS_MINI_OBJECT_CONST_CAST(buf)));
+  return OLS_META_TXT(ols_meta_copy(OLS_META_CAST(buf)));
 }
 
-ols_meta_txt_t *ols_meta_txt_copy_deep(const ols_meta_txt_t *buf);
+//ols_meta_txt_t *ols_meta_txt_copy_deep(const ols_meta_txt_t *buf);
 
 #ifdef __cplusplus
 }

@@ -33,7 +33,7 @@ extern void ols_lua_script_unload(ols_script_t *s);
 extern void ols_lua_script_destroy(ols_script_t *s);
 extern void ols_lua_load(void);
 extern void ols_lua_unload(void);
-extern struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_txt_file_t *info);
+extern struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_meta_txt_t *info);
 
 #endif
 
@@ -41,7 +41,7 @@ extern struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_txt_file_t 
 extern ols_script_t *ols_python_script_create(const char *path,
                                               ols_data_t *settings);
 
-extern struct ols_meta_result ols_python_parse_data(ols_script_t *s,ols_txt_file_t *info);
+extern struct ols_meta_result ols_python_parse_data(ols_script_t *s,ols_meta_txt_t *info);
 extern bool ols_python_script_load(ols_script_t *s);
 extern void ols_python_script_unload(ols_script_t *s);
 extern void ols_python_script_destroy(ols_script_t *s);
@@ -252,7 +252,7 @@ ols_script_t *ols_script_create(const char *path, ols_data_t *settings) {
   return script;
 }
 
-struct ols_meta_result ols_scripting_prase(ols_script_t *script,ols_txt_file_t  *txt_info) {
+struct ols_meta_result ols_scripting_prase(ols_script_t *script,ols_meta_txt_t  *txt_info) {
 
   struct ols_meta_result result;
   memset(&result, 0, sizeof(result));

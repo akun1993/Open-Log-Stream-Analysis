@@ -359,7 +359,7 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
-struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_txt_file_t * txt_info) {
+struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_info) {
   struct ols_meta_result result;
   memset(&result, 0, sizeof(result));
 

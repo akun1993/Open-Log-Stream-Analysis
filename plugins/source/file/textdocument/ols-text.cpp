@@ -123,10 +123,10 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
   // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
 
-  ols_txt_file_t *ols_txt = ols_txt_file_with_buffer(1024);
+  ols_meta_txt_t *ols_txt = ols_meta_txt_new_with_buffer(1024);
 
   errno = 0;
-  ssize_t size = os_fgetline(file, (char *)OSL_TXTFILE_BUFF(ols_txt),OSL_TXTFILE_BUFF_CAPACITY(ols_txt));
+  ssize_t size = os_fgetline(file, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
   if (UNLIKELY(size == -1)) {
     goto eos;
   }

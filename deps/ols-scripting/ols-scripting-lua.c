@@ -343,7 +343,7 @@ void ols_lua_script_destroy(ols_script_t *s) {
   }
 }
 
-struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_txt_file_t * txt_info) {
+struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_meta_txt_t * txt_info) {
   struct ols_lua_script *lua_script = (struct ols_lua_script *)s;
   #if 0
   lua_pushstring(lua_script->script, data);

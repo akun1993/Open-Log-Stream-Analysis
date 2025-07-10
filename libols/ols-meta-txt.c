@@ -6,11 +6,10 @@
 static ols_meta_txt_t *
 _ols_meta_txt_copy (const ols_meta_txt_t * txt_file){
   ols_meta_txt_t *new_txt_file;
-  uint32_t i, n;
 
   //g_return_val_if_fail (GST_IS_CAPS (caps), NULL);
 
-  new_txt_file = ols_txt_file_new_empty ();
+  new_txt_file = ols_meta_txt_new_empty ();
   new_txt_file->buff = txt_file->buff;
   new_txt_file->capacity = txt_file->capacity;
   new_txt_file->len = txt_file->len;
@@ -74,14 +73,12 @@ ols_meta_txt_init (ols_meta_txt_t * txt_file,size_t buff_size)
 }
 
 /**
- * gst_caps_new_empty:
+ * ols_meta_txt_new_empty:
  *
- * Creates a new #GstCaps that is empty.  That is, the returned
- * #GstCaps contains no media formats.
- * The #GstCaps is guaranteed to be writable.
- * Caller is responsible for unreffing the returned caps.
+ * Creates a new #ols_meta_txt_t that is empty.  That is, the returned
+ * #ols_meta_txt_t contains no data .
  *
- * Returns: (transfer full): the new #GstCaps
+ * Returns: (transfer full): the new #ols_meta_txt_t
  */
 ols_meta_txt_t *
 ols_meta_txt_new_empty (void)
@@ -93,7 +90,7 @@ ols_meta_txt_new_empty (void)
   ols_meta_txt_init (txt_file,0);
 
 #ifdef DEBUG_REFCOUNT
-  GST_CAT_TRACE (GST_CAT_CAPS, "created caps %p", caps);
+  blog (LOG_INFO, "created meta_txt %p", txt_file);
 #endif
 
   return txt_file;
@@ -108,7 +105,7 @@ ols_meta_txt_t *ols_meta_txt_new_with_buffer (size_t buf_size){
   ols_meta_txt_init (txt_file,buf_size);
 
 #ifdef DEBUG_REFCOUNT
-  GST_CAT_TRACE (GST_CAT_CAPS, "created caps %p", caps);
+  blog (LOG_INFO, "created meta_txt %p", txt_file);
 #endif
 
   return txt_file;

@@ -33,6 +33,12 @@ struct TagStatistics {
 
   uint32_t lineCnt;
   uint32_t bytes;
+  
+};
+
+struct TimeStatistics {
+
+
 };
 
 struct DataStatistics {
@@ -121,7 +127,7 @@ ols_pad_t *DataStatistics::requestNewPad(const char *name, const char *caps)
 
 void DataStatistics::onDataBuff(ols_buffer_t *buffer){
 
-	ols_txt_file_t * ols_txt = (ols_txt_file_t *) buffer->meta;
+	ols_meta_txt_t * ols_txt = (ols_meta_txt_t *) buffer->meta;
 	
 
 }
