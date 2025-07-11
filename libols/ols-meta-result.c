@@ -1,21 +1,8 @@
 #include "ols-meta-result.h"
 #include "util/base.h"
 #include "util/bmem.h"
+#include "util/darray.h"
 
-
-static ols_meta_result_t *
-_ols_meta_result_copy (const ols_meta_result_t * meta_result){
-  
-  ols_meta_result_t *new_meta_result;
-
-  new_txt_file = ols_txt_file_new_empty ();
-
-  new_txt_file->tag = txt_file->tag;
-
-  blog (LOG_INFO, "doing copy %p -> %p",txt_file, new_txt_file);
-
-  return new_txt_file;
-}
 
 /* creation/deletion */
 static void
@@ -31,15 +18,13 @@ _ols_meta_result_free (ols_meta_result_t * meta_result)
   bfree(meta_result);
 }
 
-static void
-ols_meta_result_init (ols_meta_result_t * meta_result)
+static void ols_meta_result_init (ols_meta_result_t * meta_result)
 {
-  ols_mini_object_init (OLS_MINI_OBJECT_CAST (meta_result), 0, 1,
-      (ols_mini_object_copy_function) _ols_meta_result_copy, NULL,
+  ols_mini_object_init (OLS_MINI_OBJECT_CAST (meta_result), 0, 1,NULL, NULL,
       (ols_mini_object_free_function) _ols_meta_result_free);
 
   dstr_init(&meta_result->tag);
-  da_init(&meta_result->info);
+  da_init(meta_result->info);
 
 }
 

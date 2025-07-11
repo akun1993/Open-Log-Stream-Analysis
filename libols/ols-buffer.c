@@ -51,7 +51,6 @@ static bool _ols_buffer_dispose(ols_buffer_t *buffer) {
   UNUSED_PARAMETER(buffer);
   /* keep the buffer alive */
   // /* return the buffer to the pool */
-  // GST_CAT_LOG(GST_CAT_BUFFER, "release %p to pool %p", buffer, pool);
 
 
   return true;
@@ -62,7 +61,7 @@ static ols_buffer_t *ols_buffer_copy_with_flags(const ols_buffer_t *buffer,
   UNUSED_PARAMETER(flags);
   ols_buffer_t *copy;
 
-  //return_val_if_fail (buffer != NULL, NULL);
+  return_val_if_fail (buffer != NULL, NULL);
 
   /* create a fresh new buffer */
   copy = ols_buffer_new();

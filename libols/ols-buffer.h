@@ -66,6 +66,15 @@ static inline void ols_buffer_unref(ols_buffer_t *buf) {
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(buf));
 }
 
+/* lock / unlock */
+static inline bool  ols_buffer_lock (ols_buffer_t *buf, OlsLockFlags flags){
+  return ols_mini_object_lock(OLS_MINI_OBJECT_CAST(buf),flags);
+}
+
+static inline void  ols_buffer_unlock (ols_buffer_t *buf, OlsLockFlags flags){
+  ols_mini_object_unlock(OLS_MINI_OBJECT_CAST(buf),flags);
+}
+
 /* copy buffer */
 
 /**

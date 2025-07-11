@@ -52,19 +52,14 @@ struct ols_meta {
 
 /* refcounting */
 /**
- * gst_caps_ref:
- * @caps: the #GstCaps to reference
+ * ols_meta_ref:
+ * @meta: the #ols_meta_t to reference
  *
- * Add a reference to a #GstCaps object.
+ * Add a reference to a #ols_meta_t object.
  *
- * From this point on, until the caller calls gst_caps_unref() or
- * gst_caps_make_writable(), it is guaranteed that the caps object will not
- * change. This means its structures won't change, etc. To use a #GstCaps
- * object, you must always have a refcount on it -- either the one made
- * implicitly by e.g. gst_caps_new_simple(), or via taking one explicitly with
- * this function.
+ * From this point on, until the caller calls ols_meta_unref() 
  *
- * Returns: the same #GstCaps object.
+ * Returns: the same #ols_meta_t object.
  */
 static inline ols_meta_t *
 ols_meta_ref (ols_meta_t * meta)
@@ -73,10 +68,10 @@ ols_meta_ref (ols_meta_t * meta)
 }
 
 /**
- * gst_caps_unref:
- * @caps: a #GstCaps.
+ * ols_meta_unref:
+ * @meta: a #ols_meta_t.
  *
- * Unref a #GstCaps and and free all its structures and the
+ * Unref a #ols_meta_t and and free all its structures and the
  * structures' values when the refcount reaches 0.
  */
 static inline void
@@ -85,21 +80,30 @@ ols_meta_unref (ols_meta_t * meta)
   ols_mini_object_unref (OLS_MINI_OBJECT_CAST (meta));
 }
 
-/* copy caps */
+
+/* lock / unlock */
+static inline bool  ols_meta_lock (ols_meta_t *meta, OlsLockFlags flags){
+  return ols_mini_object_lock(OLS_MINI_OBJECT_CAST(meta),flags);
+}
+
+static inline void  ols_meta_unlock (ols_meta_t *meta, OlsLockFlags flags){
+  ols_mini_object_unlock(OLS_MINI_OBJECT_CAST(meta),flags);
+}
+
+/* copy meta */
 /**
- * gst_caps_copy:
- * @caps: a #GstCaps.
+ * ols_meta_copy:
+ * @meta: a #ols_meta_t.
  *
- * Creates a new #GstCaps as a copy of the old @caps. The new caps will have a
+ * Creates a new #ols_meta_t as a copy of the old @meta. The new caps will have a
  * refcount of 1, owned by the caller. The structures are copied as well.
  *
- * Note that this function is the semantic equivalent of a gst_caps_ref()
- * followed by a gst_caps_make_writable(). If you only want to hold on to a
- * reference to the data, you should use gst_caps_ref().
+ * Note that this function is the semantic equivalent of a ols_meta_ref()
+ * . If you only want to hold on to a reference to the data, you should use ols_meta_ref().
  *
- * When you are finished with the caps, call gst_caps_unref() on it.
+ * When you are finished with the caps, call ols_meta_unref() on it.
  *
- * Returns: the new #GstCaps
+ * Returns: the new #ols_meta_t
  */
 static inline ols_meta_t *
 ols_meta_copy (const ols_meta_t * meta)

@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-
 #define OLS_META_RESULT_CAST(obj) ((ols_meta_result_t *)(obj))
 
 typedef struct ols_meta_result ols_meta_result_t;

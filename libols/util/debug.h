@@ -5,10 +5,10 @@
 
 #ifdef DISABLE_CHECKS
 
-#define return_if_fail(expr)			G_STMT_START{ (void)0; }G_STMT_END
-#define return_val_if_fail(expr,val)		G_STMT_START{ (void)0; }G_STMT_END
-#define return_if_reached()			G_STMT_START{ return; }G_STMT_END
-#define return_val_if_reached(val)		G_STMT_START{ return (val); }G_STMT_END
+#define return_if_fail(expr)			O_STMT_START{ (void)0; }O_STMT_END
+#define return_val_if_fail(expr,val)		O_STMT_START{ (void)0; }O_STMT_END
+#define return_if_reached()			O_STMT_START{ return; }O_STMT_END
+#define return_val_if_reached(val)		O_STMT_START{ return (val); }O_STMT_END
 
 #else /* !G_DISABLE_CHECKS */
 

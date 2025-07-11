@@ -57,7 +57,7 @@ void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
 ols_mini_object_t *ols_mini_object_copy(const ols_mini_object_t *mini_object) {
   ols_mini_object_t *copy;
 
-  // g_return_val_if_fail(mini_object != NULL, NULL);
+  return_val_if_fail(mini_object != NULL, NULL);
 
   if (mini_object->copy)
     copy = mini_object->copy(mini_object);

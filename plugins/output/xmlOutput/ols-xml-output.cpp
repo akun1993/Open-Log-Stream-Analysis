@@ -131,7 +131,6 @@ void XmlOutput::update(ols_data_t *settings)
 }
 
 
-
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int
 
 

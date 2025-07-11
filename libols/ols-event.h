@@ -94,11 +94,6 @@ typedef enum {
  * @OLS_EVENT_EOS: End-Of-Stream. No more data is to be expected to follow
  *                 without either a STREAM_START event, or a FLUSH_STOP and a
  * SEGMENT event.
- * @OLS_EVENT_GAP: Marks a gap in the datastream.
-
- * @OLS_EVENT_QOS: A quality message. Used to indicate to upstream elements
- *                 that the downstream elements should adjust their processing
- *                 rate.
  *
  * The custom event types can be used for private messages between elements
  * that can't be expressed using normal
@@ -122,16 +117,6 @@ typedef enum {
 
   OLS_EVENT_EOS =
       OLS_EVENT_MAKE_TYPE(40, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED)),
-
-  // OLS_EVENT_TAG =
-  //     OLS_EVENT_MAKE_TYPE(80, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED) |
-  //                                 _FLAG(STICKY) | _FLAG(STICKY_MULTI)),
-  // OLS_EVENT_BUFFERSIZE = OLS_EVENT_MAKE_TYPE(
-  //     90, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED) | _FLAG(STICKY)),
-  // OLS_EVENT_CAPS = OLS_EVENT_MAKE_TYPE(
-  //     50, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED) | _FLAG(STICKY)),
-
-  /* upstream events */
 
 } ols_event_type;
 

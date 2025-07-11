@@ -162,13 +162,7 @@ ols_mini_object_t * ols_mini_object_copy(const ols_mini_object_t *mini_object) ;
 
 
 
-// void            gst_mini_object_set_qdata       (GstMiniObject *object, GQuark quark,
-//                                                  gpointer data, GDestroyNotify destroy);
-
-// gpointer        gst_mini_object_get_qdata       (GstMiniObject *object, GQuark quark);
-
-
-// gpointer        gst_mini_object_steal_qdata     (GstMiniObject *object, GQuark quark);
+// pointer        ols_mini_object_steal_qdata     (GstMiniObject *object, GQuark quark);
 
 
 // bool        ols_mini_object_replace         (ols_mini_object_t **olddata, ols_mini_object_t *newdata);

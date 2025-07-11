@@ -2,63 +2,30 @@
 #include "util/base.h"
 #include "util/bmem.h"
 
-
-static ols_meta_txt_t *
-_ols_meta_txt_copy (const ols_meta_txt_t * txt_file){
-  ols_meta_txt_t *new_txt_file;
-
-  //g_return_val_if_fail (GST_IS_CAPS (caps), NULL);
-
-  new_txt_file = ols_meta_txt_new_empty ();
-  new_txt_file->buff = txt_file->buff;
-  new_txt_file->capacity = txt_file->capacity;
-  new_txt_file->len = txt_file->len;
-
-  new_txt_file->line = txt_file->line;
-  new_txt_file->file = txt_file->file;
-
-
-  new_txt_file->log_lv = txt_file->log_lv;
-  new_txt_file->pid = txt_file->pid;
-  new_txt_file->tid = txt_file->tid;
-  new_txt_file->msec = txt_file->msec;
-  new_txt_file->tag = txt_file->tag;
-
- // GST_CAPS_FLAGS (newcaps) = GST_CAPS_FLAGS (caps);
- // n = GST_CAPS_LEN (caps);
-
-  blog (LOG_INFO, "doing copy %p -> %p",txt_file, new_txt_file);
-
-  return new_txt_file;
-}
-
 /* creation/deletion */
 static void
 _ols_meta_txt_free (ols_meta_txt_t * txt_file)
 {
-
-  /* This can be used to get statistics about caps sizes */
-
-  /*GST_CAT_INFO (GST_CAT_CAPS, "caps size: %d", len); */
+  /* This can be used to get statistics about meta_txt sizes */
 
 #ifdef DEBUG_REFCOUNT
-  GST_CAT_TRACE (GST_CAT_CAPS, "freeing caps %p", caps);
+  blog (LOG_INFO, "freeing ols_meta_txt %p", txt_file);
 #endif
- // bfree (sizeof (GstCapsImpl), caps);
- if(txt_file->buff){
-  bfree(txt_file->buff);
-  txt_file->capacity = 0;
- }
- txt_file->len = 0;
- dstr_free(&txt_file->file);
- dstr_free(&txt_file->tag);
+
+  if(txt_file->buff){
+    bfree(txt_file->buff);
+    txt_file->capacity = 0;
+  }
+  txt_file->len = 0;
+  dstr_free(&txt_file->file);
+  dstr_free(&txt_file->tag);
+  bfree(txt_file);
 }
 
 static void
 ols_meta_txt_init (ols_meta_txt_t * txt_file,size_t buff_size)
 {
-  ols_mini_object_init (OLS_MINI_OBJECT_CAST (txt_file), 0, 1,
-      (ols_mini_object_copy_function) _ols_meta_txt_copy, NULL,
+  ols_mini_object_init (OLS_MINI_OBJECT_CAST (txt_file), 0, 1, NULL, NULL,
       (ols_mini_object_free_function) _ols_meta_txt_free);
 
   dstr_init(&txt_file->file);
@@ -67,9 +34,7 @@ ols_meta_txt_init (ols_meta_txt_t * txt_file,size_t buff_size)
   if(buff_size > 0){
     txt_file->buff = bzalloc(buff_size);
     txt_file->capacity = buff_size;
-
   }
-
 }
 
 /**
