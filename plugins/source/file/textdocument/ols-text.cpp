@@ -5,6 +5,7 @@
 #include <memory>
 #include <ols-module.h>
 #include <string>
+#include <vector>
 #include <sys/stat.h>
 #include <util/base.h>
 #include <util/platform.h>
@@ -52,19 +53,24 @@ static inline wstring to_wide(const char *utf8) {
 struct TextSource {
   ols_source_t *source_ = nullptr;
 
-  bool read_from_file = false;
-  string filename;
-  string uri;
-  FILE *file = nullptr;
+  bool read_from_file_ = false;
+  
+  string base_dir_;
+  string inner_dir_;
+  std::string file_wildcard_;
+  std::vector<std::string> files_;
+  string  curr_filename_;
+  FILE   *curr_file_ = nullptr;
   uint64_t line_cnt = 0;
-  wstring text;
+
+  uint64_t begin_time_;
+  uint64_t end_time_;
 
   /* --------------------------- */
 
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
     ols_source_update(source, settings);
-    filename = "../../../../../test/sv_user.log.00000356";
   }
 
   inline ~TextSource() {}
@@ -110,14 +116,42 @@ static time_t get_modified_timestamp(const char *filename) {
 // }
 
 void TextSource::LoadFileText() {
-  BPtr<char> file_text = os_quick_read_utf8_file(filename.c_str());
+  BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
   // text = to_wide(GetMainString(file_text));
 
-  if (!text.empty() && text.back() != '\n')
-    text.push_back('\n');
+  // if (!text.empty() && text.back() != '\n')
+  //   text.push_back('\n');
 }
 
-void TextSource::Update(ols_data_t *settings) { UNUSED_PARAMETER(settings); }
+void TextSource::Update(ols_data_t *settings) { 
+
+	if (ols_data_get_string(settings, "base_dir") != NULL ) {
+
+    
+    base_dir_ = ols_data_get_string(settings, "base_dir");
+    // = 
+    
+    if (ols_data_get_string(settings, "inner_dir") != NULL ) {
+
+      inner_dir_ = ols_data_get_string(settings, "inner_dir");
+    } 
+
+    if (ols_data_get_string(settings, "file_name_wildcard") != NULL ) {
+
+      file_wildcard_ = ols_data_get_string(settings, "file_name_wildcard");
+    } 
+
+	}
+
+  if (ols_data_get_string(settings, "begin_time") != NULL ) {
+    
+	} 
+
+  if (ols_data_get_string(settings, "end_time") != NULL ) {
+    
+	} 
+
+}
 
 int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
@@ -126,7 +160,7 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
   ols_meta_txt_t *ols_txt = ols_meta_txt_new_with_buffer(1024);
 
   errno = 0;
-  ssize_t size = os_fgetline(file, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
+  ssize_t size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
   if (UNLIKELY(size == -1)) {
     goto eos;
   }
@@ -154,19 +188,19 @@ bool TextSource::FileSrcStart() {
 
   struct stat stat_results;
 
-  if (filename.empty())
+  if (curr_filename_.empty())
     goto no_filename;
 
-  blog(LOG_INFO, "opening file %s", filename.c_str());
+  blog(LOG_INFO, "opening file %s", curr_filename_.c_str());
 
   /* open the file */
-  file = os_fopen(filename.c_str(), "rb");
+  curr_file_ = os_fopen(curr_filename_.c_str(), "rb");
 
-  if (file == NULL)
+  if (curr_file_ == NULL)
     goto open_failed;
 
   /* check if it is a regular file, otherwise bail out */
-  if (os_stat(filename.c_str(), &stat_results) < 0)
+  if (os_stat(curr_filename_.c_str(), &stat_results) < 0)
     goto no_stat;
 
   if (S_ISDIR(stat_results.st_mode))
@@ -186,38 +220,38 @@ no_filename: {
 open_failed: {
   switch (errno) {
   case ENOENT:
-    blog(LOG_ERROR, "No such file \"%s\"", filename.c_str());
+    blog(LOG_ERROR, "No such file \"%s\"", curr_filename_.c_str());
     break;
   default:
     blog(LOG_ERROR, ("Could not open file \"%s\" for reading."),
-         filename.c_str());
+    curr_filename_.c_str());
     break;
   }
   goto error_exit;
 }
 no_stat: {
-  blog(LOG_ERROR, ("Could not get info on \"%s\"."), filename.c_str());
+  blog(LOG_ERROR, ("Could not get info on \"%s\"."), curr_filename_.c_str());
   goto error_close;
 }
 
 was_directory: {
-  blog(LOG_ERROR, "\"%s\" is a directory.", filename.c_str());
+  blog(LOG_ERROR, "\"%s\" is a directory.", curr_filename_.c_str());
   goto error_close;
 }
 
 was_socket: {
-  blog(LOG_ERROR, ("File \"%s\" is a socket."), filename.c_str());
+  blog(LOG_ERROR, ("File \"%s\" is a socket."), curr_filename_.c_str());
   goto error_close;
 }
 
 lseek_wonky: {
   blog(LOG_ERROR, "Could not seek back to zero after seek test in file \"%s\"",
-       filename.c_str());
+    curr_filename_.c_str());
   goto error_close;
 }
 
 error_close:
-  fclose(file);
+  fclose(curr_file_);
 error_exit:
   return false;
 }
@@ -225,9 +259,10 @@ error_exit:
 /* unmap and close the file */
 bool TextSource::FileSrcStop() {
   /* close the file */
-  fclose(file);
+  if(curr_file_)
+    fclose(curr_file_);
   /* zero out a lot of our state */
-  file = NULL;
+  curr_file_ = NULL;
   return true;
 }
 
@@ -245,10 +280,10 @@ static ols_properties_t *get_properties(void *data) {
   ols_properties_t *props = ols_properties_create();
   ols_property_t *p;
 
-  if (s && !s->filename.empty()) {
+  if (s && !s->curr_filename_.empty()) {
     const char *slash;
 
-    path = s->filename;
+    path = s->curr_filename_;
     replace(path.begin(), path.end(), '\\', '/');
     slash = strrchr(path.c_str(), '/');
     if (slash)
