@@ -90,7 +90,7 @@ struct TextSource {
 
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
-    ols_source_update(source, settings);
+      Update(settings);
   }
 
   inline ~TextSource() {}
