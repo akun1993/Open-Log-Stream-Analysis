@@ -12,6 +12,7 @@
 #include <util/task.h>
 #include <util/util.hpp>
 #include <util/pipe.h>
+#include <util/str-util.h>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
@@ -35,6 +36,9 @@ using namespace std;
     val = max_val;
 #endif
 
+
+#define UNKNOW_FILE_EXT "unknow"
+
 /* ------------------------------------------------------------------------- */
 
 /* clang-format off */
@@ -52,6 +56,19 @@ static inline wstring to_wide(const char *utf8) {
     os_utf8_to_wcs(utf8, 0, &text[0], len + 1);
 
   return text;
+}
+
+static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz",".gz"};
+
+const char * get_matched_extension(const char *file_name){
+
+  for(size_t i = 0; i < sizeof(supported_ext)/sizeof(supported_ext[0]); ++i){
+
+    if(str_endwith(file_name,supported_ext[i])){
+      return supported_ext[i];
+    }
+  }
+  return UNKNOW_FILE_EXT;
 }
 
 struct TextSource {
@@ -85,6 +102,10 @@ struct TextSource {
   /* unmap and close the file */
   bool FileSrcStop();
 
+  bool IsSupportedCompressedFile(const char * file);
+
+  void LoadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern);
+
   inline void Update(ols_data_t *settings);
 };
 
@@ -94,6 +115,7 @@ static time_t get_modified_timestamp(const char *filename) {
     return -1;
   return stats.st_mtime;
 }
+
 
 // const char *TextSource::GetMainString(const char *str)
 // {
@@ -199,6 +221,75 @@ eos: {
 }
 }
 
+void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern){
+  os_dir_t *dir = os_opendir(dest_dir.c_str());
+
+  if (dir) {
+  
+    struct os_dirent *ent;
+  
+    /* Compile the pattern. */
+    int error_number;
+    PCRE2_SIZE error_offset;
+    pcre2_code *re = pcre2_compile(
+        match_pattern,               /* the pattern */
+        PCRE2_ZERO_TERMINATED, /* indicates pattern is zero-terminated */
+        0,                     /* default options */
+        &error_number,         /* for error number */
+        &error_offset,         /* for error offset */
+        NULL);                 /* use default compile context */
+    if (re == NULL) {
+      blog(LOG_ERROR, "Invalid pattern: %s\n", match_pattern);
+      os_closedir(dir);
+      return ;
+    }
+  
+    /* Match the pattern against the subject text. */
+    pcre2_match_data *match_data =
+        pcre2_match_data_create_from_pattern(re, NULL);
+  
+    for (;;) {
+      const char *ext;
+  
+      ent = os_readdir(dir);
+      if (!ent)
+        break;
+      if (ent->directory)
+        continue;
+  
+      int rc = pcre2_match(
+          re,                   /* the compiled pattern */
+          ( PCRE2_SPTR8)ent->d_name,              /* the subject text */
+          strlen(ent->d_name),      /* the length of the subject */
+          0,                    /* start at offset 0 in the subject */
+          0,                    /* default options */
+          match_data,           /* block for storing the result */
+          NULL);                /* use default match context */
+  
+      /* Print the match result. */
+      if (rc == PCRE2_ERROR_NOMATCH) {
+        blog(LOG_DEBUG,"No match : %s\n",ent->d_name);
+      } else if (rc < 0) {
+        blog(LOG_ERROR, "Matching error\n");
+      } else {
+          PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+          blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),
+          ent->d_name + ovector[0]);
+
+          std::string file_path = dest_dir;
+          file_path.append(ent->d_name);
+
+          files_.push_back(file_path);
+      }
+    }
+  
+    pcre2_match_data_free(match_data);   /* Free resources */
+    pcre2_code_free(re);        
+  
+    os_closedir(dir);
+  } 
+}
+
 /* open the file, necessary to go to READY state */
 bool TextSource::FileSrcStart() {
 
@@ -218,13 +309,13 @@ bool TextSource::FileSrcStart() {
   if (!S_ISDIR(stat_results.st_mode)){
 
     if(base_type_hint_.empty()){
-      file_ext = os_get_path_extension(base_file_.c_str());
+      file_ext = get_matched_extension(base_file_.c_str());
     } else {
       file_ext = base_type_hint_;
     }
 
-    if(file_ext.empty()){ //treat as a regular file 
-
+    if(file_ext == UNKNOW_FILE_EXT ){ //treat as a regular file 
+      blog(LOG_INFO,"Source file extension is NULL");
     } else {
       if(file_ext == "zip"){
 
@@ -247,11 +338,8 @@ bool TextSource::FileSrcStart() {
           while(os_process_pipe_read(pipe,buff,1024)){
             blog(LOG_INFO,"%s",buff);
           }
-
           os_process_pipe_destroy(pipe);
         }
-         
-
       } else  if(base_type_hint_ == "tar.gz"){
 
         os_process_pipe_t * pipe = os_process_pipe_create("tar -zxvf example.tar.gz -C destination_folder","r");
@@ -265,34 +353,16 @@ bool TextSource::FileSrcStart() {
 
       dest_dir.append("/").append(inner_dir_);
 
-      printf("dest is %s\n",dest_dir.c_str());
-      os_dir_t *dir = os_opendir(dest_dir.c_str());
+      blog(LOG_INFO,"dest is %s\n",dest_dir.c_str());
 
-      if (dir) {
-  
-        struct os_dirent *ent;
-
-        for (;;) {
-          const char *ext;
-
-          ent = os_readdir(dir);
-          if (!ent)
-            break;
-          if (ent->directory)
-            continue;
-
-          
-          std::string file_path = dest_dir.append(ent->d_name);
-
-          files_.push_back(file_path);
-        }
-
-
-        os_closedir(dir);
-      } 
+      LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str());
+      
     }
   } else {
-    base_file_.append("/").append(inner_dir_);
+    dest_dir = base_file_;
+    dest_dir.append("/").append(inner_dir_);
+    
+    LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str());
   }
 
   if (curr_filename_.empty())
@@ -373,6 +443,22 @@ bool TextSource::FileSrcStop() {
   curr_file_ = NULL;
   return true;
 }
+
+bool TextSource::IsSupportedCompressedFile(const char * file){
+ 
+  bool flag = false ;
+
+  for(size_t i = 0; i < sizeof(supported_ext)/sizeof(supported_ext[0]); ++i){
+
+    if(str_endwith(file,supported_ext[i])){
+      flag = true;
+      break;
+    }
+  }
+
+  return flag;
+} 
+
 
 #define ols_data_get_uint32 (uint32_t)ols_data_get_int
 

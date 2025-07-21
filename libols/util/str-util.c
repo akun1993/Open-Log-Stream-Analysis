@@ -1,5 +1,6 @@
 
 #include "str-util.h"
+#include <string.h>
 #include <ctype.h>
 
 int str_strncmp(const char *s1, const char *s2, size_t n) {
@@ -236,4 +237,12 @@ void str_rtrim(char *str, int len) {
     end--;
   // 在字符串末尾加上字符串结束符，覆盖最后一个非空格字符后的所有字符
   *(end + 1) = 0;
+}
+
+
+bool str_endwith(const char *str, const char *suffix) {
+    size_t len_str = strlen(str);
+    size_t len_suffix = strlen(suffix);
+    if (len_suffix > len_str) return 0; // 后缀比字符串还长，不可能匹配
+    return strcmp(str + len_str - len_suffix, suffix) == 0;
 }

@@ -12,6 +12,9 @@ EXPORT char *str_strncat(char *front, const char *back, size_t count);
 EXPORT char *str_ltrim(char *str);
 EXPORT void str_rtrim(char *str, int len);
 
+EXPORT bool str_endwith(const char *str, const char *suffix);
+
+
 #ifdef __cplusplus
 }
 #endif

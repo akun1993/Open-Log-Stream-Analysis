@@ -111,10 +111,9 @@ int main(int argc, char **argv) {
 
   ols_data_t * src_file_data = ols_data_create();
 
-  
-  ols_data_set_string(src_file_data,"base_file","/home/zkun/TBoxLog_20240116_132405.zip");
+  ols_data_set_string(src_file_data,"base_file","/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip");
   ols_data_set_string(src_file_data,"base_file_type_hint","zip");
-  ols_data_set_string(src_file_data,"inner_dir","ICMLog");
+  ols_data_set_string(src_file_data,"inner_dir","TBoxLog/log");
 
   ols_data_set_string(src_file_data,"file_name_wildcard","sv_user.log*");
 
