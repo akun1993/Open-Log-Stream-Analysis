@@ -109,7 +109,16 @@ int main(int argc, char **argv) {
   ols_scripting_load();
   printf("load script end\n");
 
-  ols_source_t *source = ols_source_create("text_file", "test_read", nullptr);
+  ols_data_t * src_file_data = ols_data_create();
+
+  
+  ols_data_set_string(src_file_data,"base_file","/home/zkun/TBoxLog_20240116_132405.zip");
+  ols_data_set_string(src_file_data,"base_file_type_hint","zip");
+  ols_data_set_string(src_file_data,"inner_dir","ICMLog");
+
+  ols_data_set_string(src_file_data,"file_name_wildcard","sv_user.log*");
+
+  ols_source_t *source = ols_source_create("text_file", "test_read", src_file_data);
 
   ols_process_t *dispatch =
       ols_process_create("data_dispatch", "test_dispatch", nullptr);  

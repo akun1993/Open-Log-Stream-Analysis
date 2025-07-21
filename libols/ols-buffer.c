@@ -1,5 +1,6 @@
 #include "ols-buffer.h"
 #include "ols-meta.h"
+#include "util/debug.h"
 
 static void _ols_buffer_free(ols_buffer_t *buffer);
 static ols_buffer_t *_ols_buffer_copy(const ols_buffer_t *buffer);

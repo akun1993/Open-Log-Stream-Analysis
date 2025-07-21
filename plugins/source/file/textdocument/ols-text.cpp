@@ -11,6 +11,10 @@
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
+#include <util/pipe.h>
+
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 using namespace std;
 
@@ -55,7 +59,8 @@ struct TextSource {
 
   bool read_from_file_ = false;
   
-  string base_dir_;
+  string base_file_;
+  string base_type_hint_;
   string inner_dir_;
   std::string file_wildcard_;
   std::vector<std::string> files_;
@@ -63,8 +68,6 @@ struct TextSource {
   FILE   *curr_file_ = nullptr;
   uint64_t line_cnt = 0;
 
-  uint64_t begin_time_;
-  uint64_t end_time_;
 
   /* --------------------------- */
 
@@ -125,42 +128,55 @@ void TextSource::LoadFileText() {
 
 void TextSource::Update(ols_data_t *settings) { 
 
-	if (ols_data_get_string(settings, "base_dir") != NULL ) {
+	if (ols_data_get_string(settings, "base_file") != NULL ) {
 
     
-    base_dir_ = ols_data_get_string(settings, "base_dir");
+    base_file_ = ols_data_get_string(settings, "base_file");
+    
+    blog(LOG_INFO, "base_file %s",ols_data_get_string(settings, "base_file"));
     // = 
+
+    if (ols_data_get_string(settings, "base_file_type_hint") != NULL ) {
+
+      base_type_hint_ = ols_data_get_string(settings, "base_file_type_hint");
+
+      blog(LOG_INFO, "base_type_hint %s",ols_data_get_string(settings, "base_file_type_hint"));
+    } 
+
     
     if (ols_data_get_string(settings, "inner_dir") != NULL ) {
 
       inner_dir_ = ols_data_get_string(settings, "inner_dir");
+
+      blog(LOG_INFO, "inner_dir %s",ols_data_get_string(settings, "inner_dir"));
     } 
 
     if (ols_data_get_string(settings, "file_name_wildcard") != NULL ) {
 
       file_wildcard_ = ols_data_get_string(settings, "file_name_wildcard");
+
+      blog(LOG_INFO, "file_wildcard  %s",ols_data_get_string(settings, "file_name_wildcard"));
     } 
 
 	}
 
-  if (ols_data_get_string(settings, "begin_time") != NULL ) {
-    
-	} 
-
-  if (ols_data_get_string(settings, "end_time") != NULL ) {
-    
-	} 
 
 }
 
 int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
   // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
-
-  ols_meta_txt_t *ols_txt = ols_meta_txt_new_with_buffer(1024);
-
   errno = 0;
-  ssize_t size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
+  ols_meta_txt_t *ols_txt;
+  ssize_t size ;
+
+  if(!curr_file_){
+    goto eos;
+  }
+
+  ols_txt = ols_meta_txt_new_with_buffer(1024);
+
+  size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
   if (UNLIKELY(size == -1)) {
     goto eos;
   }
@@ -187,9 +203,108 @@ eos: {
 bool TextSource::FileSrcStart() {
 
   struct stat stat_results;
+  std::string  file_ext;
+  std::string dest_dir;
+  size_t pos;
+
+  if(base_file_.empty()){
+    goto no_filename;
+  }
+
+  /* check if it is a dir */
+  if (os_stat(base_file_.c_str(), &stat_results) < 0)
+    goto no_stat;
+
+  if (!S_ISDIR(stat_results.st_mode)){
+
+    if(base_type_hint_.empty()){
+      file_ext = os_get_path_extension(base_file_.c_str());
+    } else {
+      file_ext = base_type_hint_;
+    }
+
+    if(file_ext.empty()){ //treat as a regular file 
+
+    } else {
+      if(file_ext == "zip"){
+
+        dest_dir = base_file_;
+        pos = dest_dir.find_last_of('.');
+
+        if(pos != std::string::npos){
+          dest_dir = dest_dir.substr(pos).append(".ols");
+        } else {
+          dest_dir.append(".ols");
+        }
+        
+        struct dstr command = {0};
+        dstr_printf(&command,"unzip -d %s %s",dest_dir.c_str() ,base_file_.c_str());
+        
+        os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
+
+        if(pipe){
+          uint8_t  buff[1024] = {'\0'};
+          while(os_process_pipe_read(pipe,buff,1024)){
+            blog(LOG_INFO,"%s",buff);
+          }
+
+          os_process_pipe_destroy(pipe);
+        }
+         
+
+      } else  if(base_type_hint_ == "tar.gz"){
+
+        os_process_pipe_t * pipe = os_process_pipe_create("tar -zxvf example.tar.gz -C destination_folder","r");
+
+        
+      } else if(base_type_hint_ == "gz"){
+
+      } else {
+          blog(LOG_ERROR,"Can not type : %s",base_type_hint_.c_str());
+      }
+
+      dest_dir.append("/").append(inner_dir_);
+
+      printf("dest is %s\n",dest_dir.c_str());
+      os_dir_t *dir = os_opendir(dest_dir.c_str());
+
+      if (dir) {
+  
+        struct os_dirent *ent;
+
+        for (;;) {
+          const char *ext;
+
+          ent = os_readdir(dir);
+          if (!ent)
+            break;
+          if (ent->directory)
+            continue;
+
+          
+          std::string file_path = dest_dir.append(ent->d_name);
+
+          files_.push_back(file_path);
+        }
+
+
+        os_closedir(dir);
+      } 
+    }
+  } else {
+    base_file_.append("/").append(inner_dir_);
+  }
 
   if (curr_filename_.empty())
     goto no_filename;
+  
+
+  if (os_stat(curr_filename_.c_str(), &stat_results) < 0)
+    goto no_stat;
+
+  if (S_ISDIR(stat_results.st_mode))
+    goto was_directory;
+
 
   blog(LOG_INFO, "opening file %s", curr_filename_.c_str());
 
@@ -198,13 +313,6 @@ bool TextSource::FileSrcStart() {
 
   if (curr_file_ == NULL)
     goto open_failed;
-
-  /* check if it is a regular file, otherwise bail out */
-  if (os_stat(curr_filename_.c_str(), &stat_results) < 0)
-    goto no_stat;
-
-  if (S_ISDIR(stat_results.st_mode))
-    goto was_directory;
 
   if (S_ISSOCK(stat_results.st_mode))
     goto was_socket;
@@ -323,9 +431,11 @@ bool ols_module_load(void) {
   si.icon_type = OLS_ICON_TYPE_TEXT;
 
   si.get_name = [](void *) { return ols_module_text("TextFile"); };
+
   si.create = [](ols_data_t *settings, ols_source_t *source) {
     return (void *)new TextSource(source, settings);
   };
+  
   si.destroy = [](void *data) { delete reinterpret_cast<TextSource *>(data); };
 
   si.request_new_pad = NULL;

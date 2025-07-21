@@ -22,3 +22,5 @@ endif()
 add_subdirectory(tinyxml2)
 
 add_subdirectory(ols-scripting)
+
+add_subdirectory(pcre2)
