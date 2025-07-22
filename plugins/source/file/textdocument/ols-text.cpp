@@ -58,14 +58,14 @@ static inline wstring to_wide(const char *utf8) {
   return text;
 }
 
-static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz",".gz"};
+static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz", ".tar.bz2",".gz"};
 
 const char * get_matched_extension(const char *file_name){
 
   for(size_t i = 0; i < sizeof(supported_ext)/sizeof(supported_ext[0]); ++i){
 
     if(str_endwith(file_name,supported_ext[i])){
-      return supported_ext[i];
+      return supported_ext[i] + 1;
     }
   }
   return UNKNOW_FILE_EXT;
@@ -316,42 +316,46 @@ bool TextSource::FileSrcStart() {
 
     if(file_ext == UNKNOW_FILE_EXT ){ //treat as a regular file 
       blog(LOG_INFO,"Source file extension is NULL");
+      //std::string file_path = base_file_;
+      files_.push_back(base_file_);
+
     } else {
+
+      struct dstr command = {0};
+
       if(file_ext == "zip"){
-
-        dest_dir = base_file_;
-        pos = dest_dir.find_last_of('.');
-
-        if(pos != std::string::npos){
-          dest_dir = dest_dir.substr(pos).append(".ols");
-        } else {
-          dest_dir.append(".ols");
-        }
-        
-        struct dstr command = {0};
         dstr_printf(&command,"unzip -d %s %s",dest_dir.c_str() ,base_file_.c_str());
-        
-        os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
-
-        if(pipe){
-          uint8_t  buff[1024] = {'\0'};
-          while(os_process_pipe_read(pipe,buff,1024)){
-            blog(LOG_INFO,"%s",buff);
-          }
-          os_process_pipe_destroy(pipe);
-        }
-      } else  if(base_type_hint_ == "tar.gz"){
-
-        os_process_pipe_t * pipe = os_process_pipe_create("tar -zxvf example.tar.gz -C destination_folder","r");
-
-        
-      } else if(base_type_hint_ == "gz"){
-
+      } else  if(file_ext == "tar.gz"){
+        dstr_printf(&command,"tar -zxf %s -C %s",base_file_.c_str(),dest_dir.c_str());
+      } else if(file_ext == "tar.xz"){
+        dstr_printf(&command,"tar -zJf %s -C %s",base_file_.c_str(),dest_dir.c_str());
+      } else if(file_ext == "tar.bz2"){
+        dstr_printf(&command,"tar -zjf %s -C %s",base_file_.c_str(),dest_dir.c_str());
       } else {
           blog(LOG_ERROR,"Can not type : %s",base_type_hint_.c_str());
       }
 
-      dest_dir.append("/").append(inner_dir_);
+      dest_dir = base_file_;
+      pos = dest_dir.find_last_of(file_ext);
+
+      if(pos != std::string::npos){
+        dest_dir = dest_dir.substr(0,pos).append("ols");
+      } else {
+        dest_dir.append(".ols");
+      }
+
+      os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
+
+      if(pipe){
+        uint8_t  buff[1024] = {'\0'};
+        while(os_process_pipe_read(pipe,buff,1024)){
+          blog(LOG_INFO,"%s",buff);
+        }
+        os_process_pipe_destroy(pipe);
+      }
+
+      if(!inner_dir_.empty())
+        dest_dir.append("/").append(inner_dir_);
 
       blog(LOG_INFO,"dest is %s\n",dest_dir.c_str());
 
@@ -360,10 +364,14 @@ bool TextSource::FileSrcStart() {
     }
   } else {
     dest_dir = base_file_;
-    dest_dir.append("/").append(inner_dir_);
+
+    if(!inner_dir_.empty())
+        dest_dir.append("/").append(inner_dir_);
     
     LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str());
   }
+
+  
 
   if (curr_filename_.empty())
     goto no_filename;
