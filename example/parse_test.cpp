@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
   ols_data_set_string(src_file_data,"base_file_type_hint","zip");
   ols_data_set_string(src_file_data,"inner_dir","TBoxLog/log");
 
-  ols_data_set_string(src_file_data,"file_name_wildcard","sv_user.log*");
+  ols_data_set_string(src_file_data,"file_name_wildcard","sv_dmesg.log.*");
 
   ols_source_t *source = ols_source_create("text_file", "test_read", src_file_data);
 

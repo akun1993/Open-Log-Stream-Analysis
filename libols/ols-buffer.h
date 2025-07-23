@@ -57,6 +57,8 @@ struct ols_buffer {
   struct ols_meta_result *result;
 };
 
+EXPORT ols_buffer_t *ols_buffer_new() ;
+
 /* refcounting */
 static inline ols_buffer_t *ols_buffer_ref(ols_buffer_t *buf) {
   return (ols_buffer_t *)ols_mini_object_ref(OLS_MINI_OBJECT_CAST(buf));

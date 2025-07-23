@@ -6,6 +6,7 @@
 #include <ols-module.h>
 #include <string>
 #include <vector>
+#include <queue>
 #include <set>
 #include <sys/stat.h>
 #include <util/base.h>
@@ -60,7 +61,7 @@ static inline wstring to_wide(const char *utf8) {
   return text;
 }
 
-static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz", ".tar.bz2",".gz"};
+static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz", ".tar.bz2",".tar",".gz"};
 
 const char * get_matched_extension(const char *file_name){
 
@@ -73,13 +74,17 @@ const char * get_matched_extension(const char *file_name){
   return UNKNOW_FILE_EXT;
 }
 
-bool do_command(const char *command ,uint8_t *buff, size_t buff_len,void (* read_callback)(uint8_t *buff, size_t buff_len)){
+//声明一个模板  
+typedef std::function<void (uint8_t *, size_t )> ReadCallback; 
+
+bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback callback){
 
   os_process_pipe_t * pipe = os_process_pipe_create(command,"r");
+
   if(pipe){
-    size_t len;
-    while((len = os_process_pipe_read(pipe,buff,buff_len)) > 0){
-      read_callback(buff,len);
+    size_t len = 0; 
+    while( (len = os_process_pipe_read_err(pipe,buff,buff_len)) != 0 ){
+      callback(buff,len);
     }
     os_process_pipe_destroy(pipe);
     return true;
@@ -88,31 +93,45 @@ bool do_command(const char *command ,uint8_t *buff, size_t buff_len,void (* read
   return false;
 }
 
-std::string  decompress_file(const std::string &file){
+void  decompress_file(const std::string &file){
   struct dstr command = {0};
 
   std::string extension = get_matched_extension(file.c_str());
 
   if(extension == "tar.gz"){
-    dstr_printf(&command,"tar -zxf %s ",file.c_str());
+    dstr_printf(&command,"tar -zvxf %s --overwrite",file.c_str());
   } else if(extension == "gz") {
-    dstr_printf(&command,"gzip -d %s ",file.c_str());
+    std::string dest_file = file;
+    dest_file.erase(dest_file.size() - (sizeof(".gz") - 1));
+    dstr_printf(&command,"gunzip -c %s > %s",file.c_str(),dest_file.c_str());
   } else {
-    return file;
+    return ;
   }
   
-  std::set<std::string> tar_gz_to_gz_tar;
-
+  bool format_errno = false ;
   uint8_t buffer[1024];
-  do_command(command.array,buffer,1024,[](uint8_t *buff, size_t buff_len){
-    if(extension == "tar.gz"){
-      if(strstr((const char *)buff,"not in gzip format") != nullptr){
-        tar_gz_to_gz_tar.insert(file);
+  do_command(command.array,buffer,1024,[extension,&format_errno](uint8_t *buff, size_t buff_len){
+      //blog(LOG_INFO,"ext is %s read %s",extension.c_str(),buff);
+      if(extension == "tar.gz"){
+        if(strstr((const char *)buff,"not in gzip format") != nullptr){
+          format_errno = true;
       }
     }
   });
 
+  if(format_errno){
+    size_t pos  = file.find_last_of('/');
+    std::string dest_dir;
+    if(pos != std::string::npos){
+      dest_dir = file.substr(0,pos);
+      dstr_printf(&command,"cd %s; tar -xvf %s --overwrite | xargs gunzip ",dest_dir.c_str(),file.c_str());
+      do_command(command.array,buffer,1024,[](uint8_t *buff, size_t buff_len){
+  
+      });
+    }
+  }
 
+  dstr_free(&command);
 }
 
 struct TextSource {
@@ -124,7 +143,7 @@ struct TextSource {
   string base_type_hint_;
   string inner_dir_;
   std::string file_wildcard_;
-  std::vector<std::string> files_;
+  std::queue<std::string> files_;
   string  curr_filename_;
   FILE   *curr_file_ = nullptr;
   uint64_t line_cnt = 0;
@@ -150,7 +169,9 @@ struct TextSource {
 
   void DecompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir);
 
-  void LoadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern);
+  void LoadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
+
+  bool OpenNextValidFile();
 
   inline void Update(ols_data_t *settings);
 };
@@ -227,8 +248,6 @@ void TextSource::Update(ols_data_t *settings) {
     } 
 
 	}
-
-
 }
 
 int TextSource::FileSrcGetData(ols_buffer_t *buf) {
@@ -238,16 +257,26 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
   ols_meta_txt_t *ols_txt;
   ssize_t size ;
 
+  ols_txt = ols_meta_txt_new_with_buffer(1024);
+
   if(!curr_file_){
     goto eos;
   }
 
-  ols_txt = ols_meta_txt_new_with_buffer(1024);
-
-  size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
-  if (UNLIKELY(size == -1)) {
-    goto eos;
+  while(true){
+    size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
+    if (UNLIKELY(size == -1)) {
+      if(OpenNextValidFile() ){
+        continue;
+      }  else {
+        curr_file_ = NULL;
+        goto eos;
+      }
+    } else {
+      break;
+    }
   }
+
 
   ols_txt->line = line_cnt;
   ols_txt->len = size;
@@ -256,18 +285,18 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
 
   ++line_cnt;
 
-  // blog(LOG_DEBUG, "%s  line %ld", bytes, line_cnt);
-
   return OLS_FLOW_OK;
 
 eos: {
+  ols_meta_txt_unref(ols_txt);
   blog(LOG_DEBUG, "EOS");
   // ols_buffer_resize(buf, 0, 0);
   return OLS_FLOW_EOS;
 }
+
 }
 
-void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern){
+void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern,std::set<std::string> &files){
   os_dir_t *dir = os_opendir(dest_dir.c_str());
 
   if (dir) {
@@ -294,8 +323,6 @@ void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
     pcre2_match_data *match_data =
         pcre2_match_data_create_from_pattern(re, NULL);
     
-
-    std::set<std::string> files;
 
     for (;;) {
       const char *ext;
@@ -326,16 +353,10 @@ void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
           ent->d_name + ovector[0]);
 
           std::string file_path = dest_dir;
-          file_path.append(ent->d_name);
+          file_path.append("/").append(ent->d_name);
           files.insert(file_path);
       }
     }
-
-    for(auto &file : files){
-      
-    }
-
-  
     pcre2_match_data_free(match_data);   /* Free resources */
     pcre2_code_free(re);        
   
@@ -348,13 +369,13 @@ void TextSource::DecompressFile(const std::string &file, std::string &ext_hint,c
   struct dstr command = {0};
 
   if(ext_hint == "zip"){
-    dstr_printf(&command,"unzip %s -d %s ",file.c_str(),dest_dir.c_str());
+    dstr_printf(&command,"unzip -o %s -d %s ",file.c_str(),dest_dir.c_str());
   } else  if(ext_hint == "tar.gz"){
-    dstr_printf(&command,"tar -zxf %s -C %s",file.c_str(),dest_dir.c_str());
+    dstr_printf(&command,"tar -zxf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
   } else if(ext_hint == "tar.xz"){
-    dstr_printf(&command,"tar -zJf %s -C %s",file.c_str(),dest_dir.c_str());
+    dstr_printf(&command,"tar -zJf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
   } else if(ext_hint == "tar.bz2"){
-    dstr_printf(&command,"tar -zjf %s -C %s",file.c_str(),dest_dir.c_str());
+    dstr_printf(&command,"tar -zjf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
   } else if(ext_hint == "gz") {
 
     if(!dest_dir.empty()){
@@ -385,10 +406,72 @@ void TextSource::DecompressFile(const std::string &file, std::string &ext_hint,c
   if(pipe){
     uint8_t  buff[1024] = {'\0'};
     while(os_process_pipe_read(pipe,buff,1024)){
-      blog(LOG_INFO,"%s",buff);
+      blog(LOG_INFO,"%s \n",buff);
     }
     os_process_pipe_destroy(pipe);
   }
+
+  dstr_free(&command);
+}
+
+
+bool TextSource::OpenNextValidFile(){
+
+  struct stat stat_results;
+
+  if(curr_file_){
+    fclose(curr_file_);
+    curr_file_ = NULL;
+  }
+
+  if(files_.empty()){
+    goto no_filename;
+  }
+
+  while(!files_.empty()) {
+
+    curr_filename_ = files_.front();
+    files_.pop();
+  
+    if (curr_filename_.empty()){
+      blog(LOG_INFO, "file name is empty");
+      continue;
+    }
+  
+    if (os_stat(curr_filename_.c_str(), &stat_results) < 0){
+      blog(LOG_ERROR, ("Could not get info on \"%s\"."), curr_filename_.c_str());
+      continue;
+    }
+  
+    if (S_ISDIR(stat_results.st_mode)){
+      blog(LOG_ERROR, "\"%s\" is a directory.", curr_filename_.c_str());
+      continue;
+    }
+    /* open the file */
+    curr_file_ = os_fopen(curr_filename_.c_str(), "rb");
+    if (curr_file_ == NULL){
+      switch (errno) {
+        case ENOENT:
+          blog(LOG_ERROR, "No such file \"%s\"", curr_filename_.c_str());
+          break;
+        default:
+          blog(LOG_ERROR, ("Could not open file \"%s\" for reading."),
+          curr_filename_.c_str());
+          break;
+      }      
+      continue;
+    }
+    blog(LOG_INFO, "Open file \"%s\" for reading.",curr_filename_.c_str());
+    return true;
+  } 
+
+  return false;
+
+    /* ERROR */
+  no_filename: 
+    blog(LOG_ERROR, ("No file name specified for reading."));
+    return false;
+
 }
 
 /* open the file, necessary to go to READY state */
@@ -397,16 +480,13 @@ bool TextSource::FileSrcStart() {
   struct stat stat_results;
   std::string  file_ext;
   std::string dest_dir;
+  std::set<std::string> files;
   size_t pos;
 
   if(base_file_.empty()){
     goto no_filename;
   }
-
-  /* check if it is a dir */
-  if (os_stat(base_file_.c_str(), &stat_results) < 0)
-    goto no_stat;
-
+  
   if (!S_ISDIR(stat_results.st_mode)){
 
     if(base_type_hint_.empty()){
@@ -418,10 +498,8 @@ bool TextSource::FileSrcStart() {
     if(file_ext == UNKNOW_FILE_EXT ){ //treat as a regular file 
       blog(LOG_INFO,"Source file extension is NULL");
       //std::string file_path = base_file_;
-      files_.push_back(base_file_);
-
+      files_.push(base_file_);
     } else {
-
       dest_dir = base_file_;
       pos = dest_dir.find(file_ext);
 
@@ -438,87 +516,46 @@ bool TextSource::FileSrcStart() {
 
       blog(LOG_INFO," dest is %s\n",dest_dir.c_str());
 
-      LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str());
-      
     }
   } else {
     dest_dir = base_file_;
 
     if(!inner_dir_.empty())
         dest_dir.append("/").append(inner_dir_);
-    
-    LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str());
+
   }
 
-  
+  LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
 
-  if (curr_filename_.empty())
-    goto no_filename;
-  
+  //decompress
+  for(auto &file : files){
+    decompress_file(file);
+  }
 
-  if (os_stat(curr_filename_.c_str(), &stat_results) < 0)
-    goto no_stat;
+  //reload after decompress
+  files.clear();
+  LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
 
-  if (S_ISDIR(stat_results.st_mode))
-    goto was_directory;
+  for(auto &file : files){
+    std::string ext = get_matched_extension(file.c_str());
+    if(ext == UNKNOW_FILE_EXT){
+      files_.push(file);
+      blog(LOG_INFO, "get file %s", file.c_str());
+    } 
+  }
 
+  if(files_.empty()){
+    return  false;
+  }
 
-  blog(LOG_INFO, "opening file %s", curr_filename_.c_str());
+  return OpenNextValidFile();
 
-  /* open the file */
-  curr_file_ = os_fopen(curr_filename_.c_str(), "rb");
-
-  if (curr_file_ == NULL)
-    goto open_failed;
-
-  if (S_ISSOCK(stat_results.st_mode))
-    goto was_socket;
-
-  return true;
 
   /* ERROR */
-no_filename: {
-  blog(LOG_ERROR, ("No file name specified for reading."));
-  goto error_exit;
-}
-
-open_failed: {
-  switch (errno) {
-  case ENOENT:
-    blog(LOG_ERROR, "No such file \"%s\"", curr_filename_.c_str());
-    break;
-  default:
-    blog(LOG_ERROR, ("Could not open file \"%s\" for reading."),
-    curr_filename_.c_str());
-    break;
+  no_filename: {
+    blog(LOG_ERROR, ("No file name specified for reading."));
   }
-  goto error_exit;
-}
-no_stat: {
-  blog(LOG_ERROR, ("Could not get info on \"%s\"."), curr_filename_.c_str());
-  goto error_close;
-}
-
-was_directory: {
-  blog(LOG_ERROR, "\"%s\" is a directory.", curr_filename_.c_str());
-  goto error_close;
-}
-
-was_socket: {
-  blog(LOG_ERROR, ("File \"%s\" is a socket."), curr_filename_.c_str());
-  goto error_close;
-}
-
-lseek_wonky: {
-  blog(LOG_ERROR, "Could not seek back to zero after seek test in file \"%s\"",
-    curr_filename_.c_str());
-  goto error_close;
-}
-
-error_close:
-  fclose(curr_file_);
-error_exit:
-  return false;
+  return false;  
 }
 
 /* unmap and close the file */

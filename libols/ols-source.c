@@ -446,11 +446,12 @@ static void ols_base_src_loop(ols_pad_t *pad) {
   src = (ols_source_t *)(OLS_PAD_PARENT(pad));
 
   // base_src_send_stream_start (src);
-  ols_buffer_t *buf = (ols_buffer_t *)bmalloc(sizeof(ols_buffer_t));
+  ols_buffer_t *buf = (ols_buffer_t *)ols_buffer_new ( );
   int ret = ols_src_get_stream_data(src, buf);
   if ((ret != OLS_FLOW_OK)) {
     goto pause;
   }
+
   /* this should not happen */
   if ((buf == NULL))
     goto null_buffer;
@@ -458,25 +459,22 @@ static void ols_base_src_loop(ols_pad_t *pad) {
   ret = ols_pad_push(pad, buf);
   if ((ret != OLS_FLOW_OK)) {
 
-    //blog(LOG_WARNING, "pad push buf failed , ret = %d", ret);
-    // goto pause;
+    blog(LOG_WARNING, "pad push buf failed , ret = %d", ret);
+    goto pause;
   }
-  /* Segment pending means that a new segment was configured
-   * during this loop run */
+
 done:
   return;
 
 pause: {
   ols_event_t *event;
   // src->running = false;
+  ols_buffer_unref(buf);
   ols_pad_pause_task(pad);
   if (ret == OLS_FLOW_EOS) {
 
     event = ols_event_new_eos();
-    // gst_event_set_seqnum (event, src->priv->seqnum);
-
     ols_pad_push_event(pad, event);
-    // src->priv->forced_eos = FALSE;
   }
   goto done;
 }
