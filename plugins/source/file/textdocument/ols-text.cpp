@@ -73,13 +73,13 @@ const char * get_matched_extension(const char *file_name){
   return UNKNOW_FILE_EXT;
 }
 
-bool do_command(const char *command ){
+bool do_command(const char *command ,uint8_t *buff, size_t buff_len,void (* read_callback)(uint8_t *buff, size_t buff_len)){
 
   os_process_pipe_t * pipe = os_process_pipe_create(command,"r");
   if(pipe){
-    uint8_t  buff[1024] = {'\0'};
-    while(os_process_pipe_read(pipe,buff,1024)){
-      blog(LOG_INFO,"%s",buff);
+    size_t len;
+    while((len = os_process_pipe_read(pipe,buff,buff_len)) > 0){
+      read_callback(buff,len);
     }
     os_process_pipe_destroy(pipe);
     return true;
@@ -103,21 +103,16 @@ std::string  decompress_file(const std::string &file){
   
   std::set<std::string> tar_gz_to_gz_tar;
 
-  os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
-  if(pipe){
-    uint8_t  buff[1024] = {'\0'};
-    while(os_process_pipe_read(pipe,buff,1024)){
-      if(extension == "tar.gz"){
-        if(strstr((const char *)buff,"not in gzip format") != nullptr){
-          tar_gz_to_gz_tar.insert(file);
-        }
+  uint8_t buffer[1024];
+  do_command(command.array,buffer,1024,[](uint8_t *buff, size_t buff_len){
+    if(extension == "tar.gz"){
+      if(strstr((const char *)buff,"not in gzip format") != nullptr){
+        tar_gz_to_gz_tar.insert(file);
       }
-      blog(LOG_INFO,"%s",buff);
     }
-    os_process_pipe_destroy(pipe);
+  });
 
 
-  }
 }
 
 struct TextSource {
