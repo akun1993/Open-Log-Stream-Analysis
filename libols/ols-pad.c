@@ -190,7 +190,7 @@ void ols_pad_destory( ols_pad_t *pad) {
   if(!pad){
     return;
   }
-  
+
   bfree(pad->name);
 
   pthread_cond_destroy(&pad->block_cond);
@@ -844,7 +844,6 @@ out:
   // } else {
   //   OLS_TRACER_PAD_CHAIN_POST(pad, ret);
   // }
-
   return ret;
 
   /* ERRORS */
@@ -856,6 +855,7 @@ flushing: {
   ret = OLS_FLOW_FLUSHING;
   goto out;
 }
+
 eos: {
   blog(LOG_WARNING,  "chaining, but pad was EOS");
   // pad->ABI.abi.last_flowret = OLS_FLOW_EOS;
@@ -894,6 +894,7 @@ probe_stopped: {
   // OLS_PAD_STREAM_UNLOCK(pad);
   goto out;
 }
+
 no_parent: {
   // OLS_DEBUG_OBJECT(pad, "No parent when chaining %" OLS_PTR_FORMAT, data);
   // pad->ABI.abi.last_flowret = OLS_FLOW_FLUSHING;
@@ -903,6 +904,7 @@ no_parent: {
   ret = OLS_FLOW_FLUSHING;
   goto out;
 }
+
 no_function: {
   // pad->ABI.abi.last_flowret = OLS_FLOW_NOT_SUPPORTED;
   RELEASE_PARENT(parent);
@@ -977,6 +979,7 @@ eos: {
   ols_mini_object_unref(OLS_MINI_OBJECT_CAST(data));
   return OLS_FLOW_EOS;
 }
+
 wrong_mode: {
   blog(LOG_ERROR,"pushing on pad %s but it was not activated in push mode",  OLS_PAD_NAME(pad));
   // pad->ABI.abi.last_flowret = OLS_FLOW_ERROR;
@@ -1018,9 +1021,9 @@ not_linked: {
 OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer) {
   OlsFlowReturn res;
 
-  // g_return_val_if_fail(OLS_IS_PAD(pad), OLS_FLOW_ERROR);
-  // g_return_val_if_fail(OLS_PAD_IS_SRC(pad), OLS_FLOW_ERROR);
-  // g_return_val_if_fail(OLS_IS_BUFFER(buffer), OLS_FLOW_ERROR);
+  // return_val_if_fail(OLS_IS_PAD(pad), OLS_FLOW_ERROR);
+  // return_val_if_fail(OLS_PAD_IS_SRC(pad), OLS_FLOW_ERROR);
+  // return_val_if_fail(OLS_IS_BUFFER(buffer), OLS_FLOW_ERROR);
 
   // OLS_TRACER_PAD_PUSH_PRE(pad, buffer);
   res = ols_pad_push_data(

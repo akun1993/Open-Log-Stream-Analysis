@@ -184,31 +184,9 @@ static time_t get_modified_timestamp(const char *filename) {
 }
 
 
-// const char *TextSource::GetMainString(const char *str)
-// {
-// 	if (!str)
-// 		return "";
-
-// 	size_t len = strlen(str);
-// 	if (!len)
-// 		return str;
-
-// 	const char *temp = str + len;
-
-// 	while (temp != str) {
-// 		temp--;
-
-// 		if (temp[0] == '\n' && temp[1] != 0) {
-// 			if (!--lines)
-// 				break;
-// 		}
-// 	}
-
-// 	return *temp == '\n' ? temp + 1 : temp;
-// }
 
 void TextSource::LoadFileText() {
-  BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
+  //BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
   // text = to_wide(GetMainString(file_text));
 
   // if (!text.empty() && text.back() != '\n')
@@ -276,7 +254,6 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
       break;
     }
   }
-
 
   ols_txt->line = line_cnt;
   ols_txt->len = size;
@@ -348,13 +325,12 @@ void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
       } else if (rc < 0) {
         blog(LOG_ERROR, "Matching error\n");
       } else {
-          PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-          blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),
-          ent->d_name + ovector[0]);
+        PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+        blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
 
-          std::string file_path = dest_dir;
-          file_path.append("/").append(ent->d_name);
-          files.insert(file_path);
+        std::string file_path = dest_dir;
+        file_path.append("/").append(ent->d_name);
+        files.insert(file_path);
       }
     }
     pcre2_match_data_free(match_data);   /* Free resources */

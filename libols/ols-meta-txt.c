@@ -7,7 +7,7 @@ static void
 _ols_meta_txt_free (ols_meta_txt_t * txt_file)
 {
   /* This can be used to get statistics about meta_txt sizes */
-
+  blog (LOG_INFO, "freeing ols_meta_txt %p", txt_file);
 #ifdef DEBUG_REFCOUNT
   blog (LOG_INFO, "freeing ols_meta_txt %p", txt_file);
 #endif

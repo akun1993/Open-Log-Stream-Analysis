@@ -62,14 +62,11 @@ struct DataDispatch {
 /* clang-format off */
 static OlsFlowReturn dispatch_chainlist_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_list_t *buffer){
 
-	
-
 	blog(LOG_DEBUG, "dispatch_chainlist_func");
 	return OLS_FLOW_OK;
 }
 
 static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
-
 
 	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
 	dispatch->onDataBuff(buffer);
@@ -80,8 +77,6 @@ static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *paren
 
 static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	//blog(LOG_DEBUG, "dispatch_sink_link_func");
-
-
 	return OLS_PAD_LINK_OK;
 }
 
@@ -89,9 +84,6 @@ static OlsPadLinkReturn dispatch_src_link_func(ols_pad_t *pad,ols_object_t *pare
 	blog(LOG_DEBUG, "dispatch_src_link_func");
 	return OLS_PAD_LINK_OK;
 }
-
-
-
 
 
 ols_pad_t * DataDispatch::createRecvPad(const char *caps){
@@ -112,7 +104,6 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 
 	ols_pad_set_link_function(srcpad,dispatch_src_link_func);
 
-
 	blog(LOG_DEBUG, "create send pad success");
 
 	ols_process_add_pad(process_, srcpad);
@@ -125,7 +116,7 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 	if(strcmp("sink",name) == 0){
 		return  createRecvPad(caps);
 	} else if(strcmp("src",name) == 0) {
-		return   createSendPad(caps);
+		return  createSendPad(caps);
 	}
 
 	return NULL;
@@ -135,7 +126,6 @@ ols_pad_t * DataDispatch::createSendPad(const char *caps){
 void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
 	ols_meta_txt_t * ols_txt = (ols_meta_txt_t *) buffer->meta;
-	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
 
 	size_t buff_len = ols_txt->len;
 	size_t parse_len = 0;
@@ -170,7 +160,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
 			//begin of cold start 
 		}
-
+		ols_buffer_unref(buffer);
 	} else {
 		const char *p = (const char *)ols_txt->buff;
 		
@@ -189,8 +179,8 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				//printf("%ld %ld \n",sec,fs);
 			} else {
 				//printf("%ld %ld \n",sec,fs);
-				printf("parse time failed ,not a standard line \n");
-				return;
+				blog(LOG_ERROR,"parse time failed ,not a standard line \n");
+				goto LOG_FORMAT_ERR;
 			}
 
 			ols_txt->msec = sec * 1000 + msec;
@@ -199,7 +189,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			parse_len += 18;
 
 			if(!isspace(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 	
 			while(isspace(*p) && parse_len < buff_len){
@@ -208,7 +198,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			if(parse_len >= buff_len || !isdigit(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 			
 			//parse process id
@@ -223,7 +213,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			ols_txt->pid = pid;
 
 			if(parse_len >= buff_len || !isspace(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}			
 	
 			while(isspace(*p) && parse_len < buff_len){
@@ -232,7 +222,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			if(parse_len >= buff_len || !isdigit(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 	
 			int tid = 0;
@@ -247,7 +237,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			ols_txt->tid = tid;
 	
 			if(parse_len >= buff_len ||  !isspace(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 
 			while(isspace(*p) && parse_len < buff_len){
@@ -256,14 +246,14 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 	
 			if(parse_len >= buff_len || !isalpha(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 
 			ols_txt->log_lv = *p++;
 			parse_len++;
 
 			if(parse_len >= buff_len || !isspace(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 			
 			//printf("log lv is %c \n",*p++);
@@ -274,7 +264,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			if(parse_len >= buff_len || !isalpha(*p)){
-				return;
+				goto LOG_FORMAT_ERR;
 			}			
 
 			const char *tag_beg = p;
@@ -287,7 +277,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			if(parse_len >= buff_len){
-				return;
+				goto LOG_FORMAT_ERR;
 			}
 			
 			ols_txt->data_offset = parse_len;
@@ -310,6 +300,10 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 		}
 	}
 
+	return;
+
+LOG_FORMAT_ERR:
+	ols_buffer_unref(buffer);
 }
 
 void DataDispatch::Update(ols_data_t *settings)

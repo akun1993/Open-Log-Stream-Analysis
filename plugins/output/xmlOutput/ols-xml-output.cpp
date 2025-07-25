@@ -27,10 +27,7 @@ struct XmlOutput {
 
    tinyxml2::XMLElement* apps_ = nullptr;
 
-
 	/* --------------------------- */
-
-
 	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
 	: output_(output) {
 		update( settings);
@@ -97,10 +94,10 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}
 	
+	ols_buffer_unref(buffer);
 }
 
- ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps)
-{
+ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps){
 
 	if(strcmp("sink",name) == 0){
 		return  createRecvPad(caps);
@@ -123,26 +120,19 @@ void XmlOutput::initOutfile(){
 
 }
 
-void XmlOutput::update(ols_data_t *settings)
-{
+void XmlOutput::update(ols_data_t *settings){
 	UNUSED_PARAMETER(settings);
-
-   
 }
-
 
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int
 
-
 OLS_DECLARE_MODULE()
 OLS_MODULE_USE_DEFAULT_LOCALE("ols-xml-output", "en-US")
-MODULE_EXPORT const char *ols_module_description(void)
-{
+MODULE_EXPORT const char *ols_module_description(void){
 	return "xml output";
 }
 
-static ols_properties_t *get_properties(void *data)
-{
+static ols_properties_t *get_properties(void *data){
 	XmlOutput *s = reinterpret_cast<XmlOutput *>(data);
 	string path;
 
@@ -152,13 +142,8 @@ static ols_properties_t *get_properties(void *data)
 	return props;
 }
 
-  // ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
 
-  // ols_scripting_prase(script,"parse this log in python",sizeof("parse this log in python") - 1);
-
-
-bool ols_module_load(void)
-{
+bool ols_module_load(void){
 	ols_output_info si = {};
 	si.id = "xml_output";
 	//si.type = OLS_PROCESS_TYPE_INPUT;
