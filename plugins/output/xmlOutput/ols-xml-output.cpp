@@ -6,26 +6,50 @@
 #include <memory>
 #include <ols-module.h>
 #include <string>
+#include <map>
 #include <sys/stat.h>
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
+
 
 using namespace std;
 
 #define warning(format, ...)                                                   \
   blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
+
+// XML Struct 
+//<protocol>
+//  <root>
+//		<system>
+//			...
+//		</system>
+//		<applications>
+//			<summary>
+//			</summary>
+//			<apps>
+//				<app1>
+//					...
+//				</app1>
+//			</apps>
+//		</applications>
+//  </root>
+//</protocol>
+
 struct XmlOutput {
    ols_output_t *output_ = nullptr;
    tinyxml2::XMLDocument xmldoc_;
    tinyxml2::XMLElement *root_ = nullptr;
 
-   tinyxml2::XMLElement* infos_ = nullptr;
+   tinyxml2::XMLElement* system_ = nullptr;
 
    tinyxml2::XMLElement* applications_ = nullptr;
 
    tinyxml2::XMLElement* apps_ = nullptr;
+
+   std::map<std::string,tinyxml2::XMLElement*> app_tags_;
+
 
 	/* --------------------------- */
 	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
@@ -89,8 +113,16 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	ols_meta_result *meta_result = buffer->result;
 
+
+	std::string tag(meta_result->tag.array); 
 	//printf("tag is %s line = %d \n",meta_result->tag.array, meta_txt->line);
 	for(size_t i = 0; i < meta_result->info.num; ++i){
+		auto tag = app_tags.(tag);
+		if(app_tag){
+
+		} else {
+
+		}
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}
 	
@@ -163,7 +195,6 @@ bool ols_module_load(void){
 	si.stop = [](void *data, uint64_t ts){
 		return ;
 	};
-
 
 	si.create = [](ols_data_t *settings, ols_output_t *output) {
 		return (void *)new XmlOutput(output, settings);

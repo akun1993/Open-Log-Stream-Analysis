@@ -122,8 +122,12 @@ int main(int argc, char **argv) {
   ols_process_t *dispatch =
       ols_process_create("data_dispatch", "test_dispatch", nullptr);  
 
+
+  ols_data_t * script_data = ols_data_create();
+
+  ols_data_set_string(script_data,"script_file_path","/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/python_script/parse_log_2.py");
   ols_process_t *process =
-      ols_process_create("script_caller", "test_process", nullptr);
+      ols_process_create("script_caller", "test_process", script_data);
 
   ols_output_t *xml_output =
       ols_output_create("xml_output", "test_output", nullptr);

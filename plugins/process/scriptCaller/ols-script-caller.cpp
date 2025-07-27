@@ -37,25 +37,25 @@ using namespace std;
 struct ScriptCallerProcess {
   ols_process_t *process_ = nullptr;
   ols_script_t *script_ = nullptr;
-  // ols_pad_t     *srcpad_  = nullptr;
-  // ols_pad_t     *sinkpad_  = nullptr;
+  std::string script_path_;
 
   /* --------------------------- */
 
   inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
-    ols_process_update(process_, settings);
+	update(settings);
+	
+	if(!script_path_.empty()){
+		script_ = ols_script_create(script_path_.c_str(),NULL);
+	}
 
-    script_ = ols_script_create("../../../../../python_script/"
-                                "parse_log_2.py",
-                                NULL);
   }
 
   inline ~ScriptCallerProcess() {}
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-  void Update(ols_data_t *settings);
+  void update(ols_data_t *settings);
 
   ols_pad_t *createRecvPad(const char *caps);
   ols_pad_t *createSendPad(const char *caps);
@@ -164,9 +164,14 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 }
 
-void ScriptCallerProcess::Update(ols_data_t *settings)
+void ScriptCallerProcess::update(ols_data_t *settings)
 {
-	UNUSED_PARAMETER(settings);
+	if (ols_data_get_string(settings, "script_file_path") != NULL ) {
+		script_path_ = ols_data_get_string(settings, "script_file_path");
+		
+		blog(LOG_INFO, "set script path  %s",script_path_.c_str());
+	}
+
 }
 
 
