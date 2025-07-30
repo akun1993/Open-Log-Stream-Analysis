@@ -48,6 +48,8 @@ struct XmlOutput {
 
    tinyxml2::XMLElement* apps_ = nullptr;
 
+   tinyxml2::XMLElement* summary_ = nullptr;
+
    std::map<std::string,tinyxml2::XMLElement*> app_tags_;
 
 
@@ -116,13 +118,21 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	std::string tag(meta_result->tag.array); 
 	//printf("tag is %s line = %d \n",meta_result->tag.array, meta_txt->line);
+
+	auto &tag_ele = app_tags_[tag];
+
+	if(tag_ele == nullptr){
+		tag_ele = xmldoc_.NewElement(tag.c_str());
+		apps_->InsertEndChild(tag_ele);
+	}
+
 	for(size_t i = 0; i < meta_result->info.num; ++i){
-		auto tag = app_tags.(tag);
-		if(app_tag){
 
-		} else {
+		tinyxml2::XMLElement * item = xmldoc_.NewElement("item");
+		item->setText(meta_result->info.array[i]);
+		
+		tag_ele.InsertEndChild(item);
 
-		}
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}
 	
@@ -149,6 +159,19 @@ void XmlOutput::initOutfile(){
 
 	root_ = xmldoc_.NewElement("protocol");
 	xmldoc_.InsertEndChild(root_);
+
+	system_ = xmldoc_.NewElement("system");
+	root_->InsertFirstChild(system_);
+
+	applications_  = xmldoc_.NewElement("applications");
+
+	summary_ = xmldoc_.NewElement("summary");
+	applications_->InsertFirstChild(summary_);
+
+	apps_ = xmldoc_.NewElement("apps");
+	applications_->InsertFirstChild(apps_);
+
+	root_->InsertEndChild(applications_);
 
 }
 
