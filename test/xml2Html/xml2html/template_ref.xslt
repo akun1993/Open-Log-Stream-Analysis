@@ -224,16 +224,19 @@
 
         <body>
 
-        <xsl:apply-templates select="protocol/system"/> 
+        <xsl:apply-templates select="protocol/information"/> 
   
-        <xsl:for-each select="descendant::app">
-            <a href="#{generate-id(app_name)}">
-            <xsl:value-of select="app_name"/></a><br/>
+        <!-- Generate a list of picture titles, with each 
+        title linking to the picture in the poem below. -->
+        <b>Pictures:</b><br/>
+        <xsl:for-each select="descendant::ecu">
+            <a href="#{generate-id(ecu_id)}">
+            <xsl:value-of select="ecu_name"/></a><br/>
             <xsl:text>&#10;</xsl:text>
         </xsl:for-each>
 
 
-        <xsl:apply-templates select="protocol/applications/apps"/> 
+        <xsl:apply-templates select="protocol/vehicle/communications/ecus"/> 
 
         </body>
         </html>
@@ -241,7 +244,7 @@
     </xsl:template>
 
 
-    <xsl:template match="protocol/system">
+    <xsl:template match="protocol/information">
         <table>
             <tbody>
             <tr >
@@ -318,7 +321,8 @@
     </xsl:template>    
 
 
-    <xsl:template match="protocol/applications/apps">
+    <xsl:template match="protocol/vehicle/communications/ecus">
+
         <table>
             <tbody>
             <tr >
@@ -328,12 +332,13 @@
                 <p margin-top="10pt" margin-bottom="10pt"> </p>
                 
                 <!-- child::name , Represent child of current node with name -->
-                <xsl:for-each select="child::app">
+                <xsl:for-each select="child::ecu">
 
                 <!-- Generate id for each ecu id -->
-                <xsl:variable name="app_id_tag" select="generate-id(child::app_name)"/>
+                <xsl:variable name="ecu_id_tag" select="generate-id(child::ecu_id)"/>
                 
-                <input type="hidden" class="treeView" name="treeView_parse_start"  id="{concat('start_marker_treeView_master_entry_',$app_id_tag)}" />
+                
+                <input type="hidden" class="treeView" name="treeView_parse_start"  id="{concat('start_marker_treeView_master_entry_',$ecu_id_tag)}" />
 
                 <table>
                     <tbody>
@@ -342,34 +347,35 @@
                         <td>   
                             <p class="default_style_bu_diagfunction">
                             <span class="treeView_header">
-                            <input type="checkbox" name="treeView_checkbox" onChange="javascript:showHideSectionsAfterCheckbox(this)" onClick="javascript:showHideSectionsAfterCheckbox(this)" class="treeView" id="{concat('treeView_master_entry_',$app_id_tag)}"/>
-                            <label for="{concat('treeView_master_entry_',$app_id_tag)}" id="{concat('label_master_entry_',$app_id_tag)}" class="treeView">
+                            <input type="checkbox" name="treeView_checkbox" onChange="javascript:showHideSectionsAfterCheckbox(this)" onClick="javascript:showHideSectionsAfterCheckbox(this)" class="treeView" id="{concat('treeView_master_entry_',$ecu_id_tag)}"/>
+                            <label for="{concat('treeView_master_entry_',$ecu_id_tag)}" id="{concat('label_master_entry_',$ecu_id_tag)}" class="treeView">
                             <span class="treeView_selector_item">+</span>
-                            <span class="treeView_label_content"><a name="{$app_id_tag}"><xsl:value-of select="child::app_name"/> - </a> Identification</span>
+                            <span class="treeView_label_content"><a name="{$ecu_id_tag}">Master - </a>001 Identification</span>
                             </label>
                             </span>
                             </p>
                         </td>
                         <td class="align_opposite" valign="top" style="width=65mm;">
-                            <p class="default_style_diagfunction"> <a href="#inhalt">Agenda item^</a><br/></p>
+                            <p class="default_style_diagfunction">28.02.2025 19:25:29 <a href="#inhalt">Agenda item^</a><br/></p>
                         </td>
                     </tr>
                     </tbody>
                 </table>
 
-                <span class="treeView_content" id="{concat('content_',$app_id_tag)}">
+                <span class="treeView_content" id="{concat('content_',$ecu_id_tag)}">
                 <table class="default_style">
-                    <xsl:for-each select="current()/analysis/item">
+                    <xsl:for-each select="current()/ecu_master/values">
                     <tr>
                     <td valign="top" class="default_style" style="width:105mm">
                     <span class="default_style_b"></span>
-                    <span class="default_style_b"><xsl:value-of select="current()"/></span>
+                    <span class="default_style_b"><xsl:value-of select="display_name"/></span>
                     </td>
-                    <td valign="top" colspan="2" style="width:200mm" class="default_style"><xsl:value-of select="current()"/> </td>
+                    <td valign="top" colspan="2" style="width:95mm" class="default_style"><xsl:value-of select="display_value"/> </td>
                     </tr>
                     </xsl:for-each>
                 </table>
                 </span>
+
 
                 </xsl:for-each>    
                 <p></p>

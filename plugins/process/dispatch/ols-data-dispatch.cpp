@@ -95,6 +95,7 @@ ols_pad_t * DataDispatch::createRecvPad(const char *caps){
 	ols_pad_set_link_function(sinkpad,dispatch_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,dispatch_sink_chain_func);
 
+
 	ols_process_add_pad(process_, sinkpad);
 	return sinkpad;
 }
@@ -159,6 +160,11 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
 		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
 			//begin of cold start 
+			ols_event_t *event = ols_event_new_eos();
+			for (int i = 0; i < process_->context.numsrcpads; ++i) {
+				ols_pad_t *pad = process_->context.srcpads.array[i];
+				ols_pad_push_event(pad, event);
+			}				
 		}
 		ols_buffer_unref(buffer);
 	} else {
@@ -280,7 +286,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				goto LOG_FORMAT_ERR;
 			}
 			
-			ols_txt->data_offset = parse_len;
+			ols_txt->data_offset = parse_len + 1; //+ 1 for skip ':'
 
 			if(*p == ':') --p;
 

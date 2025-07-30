@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+
 from lxml import etree
 
-#解析XML和XSLT文件
+#解析XML
 
 xml_doc = etree.parse('VW381040010_20250321T201935.xml')
 
@@ -14,7 +16,6 @@ transform = etree.XSLT(xslt_doc)
 
 
 #进行转换
-
 html_doc = transform(xml_doc)
 
 

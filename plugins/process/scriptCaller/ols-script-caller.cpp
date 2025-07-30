@@ -151,6 +151,8 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 		
 				buffer->result = (ols_meta_result *)bzalloc(sizeof(ols_meta_result));
 				*buffer->result = result;
+
+				dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
 		
 				for (int i = 0; i < process_->context.numsrcpads; ++i) {
 					ols_pad_t *pad = process_->context.srcpads.array[i];
@@ -230,7 +232,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<ScriptCallerProcess *>(data)->Update(settings);
+		reinterpret_cast<ScriptCallerProcess *>(data)->update(settings);
 	};
 
 	ols_register_process(&si);

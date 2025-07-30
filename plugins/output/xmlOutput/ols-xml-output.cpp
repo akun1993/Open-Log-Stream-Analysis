@@ -29,13 +29,21 @@ using namespace std;
 //			<summary>
 //			</summary>
 //			<apps>
-//				<app1>
-//					...
-//				</app1>
+//				<app>
+//					<name></name>
+//					<verison></verison>
+//					<compile_time></compile_time>
+//					<analysis></analysis>
+//				</app>
 //			</apps>
 //		</applications>
 //  </root>
 //</protocol>
+
+struct AppNode {
+	tinyxml2::XMLElement* app_root_ = nullptr;
+	tinyxml2::XMLElement* analysis_ = nullptr;
+};
 
 struct XmlOutput {
    ols_output_t *output_ = nullptr;
@@ -50,7 +58,7 @@ struct XmlOutput {
 
    tinyxml2::XMLElement* summary_ = nullptr;
 
-   std::map<std::string,tinyxml2::XMLElement*> app_tags_;
+   std::map<std::string,AppNode> app_tags_;
 
 
 	/* --------------------------- */
@@ -116,27 +124,38 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 	ols_meta_result *meta_result = buffer->result;
 
 
-	std::string tag(meta_result->tag.array); 
-	//printf("tag is %s line = %d \n",meta_result->tag.array, meta_txt->line);
+	if(!meta_result->tag.array){
+		blog(LOG_ERROR,"no tag in meta result");
+		ols_buffer_unref(buffer);
+		return;
+	}
 
-	auto &tag_ele = app_tags_[tag];
+	std::string tag(meta_result->tag.array);
 
-	if(tag_ele == nullptr){
-		tag_ele = xmldoc_.NewElement(tag.c_str());
-		apps_->InsertEndChild(tag_ele);
+	auto &node = app_tags_[tag];
+
+	if(node.app_root_ == nullptr){
+		node.app_root_ = xmldoc_.NewElement("app");
+		tinyxml2::XMLElement * name = xmldoc_.NewElement("name");
+		name->SetText(meta_result->tag.array);
+		node.app_root_->InsertFirstChild(name);
+
+		node.analysis_ = xmldoc_.NewElement("analysis");
+		node.app_root_->InsertEndChild(node.analysis_);
+
+		apps_->InsertEndChild(node.app_root_);
 	}
 
 	for(size_t i = 0; i < meta_result->info.num; ++i){
-
+	
 		tinyxml2::XMLElement * item = xmldoc_.NewElement("item");
-		item->setText(meta_result->info.array[i]);
-		
-		tag_ele.InsertEndChild(item);
-
+		item->SetText(meta_result->info.array[i]);
+		node.analysis_->InsertEndChild(item);
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}
 	
-	ols_buffer_unref(buffer);
+	xmldoc_.Print();
+
 }
 
 ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps){

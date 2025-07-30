@@ -404,9 +404,9 @@ void ols_pad_destory( ols_pad_t *pad) ;
 
 /* data passing */
 /**
- * OlsPadChainFunction:
- * @pad: the sink #OlsPad that performed the chain.
- * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
+ * ols_pad_chain_function:
+ * @pad: the sink #ols_pad_t that performed the chain.
+ * @parent: (allow-none): the parent of @pad. If the #OLS_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
  * @buffer: (transfer full): the #OlsBuffer that is chained, not %NULL.
@@ -428,8 +428,8 @@ typedef OlsFlowReturn (*ols_pad_chain_function)(ols_pad_t *pad,
                                                 ols_buffer_t *buffer);
 
 /**
- * OlsPadChainListFunction:
- * @pad: the sink #OlsPad that performed the chain.
+ * ols_pad_chain_list_function:
+ * @pad: the sink #ols_pad_t that performed the chain.
  * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
@@ -452,12 +452,12 @@ typedef OlsFlowReturn (*ols_pad_chain_list_function)(ols_pad_t *pad,
                                                      ols_buffer_list_t *list);
 
 /**
- * OlsPadEventFunction:
- * @pad: the #OlsPad to handle the event.
+ * ols_pad_event_function:
+ * @pad: the #ols_pad_t to handle the event.
  * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
- * @event: (transfer full): the #OlsEvent to handle.
+ * @event: (transfer full): the #ols_event_t to handle.
  *
  * Function signature to handle an event for the pad.
  *
@@ -467,12 +467,12 @@ typedef bool (*ols_pad_event_function)(ols_pad_t *pad, ols_object_t *parent,
                                        ols_event_t *event);
 
 /**
- * OlsPadEventFullFunction:
- * @pad: the #OlsPad to handle the event.
+ * ols_pad_event_full_function:
+ * @pad: the #ols_pad_t to handle the event.
  * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
- * @event: (transfer full): the #OlsEvent to handle.
+ * @event: (transfer full): the #ols_event_t to handle.
  *
  * Function signature to handle an event for the pad.
  *
@@ -483,7 +483,6 @@ typedef bool (*ols_pad_event_function)(ols_pad_t *pad, ols_object_t *parent,
  * Returns: %Ols_FLOW_OK if the event was handled properly, or any other
  * #OlsFlowReturn dependent on downstream state.
  *
- * Since: 1.8
  */
 typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad_t *pad,
                                                      ols_object_t *parent,
@@ -492,11 +491,11 @@ typedef OlsFlowReturn (*ols_pad_event_full_function)(ols_pad_t *pad,
 /* linking */
 /**
  * OlsPadLinkFunction:
- * @pad: the #OlsPad that is linked.
+ * @pad: the #ols_pad_t that is linked.
  * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
- * @peer: the peer #OlsPad of the link
+ * @peer: the peer #ols_pad_t of the link
  *
  * Function signature to handle a new link on the pad.
  *
@@ -507,7 +506,7 @@ typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad_t *pad,
                                                   ols_pad_t *peer);
 /**
  * OlsPadUnlinkFunction:
- * @pad: the #OlsPad that is linked.
+ * @pad: the #ols_pad_t that is linked.
  * @parent: (allow-none): the parent of @pad. If the #Ols_PAD_FLAG_NEED_PARENT
  *          flag is set, @parent is guaranteed to be not-%NULL and remain valid
  *          during the execution of this function.
@@ -526,16 +525,18 @@ void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
 
 OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
+
 bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad);
+
 bool ols_pad_is_linked(ols_pad_t *pad);
 
 OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer);
 
 bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event);
 
-void ols_pad_set_chain_function_full(ols_pad_t *pad,
-                                     ols_pad_chain_function chain,
-                                     void *user_data);
+void ols_pad_set_chain_function_full(ols_pad_t *pad,ols_pad_chain_function chain,void *user_data);
+
+void	ols_pad_set_event_function_full(ols_pad_t *pad,ols_pad_event_function event,void *user_data);                                     
 
 bool ols_pad_set_parent(ols_pad_t *pad, ols_object_t *parent);
 
@@ -558,14 +559,19 @@ bool ols_pad_stop_task(ols_pad_t *pad);
  * @padtemplate: padtemplate for this pad
  * @direction: the direction of the pad, cannot change after creating
  *             the pad.
- *
  * The #OlsPad structure. Use the functions to update the variables.
  */
 
 #define ols_pad_set_link_function(p, f) \
   ols_pad_set_link_function_full((p), (f), NULL)
+
 #define ols_pad_set_unlink_function(p, f) \
   ols_pad_set_unlink_function_full((p), (f), NULL)
+
+
+#define ols_pad_set_event_function(p,f)   \
+      ols_pad_set_event_function_full((p),(f),NULL)
+
 
 struct ols_pad {
   // ols_object_t context;
@@ -607,7 +613,6 @@ struct ols_pad {
   void *eventdata;
 
   OlsFlowReturn last_flowret;
-  ols_pad_event_full_function eventfullfunc;
 };
 
 #ifdef __cplusplus

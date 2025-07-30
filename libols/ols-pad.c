@@ -335,23 +335,15 @@ bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
   return ret;
 }
 
-/**
- * ols_pad_set_chain_function:
- * @p: a sink #OlsPad.
- * @f: the #OlsPadChainFunction to set.
- *
- * Calls ols_pad_set_chain_function_full() with %NULL for the user_data and
- * notify.
- */
+
 /**
  * ols_pad_set_chain_function_full:
- * @pad: a sink #OlsPad.
- * @chain: the #OlsPadChainFunction to set.
+ * @pad: a sink #ols_pad_t.
+ * @chain: the #ols_pad_chain_function to set.
  * @user_data: user_data passed to @notify
- * @notify: notify called when @chain will not be used anymore.
  *
  * Sets the given chain function for the pad. The chain function is called to
- * process a #OlsBuffer input buffer. see #OlsPadChainFunction for more details.
+ * process a #OlsBuffer input buffer. see #ols_pad_chain_function for more details.
  */
 void ols_pad_set_chain_function_full(ols_pad_t *pad,
                                      ols_pad_chain_function chain,
@@ -363,49 +355,46 @@ void ols_pad_set_chain_function_full(ols_pad_t *pad,
   //                      OLS_DEBUG_FUNCPTR_NAME(chain));
 }
 
+
 /**
- * ols_pad_set_chain_list_function:
- * @p: a sink #OlsPad.
- * @f: the #OlsPadChainListFunction to set.
+ * ols_pad_set_event_function_full:
+ * @pad: a sink #ols_pad_t.
+ * @chain: the #ols_pad_event_function to set.
+ * @user_data: user_data passed to @notify
  *
- * Calls ols_pad_set_chain_list_function_full() with %NULL for the user_data and
- * notify.
+ * Sets the given event function for the pad. 
  */
+void ols_pad_set_event_function_full(ols_pad_t *pad,ols_pad_event_function event,void *user_data){
+  OLS_PAD_EVENTFUNC(pad) = event;
+  pad->eventdata = user_data;
+}
+
+
 /**
  * ols_pad_set_chain_list_function_full:
- * @pad: a sink #OlsPad.
- * @chainlist: the #OlsPadChainListFunction to set.
+ * @pad: a sink #ols_pad_t.
+ * @chainlist: the #ols_pad_chain_list_function to set.
  * @user_data: user_data passed to @notify
- * @notify: notify called when @chainlist will not be used anymore.
  *
  * Sets the given chain list function for the pad. The chainlist function is
  * called to process a #OlsBufferList input buffer list. See
- * #OlsPadChainListFunction for more details.
+ * #ols_pad_chain_list_function for more details.
  */
 void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
                                           ols_pad_chain_list_function chainlist,
                                           void *user_data) {
   OLS_PAD_CHAINLISTFUNC(pad) = chainlist;
   pad->chaindata = user_data;
-
   // OLS_CAT_DEBUG_OBJECT(OLS_CAT_PADS, pad, "chainlistfunc set to %s",
   //                      OLS_DEBUG_FUNCPTR_NAME(chainlist));
 }
 
-/**
- * ols_pad_set_link_function:
- * @p: a #OlsPad.
- * @f: the #OlsPadLinkFunction to set.
- *
- * Calls ols_pad_set_link_function_full() with %NULL
- * for the user_data and notify.
- */
+
 /**
  * ols_pad_set_link_function_full:
- * @pad: a #OlsPad.
- * @link: the #OlsPadLinkFunction to set.
+ * @pad: a #ols_pad_t.
+ * @link: the #ols_pad_link_function to set.
  * @user_data: user_data passed to @notify
- * @notify: notify called when @link will not be used anymore.
  *
  * Sets the given link function for the pad. It will be called when
  * the pad is linked with another pad.
@@ -416,15 +405,13 @@ void ols_pad_set_chain_list_function_full(ols_pad_t *pad,
  * The return value #OLS_PAD_LINK_REFUSED should be used when the connection
  * cannot be made for some reason.
  *
- * If @link is installed on a source pad, it should call the #OlsPadLinkFunction
+ * If @link is installed on a source pad, it should call the #ols_pad_link_function
  * of the peer sink pad, if present.
  */
 void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
                                     void *user_data) {
-  //   g_return_if_fail(OLS_IS_PAD(pad));
+  //return_if_fail(OLS_IS_PAD(pad));
 
-  //   if (pad->linknotify)
-  //     pad->linknotify(pad->linkdata);
   OLS_PAD_LINKFUNC(pad) = link;
   pad->linkdata = user_data;
   //   OLS_CAT_DEBUG_OBJECT(OLS_CAT_PADS, pad, "linkfunc set to %s",
@@ -432,20 +419,12 @@ void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
   //
 }
 
-/**
- * ols_pad_set_unlink_function:
- * @p: a #OlsPad.
- * @f: the #OlsPadUnlinkFunction to set.
- *
- * Calls ols_pad_set_unlink_function_full() with %NULL
- * for the user_data and notify.
- */
+
 /**
  * ols_pad_set_unlink_function_full:
- * @pad: a #OlsPad.
- * @unlink: the #OlsPadUnlinkFunction to set.
+ * @pad: a #ols_pad_t.
+ * @unlink: the #ols_pad_unlink_function to set.
  * @user_data: user_data passed to @notify
- * @notify: notify called when @unlink will not be used anymore.
  *
  * Sets the given unlink function for the pad. It will be called
  * when the pad is unlinked.
@@ -457,13 +436,10 @@ void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
 void ols_pad_set_unlink_function_full(ols_pad_t *pad,
                                       ols_pad_unlink_function unlink,
                                       void *user_data) {
-  // g_return_if_fail(OLS_IS_PAD(pad));
+  //return_if_fail(OLS_IS_PAD(pad));
 
-  // if (pad->unlinknotify)
-  //   pad->unlinknotify(pad->unlinkdata);
   OLS_PAD_UNLINKFUNC(pad) = unlink;
   pad->unlinkdata = user_data;
-  // pad->unlinknotify = notify;
 
   // OLS_CAT_DEBUG_OBJECT(OLS_CAT_PADS, pad, "unlinkfunc set to %s",
   //                      OLS_DEBUG_FUNCPTR_NAME(unlink));
@@ -484,9 +460,6 @@ void ols_pad_set_unlink_function_full(ols_pad_t *pad,
  */
 bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   bool result = false;
-  // OLSElement *parent = NULL;
-
-  // OLS_TRACER_PAD_UNLINK_PRE(srcpad, sinkpad);
 
   // OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinking %s:%s(%p) and %s:%s(%p)",
   //              OLS_DEBUG_PAD_NAME(srcpad), srcpad,
@@ -539,10 +512,7 @@ no_sink_parent:
   OLS_PAD_UNLOCK(sinkpad);
   OLS_PAD_UNLOCK(srcpad);
 
-  /* fire off a signal to each of the pads telling them
-   * that they've been unlinked */
-  // g_signal_emit(srcpad, ols_pad_signals[PAD_UNLINKED], 0, sinkpad);
-  // g_signal_emit(sinkpad, ols_pad_signals[PAD_UNLINKED], 0, srcpad);
+
 
   // OLS_CAT_INFO(OLS_CAT_ELEMENT_PADS, "unlinked %s:%s and %s:%s",
   //              OLS_DEBUG_PAD_NAME(srcpad), OLS_DEBUG_PAD_NAME(sinkpad));
@@ -615,11 +585,10 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   ols_object_t *parent;
   ols_pad_link_function srcfunc, sinkfunc;
 
-  // g_return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
-  // g_return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
-  // g_return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
-  // g_return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),
-  // OLS_PAD_LINK_WRONG_DIRECTION);
+  // return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
+  // return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
+  // return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
+  // return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),OLS_PAD_LINK_WRONG_DIRECTION);
 
   if (!OLS_PAD_IS_SRC(srcpad)) {
     return OLS_PAD_LINK_WRONG_DIRECTION;
@@ -1071,7 +1040,6 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
 
   // old_pad_offset = pad->offset;
   // event = apply_pad_offset(pad, event, OLS_PAD_IS_SRC(pad));
-
   // if (OLS_PAD_IS_SINK(pad))
   //   serialized = OLS_EVENT_IS_SERIALIZED(event);
   // else
@@ -1221,8 +1189,8 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   OlsPadProbeType type;
   bool serialized;
 
-  // g_return_val_if_fail(OLS_IS_PAD(pad), FALSE);
-  // g_return_val_if_fail(OLS_IS_EVENT(event), FALSE);
+  // return_val_if_fail(OLS_IS_PAD(pad), false);
+  // return_val_if_fail(OLS_IS_EVENT(event), false);
 
   // OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
 
@@ -1261,7 +1229,6 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
     ols_event_unref(event);
   }
   OLS_PAD_UNLOCK(pad);
-  // OLS_TRACER_PAD_PUSH_EVENT_POST(pad, res);
   return res;
 
   /* ERROR handling */
@@ -1276,12 +1243,14 @@ unknown_direction: {
   ols_event_unref(event);
   goto done;
 }
+
 flushed: {
   // OLS_DEBUG_OBJECT(pad, "We're flushing");
   OLS_PAD_UNLOCK(pad);
   ols_event_unref(event);
   goto done;
 }
+
 eos: {
   // OLS_DEBUG_OBJECT(pad, "We're EOS");
   OLS_PAD_UNLOCK(pad);
