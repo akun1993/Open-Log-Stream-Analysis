@@ -518,6 +518,21 @@ typedef OlsPadLinkReturn (*ols_pad_link_function)(ols_pad_t *pad,
  */
 typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 
+
+/* misc */
+/**
+ * ols_pad_forward_function:
+ * @pad: the #ols_pad_t that is forwarded.
+ * @user_data: the void * to optional user data.
+ *
+ * A forward function is called for all internally linked pads, see
+ * ols_pad_forward().
+ *
+ * Returns: %TRUE if the dispatching procedure has to be stopped.
+ */
+typedef bool (*ols_pad_forward_function)	(ols_pad_t *pad, void * user_data);
+
+
 bool pad_link_maybe_ghosting(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
 void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,

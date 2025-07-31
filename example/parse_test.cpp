@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string>
 #include <util/platform.h>
-
 #include "ols-context.h"
+
 int GetConfigPath(char *path, size_t size, const char *name) {
 #if ALLOW_PORTABLE_MODE
   if (portable_mode) {
@@ -118,18 +118,15 @@ int main(int argc, char **argv) {
 
   ols_source_t *source = ols_source_create("text_file", "test_read", src_file_data);
 
-  ols_process_t *dispatch =
-      ols_process_create("data_dispatch", "test_dispatch", nullptr);  
-
+  ols_process_t *dispatch = ols_process_create("data_dispatch", "test_dispatch", nullptr);  
 
   ols_data_t * script_data = ols_data_create();
 
-  ols_data_set_string(script_data,"script_file_path","/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/python_script/parse_log_2.py");
-  ols_process_t *process =
-      ols_process_create("script_caller", "test_process", script_data);
+  ols_data_set_string(script_data,"script_file_path","/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py");
 
-  ols_output_t *xml_output =
-      ols_output_create("xml_output", "test_output", nullptr);
+  ols_process_t *process = ols_process_create("script_caller", "test_process", script_data);
+
+  ols_output_t *xml_output = ols_output_create("xml_output", "test_output", nullptr);
 
   ols_context_link(&source->context, &dispatch->context);
 

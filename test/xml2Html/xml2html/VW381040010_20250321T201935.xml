@@ -4,11 +4,11 @@
     <applications>
         <apps>
             <app>
-                <app_name>DSVFSALib</app_name>
+                <name>DSVFSALib</name>
                 <analysis></analysis>
             </app>
             <app>
-                <app_name>DSVPMLIB</app_name>
+                <name>DSVPMLIB</name>
                 <analysis></analysis>
             </app>
             <app>

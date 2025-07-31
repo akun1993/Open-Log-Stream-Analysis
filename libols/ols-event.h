@@ -10,8 +10,6 @@ typedef struct ols_event ols_event_t;
  * OlsEventTypeFlags:
  * @OLS_EVENT_TYPE_UPSTREAM:     Set if the event can travel upstream.
  * @OLS_EVENT_TYPE_DOWNSTREAM:   Set if the event can travel downstream.
- * @OLS_EVENT_TYPE_SERIALIZED:   Set if the event should be serialized with data
- *                               flow.
  *
  * #OlsEventTypeFlags indicate the aspects of the different #OlsEventType
  * values. You can get the type flags of a #OlsEventType with the
@@ -20,7 +18,6 @@ typedef struct ols_event ols_event_t;
 typedef enum {
   OLS_EVENT_TYPE_UPSTREAM = 1 << 0,
   OLS_EVENT_TYPE_DOWNSTREAM = 1 << 1,
-  OLS_EVENT_TYPE_SERIALIZED = 1 << 2,
 } OlsEventTypeFlags;
 
 #define OLS_EVENT_NUM_SHIFT (8)
@@ -72,14 +69,7 @@ typedef enum {
 #define OLS_EVENT_TYPE_BOTH                                                    \
   ((OlsEventTypeFlags)(OLS_EVENT_TYPE_UPSTREAM | OLS_EVENT_TYPE_DOWNSTREAM))
 
-/**
- * OLS_EVENT_IS_SERIALIZED:
- * @ev: the event to query
- *
- * Check if an event is serialized with the data stream.
- */
-#define OLS_EVENT_IS_SERIALIZED(ev)                                            \
-  !!(OLS_EVENT_TYPE(ev) & OLS_EVENT_TYPE_SERIALIZED)
+
 #define _FLAG(name) OLS_EVENT_TYPE_##name
 /**
  * OLSEventType:
@@ -109,14 +99,14 @@ typedef enum {
   OLS_EVENT_FLUSH_START = OLS_EVENT_MAKE_TYPE(10, _FLAG(BOTH)),
 
   OLS_EVENT_FLUSH_STOP =
-      OLS_EVENT_MAKE_TYPE(20, _FLAG(BOTH) | _FLAG(SERIALIZED)),
+      OLS_EVENT_MAKE_TYPE(20, _FLAG(BOTH)),
 
   /* downstream serialized events */
   OLS_EVENT_STREAM_START =
-      OLS_EVENT_MAKE_TYPE(30, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED)),
+      OLS_EVENT_MAKE_TYPE(30, _FLAG(DOWNSTREAM)),
 
   OLS_EVENT_EOS =
-      OLS_EVENT_MAKE_TYPE(40, _FLAG(DOWNSTREAM) | _FLAG(SERIALIZED)),
+      OLS_EVENT_MAKE_TYPE(40, _FLAG(DOWNSTREAM)),
 
 } ols_event_type;
 

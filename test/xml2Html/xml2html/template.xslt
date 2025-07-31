@@ -8,7 +8,7 @@
     <head>
         <style type="text/css">
 		html {direction:ltr;}
-		table {border-width:0pt;border-color:black;border-style:solid;border-collapse:collapse;padding:0;margin:0;width:200mm;table-layout:auto}
+		table {border-width:0pt;border-color:black;border-style:solid;border-collapse:collapse;padding:0;margin:0;width:350mm;table-layout:auto}
 		.border_style {border-width:1pt;border-color:black;border-style:solid;border-collapse:collapse;padding-left:5;padding-right:5;margin-top:10;margin-bottom:10;width:195mm}
 		tr {border-width:0pt;border-color:black;border-style:solid;padding:0;margin:0;text-align:left}
 		td {border-width:0pt;border-color:black;border-style:solid;padding:0;margin:0;text-align:left}
@@ -331,7 +331,7 @@
                 <xsl:for-each select="child::app">
 
                 <!-- Generate id for each ecu id -->
-                <xsl:variable name="app_id_tag" select="generate-id(child::app_name)"/>
+                <xsl:variable name="app_id_tag" select="generate-id(child::name)"/>
                 
                 <input type="hidden" class="treeView" name="treeView_parse_start"  id="{concat('start_marker_treeView_master_entry_',$app_id_tag)}" />
 
@@ -345,7 +345,7 @@
                             <input type="checkbox" name="treeView_checkbox" onChange="javascript:showHideSectionsAfterCheckbox(this)" onClick="javascript:showHideSectionsAfterCheckbox(this)" class="treeView" id="{concat('treeView_master_entry_',$app_id_tag)}"/>
                             <label for="{concat('treeView_master_entry_',$app_id_tag)}" id="{concat('label_master_entry_',$app_id_tag)}" class="treeView">
                             <span class="treeView_selector_item">+</span>
-                            <span class="treeView_label_content"><a name="{$app_id_tag}"><xsl:value-of select="child::app_name"/> - </a> Identification</span>
+                            <span class="treeView_label_content"><a name="{$app_id_tag}"><xsl:value-of select="child::name"/> - </a> Analysis Result</span>
                             </label>
                             </span>
                             </p>

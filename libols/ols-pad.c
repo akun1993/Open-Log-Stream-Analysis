@@ -1,8 +1,7 @@
 #include "ols-pad.h"
-
 #include <stdbool.h>
-
 #include "ols-internal.h"
+#include "util/debug.h"
 
 static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
                                                   ols_event_t *event,
@@ -34,8 +33,198 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
 
 #define OLS_PAD_CAST(obj) ((ols_pad_t *)(obj))
 
+
+
 /**
- * ols_pad_event_default:
+ * ols_pad_iterate_internal_links_default:
+ * @pad: the #ols_pad_t to get the internal links of.
+ * @parent: (allow-none): the parent of @pad or %NULL
+ *
+ * Iterate the list of pads to which the given pad is linked to inside of
+ * the parent element.
+ * This is the default handler, and thus returns an iterator of all of the
+ * pads inside the parent element with opposite direction.
+ *
+ *
+ * Returns: (nullable): a #GstIterator of #ols_pad_t, or %NULL if @pad
+ * has no parent. Unref each returned pad with ols_object_unref().
+ */
+
+GstIterator *ols_pad_iterate_internal_links_default (ols_pad_t * pad, ols_object_t * parent)
+{
+  GstIterator *res;
+  GList **padlist;
+
+  GMutex *lock;
+  void * owner;
+  ols_object_t *eparent;
+
+  return_val_if_fail (GST_IS_PAD (pad), NULL);
+
+  if (parent != NULL && GST_IS_ELEMENT (parent)) {
+    eparent = GST_ELEMENT_CAST (gst_object_ref (parent));
+  } else {
+    OLS_OBJECT_LOCK (pad);
+    eparent = GST_PAD_PARENT (pad);
+    if (!eparent || !GST_IS_ELEMENT (eparent))
+      goto no_parent;
+
+    gst_object_ref (eparent);
+    OLS_OBJECT_UNLOCK (pad);
+  }
+
+  if (pad->direction == OLS_PAD_SRC)
+    padlist = &eparent->sinkpads;
+  else
+    padlist = &eparent->srcpads;
+
+
+  owner = eparent;
+
+  lock = GST_OBJECT_GET_LOCK (eparent);
+
+  res = gst_iterator_new_list (GST_TYPE_PAD,
+      lock, cookie, padlist, (GObject *) owner, NULL);
+
+  gst_object_unref (owner);
+
+  return res;
+
+  /* ERRORS */
+no_parent:
+  {
+    GST_OBJECT_UNLOCK (pad);
+    GST_DEBUG_OBJECT (pad, "no parent element");
+    return NULL;
+  }
+}
+
+/**
+ * ols_pad_iterate_internal_links:
+ * @pad: the GstPad to get the internal links of.
+ *
+ * Gets an iterator for the pads to which the given pad is linked to inside
+ * of the parent element.
+ *
+ * Each #GstPad element yielded by the iterator will have its refcount increased,
+ * so unref after use.
+ *
+ * Free-function: gst_iterator_free
+ *
+ * Returns: (transfer full) (nullable): a new #GstIterator of #GstPad
+ *     or %NULL when the pad does not have an iterator function
+ *     configured. Use gst_iterator_free() after usage.
+ */
+GstIterator * ols_pad_iterate_internal_links (ols_pad_t * pad)
+{
+  ols_object_t *parent;
+
+  OLS_PAD_LOCK (pad);
+  ACQUIRE_PARENT (pad, parent, no_parent);
+  OLS_PAD_UNLOCK (pad);
+
+  if (OLS_PAD_ITERINTLINKFUNC (pad))
+    res = OLS_PAD_ITERINTLINKFUNC (pad) (pad, parent);
+
+  RELEASE_PARENT (parent);
+
+  return res;
+
+  /* ERRORS */
+no_parent:
+  {
+    //GST_DEBUG_OBJECT (pad, "no parent");
+    OLS_PAD_UNLOCK (pad);
+    return NULL;
+  }
+}
+
+/**
+ * ols_pad_forward:
+ * @pad: a #ols_pad_t
+ * @forward: (scope call): a #ols_pad_forward_function
+ * @user_data: user data passed to @forward
+ *
+ * Calls @forward for all internally linked pads of @pad. This function deals with
+ * dynamically changing internal pads and will make sure that the @forward
+ * function is only called once for each pad.
+ *
+ * When @forward returns %TRUE, no further pads will be processed.
+ *
+ * Returns: %TRUE if one of the dispatcher functions returned %TRUE.
+ */
+bool ols_pad_forward (ols_pad_t * pad, ols_pad_forward_function forward, void * user_data)
+{
+  bool result = false;
+
+  bool done = false;
+
+  GList *pushed_pads = NULL;
+
+  iter = gst_pad_iterate_internal_links (pad);
+
+  if (!iter)
+    goto no_iter;
+
+  while (!done) {
+    switch (gst_iterator_next (iter, &item)) {
+      case GST_ITERATOR_OK:
+      {
+        ols_pad_t *intpad;
+
+        intpad = g_value_get_object (&item);
+        /* if already pushed, skip. FIXME, find something faster to tag pads */
+        if (intpad == NULL || g_list_find (pushed_pads, intpad)) {
+          g_value_reset (&item);
+          break;
+        }
+        //OLS_LOG_OBJECT (pad, "calling forward function on pad %s:%s",GST_DEBUG_PAD_NAME (intpad));
+        done = result = forward (intpad, user_data);
+
+        pushed_pads = g_list_prepend (pushed_pads, intpad);
+
+        //g_value_reset (&item);
+        break;
+      }
+
+      case GST_ITERATOR_DONE:
+        done = true;
+        break;
+    }
+  }
+  g_value_unset (&item);
+  gst_iterator_free (iter);
+
+  g_list_free (pushed_pads);
+
+no_iter:
+  return result;
+}
+
+typedef struct
+{
+  ols_event_t *event;
+  bool result;
+  bool dispatched;
+} EventData;
+
+static bool event_forward_func (ols_pad_t * pad, EventData * data)
+{
+  /* for each pad we send to, we should ref the event; it's up
+   * to downstream to unref again when handled. */
+  // OLS_LOG_OBJECT (pad, "Reffing and pushing event %p (%s) to %s:%s",
+  //     data->event, GST_EVENT_TYPE_NAME (data->event), GST_DEBUG_PAD_NAME (pad));
+
+  data->result |= ols_pad_push_event (pad, ols_event_ref (data->event));
+
+  data->dispatched = true;
+
+  /* don't stop */
+  return false;
+}
+
+/**
+ * gst_pad_event_default:
  * @pad: a #GstPad to call the default event handler on.
  * @parent: (allow-none): the parent of @pad or %NULL
  * @event: (transfer full): the #GstEvent to handle.
@@ -50,49 +239,38 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
  *
  * Returns: %TRUE if the event was sent successfully.
  */
-static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
-                                  ols_event_t *event) {
-  bool result = true;
-  UNUSED_PARAMETER(pad);
-  UNUSED_PARAMETER(parent);
-  UNUSED_PARAMETER(event);
-  // g_return_val_if_fail(GST_IS_PAD(pad), FALSE);
-  // g_return_val_if_fail(event != NULL, FALSE);
+bool ols_pad_event_default (ols_pad_t * pad, ols_object_t * parent, ols_event_t * event)
+{
+  bool result, forward = true;
 
-  // GST_LOG_OBJECT(pad, "default event handler for event %" GST_PTR_FORMAT,
-  //                event);
+  return_val_if_fail (OLS_IS_PAD (pad), false);
+  return_val_if_fail (event != NULL, false);
 
-  // switch (GST_EVENT_TYPE(event)) {
-  // case GST_EVENT_CAPS:
-  //   forward = GST_PAD_IS_PROXY_CAPS(pad);
-  //   result = TRUE;
-  //   break;
-  // default:
-  //   break;
-  // }
+  //OLS_LOG_OBJECT (pad, "default event handler for event %" GST_PTR_FORMAT, event);
 
-  // if (forward) {
-  //   EventData data;
+  if (forward) {
+    EventData data;
 
-  //   data.event = event;
-  //   data.dispatched = FALSE;
-  //   data.result = FALSE;
+    data.event = event;
+    data.dispatched = false;
+    data.result = false;
 
-  //   gst_pad_forward(pad, (GstPadForwardFunction)event_forward_func, &data);
+    ols_pad_forward (pad, (ols_pad_forward_function) event_forward_func, &data);
 
-  //   /* for sinkpads without a parent element or without internal links,
-  //   nothing
-  //    * will be dispatched but we still want to return TRUE. */
-  //   if (data.dispatched)
-  //     result = data.result;
-  //   else
-  //     result = TRUE;
-  // }
+    /* for sinkpads without a parent element or without internal links, nothing
+     * will be dispatched but we still want to return TRUE. */
+    if (data.dispatched)
+      result = data.result;
+    else
+      result = true;
+  }
 
-  // gst_event_unref(event);
+  ols_event_unref (event);
 
   return result;
 }
+
+
 
 static void ols_pad_init(ols_pad_t *pad,const char *name) {
   // pad->priv = ols_pad_get_instance_private(pad);
@@ -118,8 +296,6 @@ static void ols_pad_init(ols_pad_t *pad,const char *name) {
   pthread_mutex_init(&pad->mutex, NULL);
 
   pthread_mutex_init_recursive(&pad->stream_rec_lock);
-
-  // g_hook_list_init(&pad->probes, sizeof(OLSProbe));
 
   // pad->priv->events = g_array_sized_new(FALSE, TRUE, sizeof(PadEvent), 16);
   // pad->priv->events_cookie = 0;
@@ -248,7 +424,6 @@ bool ols_pad_pause_task(ols_pad_t *pad) {
 
   res = ols_task_set_state(task, OLS_TASK_PAUSED);
   /* unblock activation waits if any */
-  // pad->priv->in_activation = FALSE;
   // g_cond_broadcast (&pad->priv->activation_cond);
   OLS_PAD_UNLOCK(pad);
 
@@ -301,6 +476,7 @@ no_task: {
   /* this is not an error */
   return true;
 }
+
 join_failed: {
   /* this is bad, possibly the application tried to join the task from
    * the task's thread. We install the task again so that it will be stopped
@@ -317,9 +493,7 @@ join_failed: {
 }
 
 bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
-  // GSList *pads_created = NULL;
-  
-  
+
   bool ret;
 
   // if (!prepare_link_maybe_ghosting(&src, &sink, &pads_created)) {
@@ -330,7 +504,6 @@ bool pad_link_maybe_ghosting(ols_pad_t *src, ols_pad_t *sink) {
   if (!ret) {
     blog(LOG_DEBUG, "pad link failed");
   }
-  // g_slist_free(pads_created);
 
   return ret;
 }
@@ -1187,10 +1360,10 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   bool res = false;
 
   OlsPadProbeType type;
-  bool serialized;
 
-  // return_val_if_fail(OLS_IS_PAD(pad), false);
-  // return_val_if_fail(OLS_IS_EVENT(event), false);
+  OlsFlowReturn ret;
+  return_val_if_fail(OLS_IS_PAD(pad), false);
+  return_val_if_fail(OLS_IS_EVENT(event), false);
 
   // OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
 
@@ -1208,55 +1381,31 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
 
   OLS_PAD_LOCK(pad);
 
-  serialized = OLS_EVENT_IS_SERIALIZED(event);
+  
 
-  if (!serialized) {
-    OlsFlowReturn ret;
+  /* non-serialized and non-sticky events are pushed right away. */
+  ret = ols_pad_push_event_unchecked(pad, event, type);
+  /* dropped events by a probe are not an error */
+  res = (ret == OLS_FLOW_OK || ret == OLS_FLOW_CUSTOM_SUCCESS ||
+          ret == OLS_FLOW_CUSTOM_SUCCESS_1);
 
-    /* non-serialized and non-sticky events are pushed right away. */
-    ret = ols_pad_push_event_unchecked(pad, event, type);
-    /* dropped events by a probe are not an error */
-    res = (ret == OLS_FLOW_OK || ret == OLS_FLOW_CUSTOM_SUCCESS ||
-           ret == OLS_FLOW_CUSTOM_SUCCESS_1);
-  } else {
-    /* Errors in sticky event pushing are no problem and ignored here
-     * as they will cause more meaningful errors during data flow.
-     * For EOS events, that are not followed by data flow, we still
-     * return FALSE here though.
-     */
-    if (OLS_EVENT_TYPE(event) != OLS_EVENT_EOS)
-      res = true;
-    ols_event_unref(event);
-  }
   OLS_PAD_UNLOCK(pad);
   return res;
 
   /* ERROR handling */
 wrong_direction: {
-  // g_warning("pad %s:%s pushing %s event in wrong direction",
+  // warning("pad %s:%s pushing %s event in wrong direction",
   //           OLS_DEBUG_PAD_NAME(pad), OLS_EVENT_TYPE_NAME(event));
   ols_event_unref(event);
   goto done;
 }
+
 unknown_direction: {
-  // g_warning("pad %s:%s has invalid direction", OLS_DEBUG_PAD_NAME(pad));
+  // warning("pad %s:%s has invalid direction", OLS_DEBUG_PAD_NAME(pad));
   ols_event_unref(event);
   goto done;
 }
 
-flushed: {
-  // OLS_DEBUG_OBJECT(pad, "We're flushing");
-  OLS_PAD_UNLOCK(pad);
-  ols_event_unref(event);
-  goto done;
-}
-
-eos: {
-  // OLS_DEBUG_OBJECT(pad, "We're EOS");
-  OLS_PAD_UNLOCK(pad);
-  ols_event_unref(event);
-  goto done;
-}
 done:
   // OLS_TRACER_PAD_PUSH_EVENT_POST(pad, FALSE);
   return res;
