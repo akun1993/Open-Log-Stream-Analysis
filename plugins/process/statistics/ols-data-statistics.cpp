@@ -48,14 +48,14 @@ struct DataStatistics {
 
   inline DataStatistics(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
-    ols_process_update(process_, settings);
+		update(settings);
   }
 
   inline ~DataStatistics() {}
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-  void Update(ols_data_t *settings);
+  void update(ols_data_t *settings);
 
   ols_pad_t *createRecvPad(const char *caps);
   ols_pad_t *createSendPad(const char *caps);
@@ -132,12 +132,10 @@ void DataStatistics::onDataBuff(ols_buffer_t *buffer){
 
 }
 
-void DataStatistics::Update(ols_data_t *settings)
+void DataStatistics::update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
 }
-
-
 
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int
 
@@ -193,7 +191,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<DataStatistics *>(data)->Update(settings);
+		reinterpret_cast<DataStatistics *>(data)->update(settings);
 	};
 
 	ols_register_process(&si);

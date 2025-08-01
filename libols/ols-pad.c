@@ -51,71 +51,44 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
 bool ols_pad_forward (ols_pad_t * pad, ols_pad_forward_function forward, void * user_data)
 {
   bool result = false;
-
   bool done = false;
-
-
-  ols_object_t *parent;
+  size_t i;
+  ols_object_t *parent = NULL;
 
   OLS_PAD_LOCK (pad);
   ACQUIRE_PARENT (pad, parent, no_parent);
   OLS_PAD_UNLOCK (pad);
 
-  void * owner;
-  ols_object_t *eparent;
+  if (pad->direction == OLS_PAD_SRC){
+    for (i = 0; i < parent->sinkpads.num && !done; ++i) {
 
-  if (pad->direction == OLS_PAD_SRC)
-    padlist = &eparent->sinkpads;
-  else
-    padlist = &eparent->srcpads;
-
-  owner = eparent;
-
-  gst_object_unref (owner);
+      ols_pad_t *intpad = parent->sinkpads.array[i];
+      if (intpad == NULL ) {
+        break;
+      }
+      //OLS_LOG_OBJECT (pad, "calling forward function on pad %s:%s",GST_DEBUG_PAD_NAME (intpad));
+      done = result = forward (intpad, user_data);
+    }
+  } else {
+    for (i = 0; i < parent->srcpads.num ; ++i) {
+      ols_pad_t *intpad = parent->srcpads.array[i];
+      if (intpad == NULL ) {
+        break;
+      }
+      //OLS_LOG_OBJECT (pad, "calling forward function on pad %s:%s",GST_DEBUG_PAD_NAME (intpad));
+      done = result = forward (intpad, user_data);
+    }
+  }
 
   RELEASE_PARENT (parent);
-
-  return res;
-
+  return result;
   /* ERRORS */
 no_parent:
   {
     //GST_DEBUG_OBJECT (pad, "no parent");
     OLS_PAD_UNLOCK (pad);
-    return NULL;
+    return result;
   }
-
-  if (!iter)
-    goto no_iter;
-
-  while (!done) {
-    switch (gst_iterator_next (iter, &item)) {
-      case GST_ITERATOR_OK:
-      {
-        ols_pad_t *intpad;
-
-        /* if already pushed, skip. FIXME, find something faster to tag pads */
-        if (intpad == NULL || g_list_find (pushed_pads, intpad)) {
-          g_value_reset (&item);
-          break;
-        }
-        //OLS_LOG_OBJECT (pad, "calling forward function on pad %s:%s",GST_DEBUG_PAD_NAME (intpad));
-        done = result = forward (intpad, user_data);
-
-        pushed_pads = g_list_prepend (pushed_pads, intpad);
-
-        //g_value_reset (&item);
-        break;
-      }
-
-      case GST_ITERATOR_DONE:
-        done = true;
-        break;
-    }
-  }
-
-no_iter:
-  return result;
 }
 
 typedef struct
@@ -160,7 +133,7 @@ bool ols_pad_event_default (ols_pad_t * pad, ols_object_t * parent, ols_event_t 
 {
   bool result, forward = true;
 
-  return_val_if_fail (OLS_IS_PAD (pad), false);
+  return_val_if_fail (pad != NULL, false);
   return_val_if_fail (event != NULL, false);
 
   //OLS_LOG_OBJECT (pad, "default event handler for event %" GST_PTR_FORMAT, event);
@@ -1279,8 +1252,8 @@ bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event) {
   OlsPadProbeType type;
 
   OlsFlowReturn ret;
-  return_val_if_fail(OLS_IS_PAD(pad), false);
-  return_val_if_fail(OLS_IS_EVENT(event), false);
+  return_val_if_fail(pad != NULL, false);
+  return_val_if_fail(event != NULL, false);
 
   // OLS_TRACER_PAD_PUSH_EVENT_PRE(pad, event);
 

@@ -223,17 +223,78 @@
     </head>
 
         <body>
+				
+				<table style="border-bottom-style=groove;border-bottom-color=black;border-bottom-width=2">
+					<tbody>
+						<tr>
+							<td valign="bottom" style="width:45mm;">
+								<p class="header_style_big">OLS Analysis Engine</p>
+							</td>
+							<td valign="bottom" style="width:80mm;text-align:center">
+								<p class="header_style_big">Analysis documentation</p>
+							</td>
+							<td valign="bottom" class="align_opposite" style="width:45mm;">
+								<p class="header_style_small">21.03.2025 20:19:35+08:<br></br></p>
+							</td>
+						</tr>
+					</tbody>
+				</table>				
+				
+				<p class="p_small"></p>
 
         <xsl:apply-templates select="protocol/system"/> 
-  
-        <xsl:for-each select="descendant::app">
-            <a href="#{generate-id(app_name)}">
-            <xsl:value-of select="app_name"/></a><br/>
-            <xsl:text>&#10;</xsl:text>
-        </xsl:for-each>
+				
+				<p class="p_small"></p>
 
+				<table>
+					<tbody>
+					<tr><td valign="top" style="width:200mm">&#160;</td></tr>
+						
+					<tr>
+					<td valign="top" style="width:200mm">
+					<p class="header_style_bigu">
+						<a name="inhalt">Content</a>
+					</p>								
+					<p class="p_small"></p> 
+								
+					<table>			
+					<tbody>
+					<tr>
+						<td><p class="default_style_b">App name</p></td>
+						<td><p class="default_style_b">Function describe</p></td>
+						<td><p class="default_style_b">Start times </p></td>
+						<td><p class="default_style_b">Software</p></td>
+						<td><p class="default_style_b">HW</p></td>
+						<td><p class="default_style_b">DTC</p></td>
+						<td><p class="default_style_b">SWaP/FoD</p></td>
+					</tr>	
+										
+					<tr>
+						<td colspan="7" style="height:1px;background-color:#000000"></td>
+					</tr>
+										
+					<xsl:for-each select="descendant::app">
+							<tr>
+						  <td>
+							<p><a href="#{generate-id(name)}"><xsl:value-of select="name"/></a>
+							<xsl:text>&#10;</xsl:text>
+							</p>
+							</td>
+							</tr>
+					</xsl:for-each>
+					
+					</tbody>		
+					</table>	
+					</td>			
+					</tr>
+						
+					<tr>
+						<td valign="top" style="width:200mm">&#160;</td>
+					</tr>						
 
-        <xsl:apply-templates select="protocol/applications/apps"/> 
+        	<xsl:apply-templates select="protocol/applications/apps"/> 
+					</tbody>
+				</table>
 
         </body>
         </html>
@@ -242,28 +303,25 @@
 
 
     <xsl:template match="protocol/system">
-        <table>
-            <tbody>
-            <tr >
-                <!-- name() get the name of  tag. -->    
-                <td ><p>workshop_code:</p></td>
-                <td ><p>version:</p></td>
-            </tr>
-
-            <tr>
-                <td ><p><xsl:value-of select="workshop_code/serial_number"/></p></td>
-                <!-- call template with more than one param. -->    
-                <xsl:call-template name="formatText">
-                    <!-- call template with static param -->    
-                    <xsl:with-param name="tagName">Software Name</xsl:with-param>
-                    <!-- call template with dynamic param --> 
-                    <xsl:with-param name="inputText" select="software_name"/>
-                </xsl:call-template>
-
-            </tr>
-
-            </tbody>
-        </table>
+		
+			<table>
+				<tbody>
+					<tr>
+						<td valign="top" style="width:200mm">
+							<p class="default_style_bu">Vehicle</p>
+						
+								<!-- call template with more than one param. -->    
+								<xsl:call-template name="formatText">
+									<!-- call template with static param -->    
+									<xsl:with-param name="tagName">Software Name</xsl:with-param>
+									<!-- call template with dynamic param --> 
+									<xsl:with-param name="inputText" select="software_name"/>
+								</xsl:call-template>									
+						
+						</td>
+					</tr>
+				</tbody>
+			</table>
     </xsl:template>
 
     <xsl:template match="information/workshop_code">
@@ -288,17 +346,20 @@
     <xsl:template name="formatText">
         <xsl:param name="tagName"/>
         <xsl:param name="inputText"/>
-        <td >
-        <table>
+
+        <table style="display:inline;width:auto;margin:0;">
             <tbody>
-            <tr bgcolor="#9acd32">
+            <tr>
                 <!-- name() get the name of  tag. -->    
-                <td ><p><xsl:value-of select="$tagName"/></p></td>
-                <td ><p><xsl:value-of select="$inputText"/></p></td>
+							<td class="default_style"></td>
+							<td class="default_style"><b><xsl:value-of select="$tagName"/></b></td>
+							<td class="default_style"><b>: </b></td>
+							<td class="default_style">&#160;</td>
+							<td class="default_style"><xsl:value-of select="$inputText"/></td>
             </tr>
             </tbody>
         </table>
-        </td>
+
     </xsl:template>
 
 
@@ -319,64 +380,61 @@
 
 
     <xsl:template match="protocol/applications/apps">
-        <table>
-            <tbody>
-            <tr >
-                <!-- name() get the name of  tag. -->    
-                <td>
-                <p>Communications Data </p>
-                <p margin-top="10pt" margin-bottom="10pt"> </p>
-                
-                <!-- child::name , Represent child of current node with name -->
-                <xsl:for-each select="child::app">
 
-                <!-- Generate id for each ecu id -->
-                <xsl:variable name="app_id_tag" select="generate-id(child::name)"/>
-                
-                <input type="hidden" class="treeView" name="treeView_parse_start"  id="{concat('start_marker_treeView_master_entry_',$app_id_tag)}" />
+			<tr >
+					<!-- name() get the name of  tag. -->    
+					<td>
+					<p class="header_style_bigu">Applications analysis result</p>
+					<p class="p_small"></p>
+					<p margin-top="10pt" margin-bottom="10pt"> </p>
+					
+					<!-- child::name , Represent child of current node with name -->
+					<xsl:for-each select="child::app">
+					<!-- Generate id for each ecu id -->
+					<xsl:variable name="app_id_tag" select="generate-id(child::name)"/>
+					
+					<input type="hidden" class="treeView" name="treeView_parse_start"  id="{concat('start_marker_treeView_master_entry_',$app_id_tag)}" />
 
-                <table>
-                    <tbody>
-                    <tr>
-                        <!-- name() get the name of  tag. --> 
-                        <td>   
-                            <p class="default_style_bu_diagfunction">
-                            <span class="treeView_header">
-                            <input type="checkbox" name="treeView_checkbox" onChange="javascript:showHideSectionsAfterCheckbox(this)" onClick="javascript:showHideSectionsAfterCheckbox(this)" class="treeView" id="{concat('treeView_master_entry_',$app_id_tag)}"/>
-                            <label for="{concat('treeView_master_entry_',$app_id_tag)}" id="{concat('label_master_entry_',$app_id_tag)}" class="treeView">
-                            <span class="treeView_selector_item">+</span>
-                            <span class="treeView_label_content"><a name="{$app_id_tag}"><xsl:value-of select="child::name"/> - </a> Analysis Result</span>
-                            </label>
-                            </span>
-                            </p>
-                        </td>
-                        <td class="align_opposite" valign="top" style="width=65mm;">
-                            <p class="default_style_diagfunction"> <a href="#inhalt">Agenda item^</a><br/></p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+					<table>
+							<tbody>
+							<tr>
+									<!-- name() get the name of  tag. --> 
+									<td>   
+											<p class="default_style_bu_diagfunction">
+											<span class="treeView_header">
+											<input type="checkbox" name="treeView_checkbox" onChange="javascript:showHideSectionsAfterCheckbox(this)" onClick="javascript:showHideSectionsAfterCheckbox(this)" class="treeView" id="{concat('treeView_master_entry_',$app_id_tag)}"/>
+											<label for="{concat('treeView_master_entry_',$app_id_tag)}" id="{concat('label_master_entry_',$app_id_tag)}" class="treeView">
+											<span class="treeView_selector_item">+</span>
+											<span class="treeView_label_content"><a name="{$app_id_tag}"><xsl:value-of select="child::name"/> - </a> Analysis Result</span>
+											</label>
+											</span>
+											</p>
+									</td>
+									<td class="align_opposite" valign="top" style="width=65mm;">
+											<p class="default_style_diagfunction"> <a href="#inhalt">Top^</a><br/></p>
+									</td>
+							</tr>
+							</tbody>
+					</table>
 
-                <span class="treeView_content" id="{concat('content_',$app_id_tag)}">
-                <table class="default_style">
-                    <xsl:for-each select="current()/analysis/item">
-                    <tr>
-                    <td valign="top" class="default_style" style="width:105mm">
-                    <span class="default_style_b"></span>
-                    <span class="default_style_b"><xsl:value-of select="current()"/></span>
-                    </td>
-                    <td valign="top" colspan="2" style="width:200mm" class="default_style"><xsl:value-of select="current()"/> </td>
-                    </tr>
-                    </xsl:for-each>
-                </table>
-                </span>
+					<span class="treeView_content" id="{concat('content_',$app_id_tag)}">
+					<table class="default_style">
+							<xsl:for-each select="current()/analysis/item">
+							<tr>
+							<td valign="top" class="default_style" style="width:105mm">
+							<span class="default_style_b"></span>
+							<span class="default_style_b"><xsl:value-of select="current()"/></span>
+							</td>
+							<td valign="top" colspan="2" style="width:200mm" class="default_style"><xsl:value-of select="current()"/> </td>
+							</tr>
+							</xsl:for-each>
+					</table>
+					</span>
 
-                </xsl:for-each>    
-                <p></p>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+					</xsl:for-each>    
+					<p></p>
+					</td>
+			</tr>
 
     </xsl:template>
     

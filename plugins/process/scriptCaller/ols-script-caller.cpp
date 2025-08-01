@@ -154,7 +154,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 				dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
 		
-				for (int i = 0; i < process_->context.numsrcpads; ++i) {
+				for (int i = 0; i < process_->context.srcpads.num; ++i) {
 					ols_pad_t *pad = process_->context.srcpads.array[i];
 					ols_pad_push(pad, buffer);
 				}

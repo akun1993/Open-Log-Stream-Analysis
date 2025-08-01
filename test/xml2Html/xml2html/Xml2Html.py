@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import time
 from lxml import etree
 
 #解析XML
@@ -21,7 +21,11 @@ html_doc = transform(xml_doc)
 
 #输出结果
 #输出结果
-with  open('XmltoHtml.html', 'w', encoding="utf-8") as f1:
+
+timestamp = time.time()
+outfile = "XmltoHtml-" + str(int(timestamp)) + ".html"
+
+with  open(outfile, 'w', encoding="utf-8") as f1:
     f1.write(str(html_doc))
     f1.close()
 

@@ -161,7 +161,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
 			//begin of cold start 
 			ols_event_t *event = ols_event_new_eos();
-			for (int i = 0; i < process_->context.numsrcpads; ++i) {
+			for (int i = 0; i < process_->context.srcpads.num; ++i) {
 				ols_pad_t *pad = process_->context.srcpads.array[i];
 				ols_pad_push_event(pad, event);
 			}				
