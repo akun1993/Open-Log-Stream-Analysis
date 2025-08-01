@@ -34,111 +34,6 @@ static bool ols_pad_event_default(ols_pad_t *pad, ols_object_t *parent,
 #define OLS_PAD_CAST(obj) ((ols_pad_t *)(obj))
 
 
-
-/**
- * ols_pad_iterate_internal_links_default:
- * @pad: the #ols_pad_t to get the internal links of.
- * @parent: (allow-none): the parent of @pad or %NULL
- *
- * Iterate the list of pads to which the given pad is linked to inside of
- * the parent element.
- * This is the default handler, and thus returns an iterator of all of the
- * pads inside the parent element with opposite direction.
- *
- *
- * Returns: (nullable): a #GstIterator of #ols_pad_t, or %NULL if @pad
- * has no parent. Unref each returned pad with ols_object_unref().
- */
-
-GstIterator *ols_pad_iterate_internal_links_default (ols_pad_t * pad, ols_object_t * parent)
-{
-  GstIterator *res;
-  GList **padlist;
-
-  GMutex *lock;
-  void * owner;
-  ols_object_t *eparent;
-
-  return_val_if_fail (GST_IS_PAD (pad), NULL);
-
-  if (parent != NULL && GST_IS_ELEMENT (parent)) {
-    eparent = GST_ELEMENT_CAST (gst_object_ref (parent));
-  } else {
-    OLS_OBJECT_LOCK (pad);
-    eparent = GST_PAD_PARENT (pad);
-    if (!eparent || !GST_IS_ELEMENT (eparent))
-      goto no_parent;
-
-    gst_object_ref (eparent);
-    OLS_OBJECT_UNLOCK (pad);
-  }
-
-  if (pad->direction == OLS_PAD_SRC)
-    padlist = &eparent->sinkpads;
-  else
-    padlist = &eparent->srcpads;
-
-
-  owner = eparent;
-
-  lock = GST_OBJECT_GET_LOCK (eparent);
-
-  res = gst_iterator_new_list (GST_TYPE_PAD,
-      lock, cookie, padlist, (GObject *) owner, NULL);
-
-  gst_object_unref (owner);
-
-  return res;
-
-  /* ERRORS */
-no_parent:
-  {
-    GST_OBJECT_UNLOCK (pad);
-    GST_DEBUG_OBJECT (pad, "no parent element");
-    return NULL;
-  }
-}
-
-/**
- * ols_pad_iterate_internal_links:
- * @pad: the GstPad to get the internal links of.
- *
- * Gets an iterator for the pads to which the given pad is linked to inside
- * of the parent element.
- *
- * Each #GstPad element yielded by the iterator will have its refcount increased,
- * so unref after use.
- *
- * Free-function: gst_iterator_free
- *
- * Returns: (transfer full) (nullable): a new #GstIterator of #GstPad
- *     or %NULL when the pad does not have an iterator function
- *     configured. Use gst_iterator_free() after usage.
- */
-GstIterator * ols_pad_iterate_internal_links (ols_pad_t * pad)
-{
-  ols_object_t *parent;
-
-  OLS_PAD_LOCK (pad);
-  ACQUIRE_PARENT (pad, parent, no_parent);
-  OLS_PAD_UNLOCK (pad);
-
-  if (OLS_PAD_ITERINTLINKFUNC (pad))
-    res = OLS_PAD_ITERINTLINKFUNC (pad) (pad, parent);
-
-  RELEASE_PARENT (parent);
-
-  return res;
-
-  /* ERRORS */
-no_parent:
-  {
-    //GST_DEBUG_OBJECT (pad, "no parent");
-    OLS_PAD_UNLOCK (pad);
-    return NULL;
-  }
-}
-
 /**
  * ols_pad_forward:
  * @pad: a #ols_pad_t
@@ -159,9 +54,36 @@ bool ols_pad_forward (ols_pad_t * pad, ols_pad_forward_function forward, void * 
 
   bool done = false;
 
-  GList *pushed_pads = NULL;
 
-  iter = gst_pad_iterate_internal_links (pad);
+  ols_object_t *parent;
+
+  OLS_PAD_LOCK (pad);
+  ACQUIRE_PARENT (pad, parent, no_parent);
+  OLS_PAD_UNLOCK (pad);
+
+  void * owner;
+  ols_object_t *eparent;
+
+  if (pad->direction == OLS_PAD_SRC)
+    padlist = &eparent->sinkpads;
+  else
+    padlist = &eparent->srcpads;
+
+  owner = eparent;
+
+  gst_object_unref (owner);
+
+  RELEASE_PARENT (parent);
+
+  return res;
+
+  /* ERRORS */
+no_parent:
+  {
+    //GST_DEBUG_OBJECT (pad, "no parent");
+    OLS_PAD_UNLOCK (pad);
+    return NULL;
+  }
 
   if (!iter)
     goto no_iter;
@@ -172,7 +94,6 @@ bool ols_pad_forward (ols_pad_t * pad, ols_pad_forward_function forward, void * 
       {
         ols_pad_t *intpad;
 
-        intpad = g_value_get_object (&item);
         /* if already pushed, skip. FIXME, find something faster to tag pads */
         if (intpad == NULL || g_list_find (pushed_pads, intpad)) {
           g_value_reset (&item);
@@ -192,10 +113,6 @@ bool ols_pad_forward (ols_pad_t * pad, ols_pad_forward_function forward, void * 
         break;
     }
   }
-  g_value_unset (&item);
-  gst_iterator_free (iter);
-
-  g_list_free (pushed_pads);
 
 no_iter:
   return result;
