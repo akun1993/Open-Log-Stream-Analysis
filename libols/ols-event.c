@@ -68,3 +68,15 @@ ols_event_t *ols_event_new_eos(){
 
     return ols_event;
 }
+
+
+ols_event_t *ols_event_new_stream_start(){
+    ols_event_t *ols_event = ols_event_new();
+
+    if(ols_event) {
+        ols_event_init(ols_event);
+        ols_event->ev_type = OLS_EVENT_STREAM_START;
+    }
+
+    return ols_event;
+}

@@ -168,7 +168,7 @@ static void ols_pad_init(ols_pad_t *pad,const char *name) {
   OLS_PAD_NAME(pad) =  bstrdup(name);
 
   OLS_PAD_DIRECTION(pad) = OLS_PAD_UNKNOWN;
-
+  
   OLS_PAD_EVENTFUNC(pad) = ols_pad_event_default;
 
   OLS_PAD_CHAINLISTFUNC(pad) = ols_pad_chain_list_default;
@@ -179,6 +179,7 @@ static void ols_pad_init(ols_pad_t *pad,const char *name) {
 
   OLS_PAD_TASK(pad) = NULL;
 
+  dstr_init(&OLS_PAD_CAPS(pad));
   // g_rec_mutex_init(&pad->stream_rec_lock);
 
   pthread_cond_init(&pad->block_cond, NULL);

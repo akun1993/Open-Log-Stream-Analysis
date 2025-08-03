@@ -120,9 +120,7 @@ ols_pad_t * XmlOutput::createRecvPad(const char *caps){
 void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	ols_meta_txt_t * meta_txt = (ols_meta_txt_t *) buffer->meta;
-
 	ols_meta_result *meta_result = buffer->result;
-
 
 	if(!meta_result->tag.array){
 		blog(LOG_ERROR,"no tag in meta result");

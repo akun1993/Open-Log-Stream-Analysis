@@ -101,7 +101,7 @@ typedef enum {
   OLS_EVENT_FLUSH_STOP =
       OLS_EVENT_MAKE_TYPE(20, _FLAG(BOTH)),
 
-  /* downstream serialized events */
+  /* downstream  events */
   OLS_EVENT_STREAM_START =
       OLS_EVENT_MAKE_TYPE(30, _FLAG(DOWNSTREAM)),
 
@@ -127,6 +127,8 @@ static inline ols_event_t *ols_event_copy(const ols_event_t *event) {
 }
 
 ols_event_t *ols_event_new_eos();
+
+ols_event_t *ols_event_new_stream_start();
 
 #else  /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 

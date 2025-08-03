@@ -11,3 +11,6 @@ def parse_str(timeStamp, pid,tid,log_lv,tag_str , log_str):
         elif "Request login to" in log_str:
             return [log_str]
     return []
+
+def get_caps():
+    return "DSVTSPConnectSVC"

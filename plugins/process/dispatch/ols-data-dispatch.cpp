@@ -5,11 +5,14 @@
 #include <memory>
 #include <ols-module.h>
 #include <string>
+#include <map>
+#include <list>
 #include <sys/stat.h>
 #include <util/platform.h>
 #include <util/str-util.h>
 #include <util/time-parse.h>
 #include <util/util.hpp>
+
 
 using namespace std;
 
@@ -34,9 +37,8 @@ struct DataDispatch {
   ols_process_t *process_ = nullptr;
 
   int year_{1970};
-
-  // ols_pad_t     *srcpad_  = nullptr;
-  // ols_pad_t     *sinkpad_  = nullptr;
+  
+  std::map<std::string, std::list<ols_pad_t *>> tag2Pad_;
 
   /* --------------------------- */
 
@@ -70,13 +72,12 @@ static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *paren
 
 	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
 	dispatch->onDataBuff(buffer);
-
 	//blog(LOG_DEBUG, "dispatch_sink_chain_func %s",ols_txt->data );
 	return OLS_FLOW_OK;
 }
 
 static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	//blog(LOG_DEBUG, "dispatch_sink_link_func");
+	blog(LOG_DEBUG, "dispatch_sink_link_func");
 	return OLS_PAD_LINK_OK;
 }
 
@@ -160,7 +161,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
 		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
 			//begin of cold start 
-			ols_event_t *event = ols_event_new_eos();
+			ols_event_t *event = ols_event_new_stream_start();
 			for (int i = 0; i < process_->context.srcpads.num; ++i) {
 				ols_pad_t *pad = process_->context.srcpads.array[i];
 				ols_pad_push_event(pad, event);

@@ -56,25 +56,6 @@ typedef enum {
  * @OLS_PAD_PROBE_TYPE_QUERY_UPSTREAM: probe upstream queries
  * @OLS_PAD_PROBE_TYPE_PUSH: probe push
  * @OLS_PAD_PROBE_TYPE_PULL: probe pull
- * @OLS_PAD_PROBE_TYPE_BLOCKING: probe and block at the next opportunity, at
- * data flow or when idle
- * @OLS_PAD_PROBE_TYPE_DATA_DOWNSTREAM: probe downstream data (buffers, buffer
- * lists, and events)
- * @OLS_PAD_PROBE_TYPE_DATA_UPSTREAM: probe upstream data (events)
- * @OLS_PAD_PROBE_TYPE_DATA_BOTH: probe upstream and downstream data (buffers,
- * buffer lists, and events)
- * @OLS_PAD_PROBE_TYPE_BLOCK_DOWNSTREAM: probe and block downstream data
- * (buffers, buffer lists, and events)
- * @OLS_PAD_PROBE_TYPE_BLOCK_UPSTREAM: probe and block upstream data (events)
- * @OLS_PAD_PROBE_TYPE_EVENT_BOTH: probe upstream and downstream events
- * @OLS_PAD_PROBE_TYPE_QUERY_BOTH: probe upstream and downstream queries
- * @OLS_PAD_PROBE_TYPE_ALL_BOTH: probe upstream events and queries and
- * downstream buffers, buffer lists, events and queries
- * @OLS_PAD_PROBE_TYPE_SCHEDULING: probe push and pull
- *
- * The different probing types that can occur. When either one of
- * @OLS_PAD_PROBE_TYPE_IDLE or @OLS_PAD_PROBE_TYPE_BLOCK is used, the probe will
- * be a blocking probe.
  */
 typedef enum {
   OLS_PAD_PROBE_TYPE_INVALID = 0,
@@ -150,6 +131,8 @@ typedef enum {
 
 #define OLS_PAD_NAME(pad) (OLS_PAD_CAST(pad)->name)
 
+#define OLS_PAD_CAPS(pad) (OLS_PAD_CAST(pad)->caps)
+
 /**
  * OLS_PAD_MODE:
  * @pad: a #OLSPad
@@ -202,30 +185,6 @@ typedef enum {
  * @OLS_PAD_FLAG_BLOCKING: is pad currently blocking on a buffer or event
  * @OLS_PAD_FLAG_NEED_PARENT: ensure that there is a parent object before
  * calling into the pad callbacks.
- * @OLS_PAD_FLAG_NEED_RECONFIGURE: the pad should be reconfigured/renegotiated.
- *                            The flag has to be unset manually after
- *                            reconfiguration happened.
- * @OLS_PAD_FLAG_PENDING_EVENTS: the pad has pending events
- * @OLS_PAD_FLAG_FIXED_CAPS: the pad is using fixed caps. This means that
- *     once the caps are set on the pad, the default caps query function
- *     will only return those caps.
- * @OLS_PAD_FLAG_PROXY_CAPS: the default event and query handler will forward
- *                      all events and queries to the internally linked pads
- *                      instead of discarding them.
- * @OLS_PAD_FLAG_PROXY_ALLOCATION: the default query handler will forward
- *                      allocation queries to the internally linked pads
- *                      instead of discarding them.
- * @OLS_PAD_FLAG_PROXY_SCHEDULING: the default query handler will forward
- *                      scheduling queries to the internally linked pads
- *                      instead of discarding them.
- * @OLS_PAD_FLAG_ACCEPT_INTERSECT: the default accept-caps handler will check
- *                      it the caps intersect the query-caps result instead
- *                      of checking for a subset. This is interesting for
- *                      parsers that can accept incompletely specified caps.
- * @OLS_PAD_FLAG_ACCEPT_TEMPLATE: the default accept-caps handler will use
- *                      the template pad caps instead of query caps to
- *                      compare with the accept caps. Use this in combination
- *                      with %OLS_PAD_FLAG_ACCEPT_INTERSECT. (Since: 1.6)
  * @OLS_PAD_FLAG_LAST: offset to define more flags
  *
  * Pad state flags
@@ -235,16 +194,6 @@ typedef enum {
   OLS_PAD_FLAG_BLOCKED = (1 << 0),
   OLS_PAD_FLAG_FLUSHING = (1 << 1),
   OLS_PAD_FLAG_EOS = (1 << 2),
-  OLS_PAD_FLAG_BLOCKING = (1 << 3),
-  OLS_PAD_FLAG_NEED_PARENT = (1 << 4),
-  OLS_PAD_FLAG_NEED_RECONFIGURE = (1 << 5),
-  OLS_PAD_FLAG_PENDING_EVENTS = (1 << 6),
-  OLS_PAD_FLAG_FIXED_CAPS = (1 << 7),
-  OLS_PAD_FLAG_PROXY_CAPS = (1 << 8),
-  OLS_PAD_FLAG_PROXY_ALLOCATION = (1 << 9),
-  OLS_PAD_FLAG_PROXY_SCHEDULING = (1 << 10),
-  OLS_PAD_FLAG_ACCEPT_INTERSECT = (1 << 11),
-  OLS_PAD_FLAG_ACCEPT_TEMPLATE = (1 << 12),
   /* padding */
   OLS_PAD_FLAG_LAST = (1 << 16)
 } OlsPadFlags;
@@ -595,6 +544,7 @@ struct ols_pad {
 
   char *name;
   uint32_t flags;
+  dstr caps;
   /*< private >*/
 
   pthread_mutex_t mutex;
