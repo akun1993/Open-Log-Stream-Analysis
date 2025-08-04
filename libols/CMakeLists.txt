@@ -48,6 +48,8 @@ target_sources(
           ols-nix.h
           ols-task.c
           ols-task.h          
+          ols-caps.c
+          ols-caps.h
           ols-pad.c
           ols-pad.h
           ols-event.c

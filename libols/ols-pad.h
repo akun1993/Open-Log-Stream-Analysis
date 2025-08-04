@@ -2,7 +2,7 @@
 
 #pragma once
 #include <stdint.h>
-
+#include "ols-caps.h"
 #include "ols-task.h"
 #include "ols.h"
 
@@ -506,6 +506,8 @@ bool ols_pad_set_parent(ols_pad_t *pad, ols_object_t *parent);
 
 ols_object_t *ols_pad_get_parent(ols_pad_t *pad);
 
+void ols_pad_set_caps(ols_pad_t *pad , ols_caps_t *caps);
+
 /* pad tasks */
 bool ols_pad_start_task(ols_pad_t *pad, os_task_t func, void *user_data);
 
@@ -544,7 +546,7 @@ struct ols_pad {
 
   char *name;
   uint32_t flags;
-  dstr caps;
+  ols_caps_t *caps;
   /*< private >*/
 
   pthread_mutex_t mutex;

@@ -199,7 +199,7 @@ ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object) {
   old_refcount = os_atomic_load_long(&mini_object->refcount);
   new_refcount = old_refcount + 1;
   
-  blog(LOG_INFO, "%p ref %d->%d", mini_object,  old_refcount,    new_refcount);
+  //blog(LOG_INFO, "%p ref %d->%d", mini_object,  old_refcount,    new_refcount);
 
   os_atomic_inc_long(&mini_object->refcount);
   //   OLS_TRACER_MINI_OBJECT_REFFED(mini_object, new_refcount);
@@ -224,7 +224,7 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
   new_refcount = os_atomic_load_long(&mini_object->refcount) - 1;
 
   // return_if_fail(old_refcount > 0);
-  blog(LOG_INFO, "%p unref %d->%d", mini_object,  old_refcount,    new_refcount);
+  //blog(LOG_INFO, "%p unref %d->%d", mini_object,  old_refcount,    new_refcount);
 
   if ((os_atomic_dec_long(&mini_object->refcount)) == 0) {
     bool do_free;
@@ -239,7 +239,7 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object) {
      * want to free the instance anymore */
     if (do_free) {
 
-      blog(LOG_INFO, "lockstate  %zd lock mask %d ", mini_object->lockstate,LOCK_MASK);
+      //blog(LOG_INFO, "lockstate  %zd lock mask %d ", mini_object->lockstate,LOCK_MASK);
       /* there should be no outstanding locks */
       return_if_fail((os_atomic_load_long(&mini_object->lockstate) & LOCK_MASK) < 4);
  

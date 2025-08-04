@@ -173,13 +173,19 @@ static void ols_pad_init(ols_pad_t *pad,const char *name) {
 
   OLS_PAD_CHAINLISTFUNC(pad) = ols_pad_chain_list_default;
 
+  OLS_PAD_CHAINFUNC(pad) = NULL;
+
+  OLS_PAD_LINKFUNC(pad) = NULL;
+
+  OLS_PAD_UNLINKFUNC(pad) = NULL;
+
+  OLS_PAD_CAPS(pad) = NULL;
   // OLS_PAD_LINKFUNC(pad) =
 
   OLS_PAD_PEER(pad) = NULL;
 
   OLS_PAD_TASK(pad) = NULL;
 
-  dstr_init(&OLS_PAD_CAPS(pad));
   // g_rec_mutex_init(&pad->stream_rec_lock);
 
   pthread_cond_init(&pad->block_cond, NULL);
@@ -226,6 +232,19 @@ ols_object_t *ols_pad_get_parent(ols_pad_t *pad) {
   return result;
 }
 
+void ols_pad_set_caps(ols_pad_t *pad , ols_caps_t *caps){
+  OLS_PAD_LOCK(pad);
+  if(pad->caps){
+    ols_caps_unref(pad->caps);
+  }
+  pad->caps = caps;
+
+  //blog(LOG_ERROR, "pad %p caps is %p",pad,pad->caps);
+  // if (G_LIKELY (result))
+  //   gst_object_ref (result);
+  OLS_PAD_UNLOCK(pad);
+}
+
 /**
  * ols_pad_new:
  * @name: (allow-none): the name of the new pad.
@@ -259,6 +278,10 @@ void ols_pad_destory( ols_pad_t *pad) {
   }
 
   bfree(pad->name);
+
+  if(pad->caps){
+    ols_caps_unref(pad->caps);
+  }
 
   pthread_cond_destroy(&pad->block_cond);
   
@@ -649,18 +672,9 @@ OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad) {
   ols_object_t *parent;
   ols_pad_link_function srcfunc, sinkfunc;
 
-  // return_val_if_fail(OLS_IS_PAD(srcpad), OLS_PAD_LINK_REFUSED);
-  // return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
-  // return_val_if_fail(OLS_IS_PAD(sinkpad), OLS_PAD_LINK_REFUSED);
-  // return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),OLS_PAD_LINK_WRONG_DIRECTION);
+  return_val_if_fail(OLS_PAD_IS_SRC(srcpad), OLS_PAD_LINK_WRONG_DIRECTION);
+  return_val_if_fail(OLS_PAD_IS_SINK(sinkpad),OLS_PAD_LINK_WRONG_DIRECTION);
 
-  if (!OLS_PAD_IS_SRC(srcpad)) {
-    return OLS_PAD_LINK_WRONG_DIRECTION;
-  }
-
-  if (!OLS_PAD_IS_SINK(sinkpad)) {
-    return OLS_PAD_LINK_WRONG_DIRECTION;
-  }
 
   // OLS_TRACER_PAD_LINK_PRE(srcpad, sinkpad);
 
@@ -1094,7 +1108,7 @@ static OlsFlowReturn ols_pad_send_event_unchecked(ols_pad_t *pad,
   UNUSED_PARAMETER(type);
 
   OlsFlowReturn ret;
-  // ols_event_type event_type;
+  // OlsEventType event_type;
   // bool serialized, need_unlock = false;
   ols_pad_event_function eventfunc;
   ols_object_t *parent;
@@ -1172,7 +1186,7 @@ static OlsFlowReturn ols_pad_push_event_unchecked(ols_pad_t *pad,
                                                   OlsPadProbeType type) {
   OlsFlowReturn ret;
   ols_pad_t *peerpad;
-  ols_event_type event_type;
+  OlsEventType event_type;
   // int64_t old_pad_offset = pad->offset;
 
   /* now check the peer pad */

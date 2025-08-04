@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <set>
 #include <sys/stat.h>
 #include <util/platform.h>
 #include <util/str-util.h>
@@ -40,23 +41,27 @@ struct DataDispatch {
   
   std::map<std::string, std::list<ols_pad_t *>> tag2Pad_;
 
+  std::set<ols_pad_t *> tagAny_;
+
   /* --------------------------- */
 
   inline DataDispatch(ols_process_t *process, ols_data_t *settings)
       : process_(process) {
-    ols_process_update(process_, settings);
+		update(settings);
   }
 
   inline ~DataDispatch() {}
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-  void Update(ols_data_t *settings);
+  void update(ols_data_t *settings);
 
-  ols_pad_t *createRecvPad(const char *caps);
-  ols_pad_t *createSendPad(const char *caps);
+  ols_pad_t *createSinkPad(const char *caps);
+  ols_pad_t *createSrcPad(const char *caps);
 
   void onDataBuff(ols_buffer_t *buffer);
+
+  void onPeerLink(ols_pad_t *pad,ols_pad_t *peer);
 };
 
 /* ------------------------------------------------------------------------- */
@@ -82,12 +87,43 @@ static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *par
 }
 
 static OlsPadLinkReturn dispatch_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
-	blog(LOG_DEBUG, "dispatch_src_link_func");
+	blog(LOG_DEBUG, "dispatch_src_link_func src %p peer %p",pad,peer);
+
+	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
+	dispatch->onPeerLink(pad,peer);
+
 	return OLS_PAD_LINK_OK;
 }
 
+void  DataDispatch::onPeerLink(ols_pad_t *pad,ols_pad_t *peer){
 
-ols_pad_t * DataDispatch::createRecvPad(const char *caps){
+
+	if(OLS_PAD_CAPS(peer)){
+
+		//blog(LOG_DEBUG, "peer linked with caps");
+
+		if(!CAPS_IS_ANY(OLS_PAD_CAPS(peer))){
+
+			//blog(LOG_DEBUG, "peer linked with caps default");
+
+			size_t count = ols_caps_count(OLS_PAD_CAPS(peer));
+			for(size_t i = 0; i < count; ++i){
+				std::string cap_tag = ols_caps_by_idx(OLS_PAD_CAPS(peer),i);
+				blog(LOG_DEBUG, "DataDispatch::onPeerLink cap tag is %s",cap_tag.c_str());
+				if(!cap_tag.empty()){
+					tag2Pad_[cap_tag].push_back( pad);
+				}
+			}
+		} else {
+			blog(LOG_DEBUG, "peer linked with caps any");
+			tagAny_.insert(pad);
+		}
+	} else {
+		blog(LOG_ERROR, "no caps get on peer");
+	}
+}
+
+ols_pad_t * DataDispatch::createSinkPad(const char *caps){
 
 	ols_pad_t * sinkpad = ols_pad_new("dispatch-sink",OLS_PAD_SINK);
 
@@ -96,29 +132,27 @@ ols_pad_t * DataDispatch::createRecvPad(const char *caps){
 	ols_pad_set_link_function(sinkpad,dispatch_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,dispatch_sink_chain_func);
 
-
 	ols_process_add_pad(process_, sinkpad);
 	return sinkpad;
 }
 
-ols_pad_t * DataDispatch::createSendPad(const char *caps){
+ols_pad_t * DataDispatch::createSrcPad(const char *caps){
 	ols_pad_t  * srcpad = ols_pad_new("dispatch-src",OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,dispatch_src_link_func);
 
-	blog(LOG_DEBUG, "create send pad success");
+	blog(LOG_DEBUG, "create src pad success %p",srcpad);
 
 	ols_process_add_pad(process_, srcpad);
 	return srcpad;
 }
 
- ols_pad_t *DataDispatch::requestNewPad(const char *name, const char *caps)
-{
+ols_pad_t *DataDispatch::requestNewPad(const char *name, const char *caps){
 
 	if(strcmp("sink",name) == 0){
-		return  createRecvPad(caps);
+		return  createSinkPad(caps);
 	} else if(strcmp("src",name) == 0) {
-		return  createSendPad(caps);
+		return  createSrcPad(caps);
 	}
 
 	return NULL;
@@ -160,11 +194,19 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 		} else if((result = strstr((const char *)ols_txt->buff, "Parameters"))  != nullptr ) {
-			//begin of cold start 
-			ols_event_t *event = ols_event_new_stream_start();
-			for (int i = 0; i < process_->context.srcpads.num; ++i) {
+
+			//send flush event first
+			ols_event_t *event_flush = ols_event_new_stream_flush();
+			for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
 				ols_pad_t *pad = process_->context.srcpads.array[i];
-				ols_pad_push_event(pad, event);
+				ols_pad_push_event(pad, event_flush);
+			}	
+
+			//begin of cold start 
+			ols_event_t *event_start = ols_event_new_stream_start();
+			for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
+				ols_pad_t *pad = process_->context.srcpads.array[i];
+				ols_pad_push_event(pad, event_start);
 			}				
 		}
 		ols_buffer_unref(buffer);
@@ -297,12 +339,18 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			}
 
 			dstr_ncopy(&ols_txt->tag,tag_beg,tag_len);
-			
-			for (int i = 0; i < process_->context.numsrcpads; ++i) {
-				ols_pad_t *pad = process_->context.srcpads.array[i];
-			
-				ols_pad_push(pad, buffer);
-			}			
+
+			if(tag2Pad_.count(ols_txt->tag.array) > 0){
+				
+				std::list<ols_pad_t *> &list_pad = tag2Pad_[ols_txt->tag.array];
+				for (ols_pad_t * pad : list_pad) {
+					ols_pad_push(pad, buffer);
+				}
+			}
+			auto any_iter = tagAny_.begin();
+			while(any_iter != tagAny_.end()){
+				ols_pad_push(*any_iter, buffer);
+			}
     		//printf("tag is %s \n",tag);
 		}
 	}
@@ -313,7 +361,7 @@ LOG_FORMAT_ERR:
 	ols_buffer_unref(buffer);
 }
 
-void DataDispatch::Update(ols_data_t *settings)
+void DataDispatch::update(ols_data_t *settings)
 {
 	UNUSED_PARAMETER(settings);
 }
@@ -378,7 +426,7 @@ bool ols_module_load(void)
 	};
 
 	si.update = [](void *data, ols_data_t *settings) {
-		reinterpret_cast<DataDispatch *>(data)->Update(settings);
+		reinterpret_cast<DataDispatch *>(data)->update(settings);
 	};
 
 	ols_register_process(&si);

@@ -57,8 +57,8 @@ struct DataStatistics {
 
   void update(ols_data_t *settings);
 
-  ols_pad_t *createRecvPad(const char *caps);
-  ols_pad_t *createSendPad(const char *caps);
+  ols_pad_t *createSinkPad(const char *caps);
+  ols_pad_t *createSrcPad(const char *caps);
 
   void onDataBuff(ols_buffer_t *buffer);
 };
@@ -89,7 +89,7 @@ static OlsPadLinkReturn statistics_src_link_func(ols_pad_t *pad,ols_object_t *pa
 }
 
 
-ols_pad_t * DataStatistics::createRecvPad(const char *caps){
+ols_pad_t * DataStatistics::createSinkPad(const char *caps){
 
 	ols_pad_t * sinkpad = ols_pad_new("statistics-sink",OLS_PAD_SINK);
 
@@ -102,7 +102,7 @@ ols_pad_t * DataStatistics::createRecvPad(const char *caps){
 	return sinkpad;
 }
 
-ols_pad_t * DataStatistics::createSendPad(const char *caps){
+ols_pad_t * DataStatistics::createSrcPad(const char *caps){
 	ols_pad_t  * srcpad = ols_pad_new("statistics-src",OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,statistics_src_link_func);
@@ -117,9 +117,9 @@ ols_pad_t * DataStatistics::createSendPad(const char *caps){
 ols_pad_t *DataStatistics::requestNewPad(const char *name, const char *caps)
 {
 	if(strcmp("sink",name) == 0){
-		return  createRecvPad(caps);
+		return  createSinkPad(caps);
 	} else if(strcmp("src",name) == 0) {
-		return   createSendPad(caps);
+		return   createSrcPad(caps);
 	}
 	return NULL;
 }

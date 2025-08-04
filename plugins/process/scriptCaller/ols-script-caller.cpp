@@ -39,6 +39,8 @@ struct ScriptCallerProcess {
   ols_script_t *script_ = nullptr;
   std::string script_path_;
 
+  std::string caps_;
+
   /* --------------------------- */
 
   inline ScriptCallerProcess(ols_process_t *process, ols_data_t *settings)
@@ -57,8 +59,8 @@ struct ScriptCallerProcess {
 
   void update(ols_data_t *settings);
 
-  ols_pad_t *createRecvPad(const char *caps);
-  ols_pad_t *createSendPad(const char *caps);
+  ols_pad_t *createSinkPad(const char *caps);
+  ols_pad_t *createSrcPad(const char *caps);
 
   void onDataBuff(ols_buffer_t *buffer);
 };
@@ -91,24 +93,27 @@ static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent
 	return OLS_PAD_LINK_OK;
 }
 
-ols_pad_t * ScriptCallerProcess::createRecvPad(const char *caps){
+ols_pad_t * ScriptCallerProcess::createSinkPad(const char *caps_str){
+
+	ols_caps_t *caps = ols_caps_new(caps_.c_str());
 
 	ols_pad_t * sinkpad = ols_pad_new("script-process-sink",OLS_PAD_SINK);
-
-	blog(LOG_DEBUG, "create recv pad success");
 
 	ols_pad_set_link_function(sinkpad,script_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,script_sink_chain_func);
 
+	ols_pad_set_caps(sinkpad,caps);
+
 	ols_process_add_pad(process_, sinkpad);
+
 	return sinkpad;
 }
 
-ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
+ols_pad_t * ScriptCallerProcess::createSrcPad(const char *caps){
+	
 	ols_pad_t  * srcpad = ols_pad_new("script-process-src",OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,script_src_link_func);
-
 
 	blog(LOG_DEBUG, "create send pad success");
 
@@ -116,16 +121,15 @@ ols_pad_t * ScriptCallerProcess::createSendPad(const char *caps){
 	return srcpad;
 }
 
- ols_pad_t *ScriptCallerProcess::requestNewPad(const char *name, const char *caps)
-{
+ols_pad_t *ScriptCallerProcess::requestNewPad(const char *name, const char *caps){
 
 	if(strcmp("sink",name) == 0){
-		return  createRecvPad(caps);
+		return  createSinkPad(caps);
 	} else if(strcmp("src",name) == 0) {
-		return   createSendPad(caps);
+		return   createSrcPad(caps);
 	}
-
 	return NULL;
+
 }
 
 
@@ -154,7 +158,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 				dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
 		
-				for (int i = 0; i < process_->context.srcpads.num; ++i) {
+				for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
 					ols_pad_t *pad = process_->context.srcpads.array[i];
 					ols_pad_push(pad, buffer);
 				}
@@ -170,16 +174,17 @@ void ScriptCallerProcess::update(ols_data_t *settings)
 {
 	if (ols_data_get_string(settings, "script_file_path") != NULL ) {
 		script_path_ = ols_data_get_string(settings, "script_file_path");
-		
 		blog(LOG_INFO, "set script path  %s",script_path_.c_str());
 	}
 
+	if (ols_data_get_string(settings, "capacity") != NULL ) {
+		caps_ = ols_data_get_string(settings, "capacity");
+		
+		blog(LOG_INFO, "set capacity  %s",caps_.c_str());
+	}
 }
 
-
-
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int
-
 
 OLS_DECLARE_MODULE()
 OLS_MODULE_USE_DEFAULT_LOCALE("ols-script-caller", "en-US")

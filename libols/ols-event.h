@@ -105,10 +105,12 @@ typedef enum {
   OLS_EVENT_STREAM_START =
       OLS_EVENT_MAKE_TYPE(30, _FLAG(DOWNSTREAM)),
 
-  OLS_EVENT_EOS =
-      OLS_EVENT_MAKE_TYPE(40, _FLAG(DOWNSTREAM)),
+  OLS_EVENT_STREAM_FLUSH  = OLS_EVENT_MAKE_TYPE (40, _FLAG(DOWNSTREAM)),      
 
-} ols_event_type;
+  OLS_EVENT_EOS =
+      OLS_EVENT_MAKE_TYPE(50, _FLAG(DOWNSTREAM)),
+
+} OlsEventType;
 
 #ifndef OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS
 /* refcounting */
@@ -130,6 +132,8 @@ ols_event_t *ols_event_new_eos();
 
 ols_event_t *ols_event_new_stream_start();
 
+ols_event_t *ols_event_new_stream_flush();
+
 #else  /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
 ols_event_t *ols_event_ref(ols_event_t *event);
@@ -141,5 +145,5 @@ ols_event_t *ols_event_copy(const ols_event_t *event);
 
 struct ols_event {
   ols_mini_object_t mini_object;
-  ols_event_type ev_type;
+  OlsEventType ev_type;
 };

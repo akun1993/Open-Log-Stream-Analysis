@@ -153,27 +153,27 @@ struct TextSource {
 
   inline TextSource(ols_source_t *source, ols_data_t *settings)
       : source_(source) {
-      Update(settings);
+        update(settings);
   }
 
   inline ~TextSource() {}
 
-  int FileSrcGetData(ols_buffer_t *buf);
+  int fileSrcGetData(ols_buffer_t *buf);
 
-  void LoadFileText();
-  bool FileSrcStart();
+  void loadFileText();
+  bool fileSrcStart();
   /* unmap and close the file */
-  bool FileSrcStop();
+  bool fileSrcStop();
 
-  bool IsSupportedCompressedFile(const char * file);
+  bool isSupportedCompressedFile(const char * file);
 
-  void DecompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir);
+  void decompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir);
 
-  void LoadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
+  void loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
 
-  bool OpenNextValidFile();
+  bool openNextValidFile();
 
-  inline void Update(ols_data_t *settings);
+  inline void update(ols_data_t *settings);
 };
 
 static time_t get_modified_timestamp(const char *filename) {
@@ -185,7 +185,7 @@ static time_t get_modified_timestamp(const char *filename) {
 
 
 
-void TextSource::LoadFileText() {
+void TextSource::loadFileText() {
   //BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
   // text = to_wide(GetMainString(file_text));
 
@@ -193,7 +193,7 @@ void TextSource::LoadFileText() {
   //   text.push_back('\n');
 }
 
-void TextSource::Update(ols_data_t *settings) { 
+void TextSource::update(ols_data_t *settings) { 
 
 	if (ols_data_get_string(settings, "base_file") != NULL ) {
 
@@ -228,7 +228,7 @@ void TextSource::Update(ols_data_t *settings) {
 	}
 }
 
-int TextSource::FileSrcGetData(ols_buffer_t *buf) {
+int TextSource::fileSrcGetData(ols_buffer_t *buf) {
 
   // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
   errno = 0;
@@ -244,7 +244,7 @@ int TextSource::FileSrcGetData(ols_buffer_t *buf) {
   while(true){
     size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
     if (UNLIKELY(size == -1)) {
-      if(OpenNextValidFile() ){
+      if(openNextValidFile() ){
         continue;
       }  else {
         curr_file_ = NULL;
@@ -273,7 +273,7 @@ eos: {
 
 }
 
-void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern,std::set<std::string> &files){
+void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern,std::set<std::string> &files){
   os_dir_t *dir = os_opendir(dest_dir.c_str());
 
   if (dir) {
@@ -341,7 +341,7 @@ void TextSource::LoadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
 }
 
 
-void TextSource::DecompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir){
+void TextSource::decompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir){
   struct dstr command = {0};
 
   if(ext_hint == "zip"){
@@ -391,7 +391,7 @@ void TextSource::DecompressFile(const std::string &file, std::string &ext_hint,c
 }
 
 
-bool TextSource::OpenNextValidFile(){
+bool TextSource::openNextValidFile(){
 
   struct stat stat_results;
 
@@ -451,7 +451,7 @@ bool TextSource::OpenNextValidFile(){
 }
 
 /* open the file, necessary to go to READY state */
-bool TextSource::FileSrcStart() {
+bool TextSource::fileSrcStart() {
 
   struct stat stat_results;
   std::string  file_ext;
@@ -485,7 +485,7 @@ bool TextSource::FileSrcStart() {
         dest_dir.append(".ols");
       }      
 
-      DecompressFile(base_file_,file_ext,dest_dir);
+      decompressFile(base_file_,file_ext,dest_dir);
 
       if(!inner_dir_.empty())
         dest_dir.append("/").append(inner_dir_);
@@ -501,7 +501,7 @@ bool TextSource::FileSrcStart() {
 
   }
 
-  LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
+  loadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
 
   //decompress
   for(auto &file : files){
@@ -510,7 +510,7 @@ bool TextSource::FileSrcStart() {
 
   //reload after decompress
   files.clear();
-  LoadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
+  loadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
 
   for(auto &file : files){
     std::string ext = get_matched_extension(file.c_str());
@@ -524,7 +524,7 @@ bool TextSource::FileSrcStart() {
     return  false;
   }
 
-  return OpenNextValidFile();
+  return openNextValidFile();
 
 
   /* ERROR */
@@ -535,7 +535,7 @@ bool TextSource::FileSrcStart() {
 }
 
 /* unmap and close the file */
-bool TextSource::FileSrcStop() {
+bool TextSource::fileSrcStop() {
   /* close the file */
   if(curr_file_)
     fclose(curr_file_);
@@ -544,7 +544,7 @@ bool TextSource::FileSrcStop() {
   return true;
 }
 
-bool TextSource::IsSupportedCompressedFile(const char * file){
+bool TextSource::isSupportedCompressedFile(const char * file){
  
   bool flag = false ;
 
@@ -632,15 +632,15 @@ bool ols_module_load(void) {
   };
 
   si.activate = [](void *data) {
-    reinterpret_cast<TextSource *>(data)->FileSrcStart();
+    reinterpret_cast<TextSource *>(data)->fileSrcStart();
   };
 
   si.update = [](void *data, ols_data_t *settings) {
-    reinterpret_cast<TextSource *>(data)->Update(settings);
+    reinterpret_cast<TextSource *>(data)->update(settings);
   };
 
   si.get_data = [](void *data, ols_buffer_t *buf) {
-    return reinterpret_cast<TextSource *>(data)->FileSrcGetData(buf);
+    return reinterpret_cast<TextSource *>(data)->fileSrcGetData(buf);
   };
   si.version = 0;
 
@@ -677,5 +677,5 @@ bool ols_module_load(void) {
 }
 
 void ols_module_unload(void) {
-  // GdiplusShutdown(gdip_token);
+
 }

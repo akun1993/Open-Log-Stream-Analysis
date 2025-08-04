@@ -1,4 +1,16 @@
 #include "ols-caps.h"
+#include "util/dstr.h"
+
+static void _ols_caps_free(ols_caps_t *ols_caps);
+
+
+static void ols_caps_init(ols_caps_t *ols_caps) {
+  ols_mini_object_init(OLS_MINI_OBJECT_CAST(ols_caps), 0, 1,
+                       (ols_mini_object_copy_function)NULL,
+                       (ols_mini_object_dispose_function)NULL,
+                       (ols_mini_object_free_function)_ols_caps_free);
+
+}
 
 static void ols_caps_add_cap(ols_caps_t *ols_caps, const char *cap_str) {
   if (!ols_caps || !cap_str) return;
@@ -8,7 +20,7 @@ static void ols_caps_add_cap(ols_caps_t *ols_caps, const char *cap_str) {
 }
 
 
-void  ols_caps_free(ols_caps_t *ols_caps){
+void  _ols_caps_free(ols_caps_t *ols_caps){
 
     if(!ols_caps) return;
 
@@ -22,6 +34,9 @@ ols_caps_t *ols_caps_new(const char *caps_str){
 
     ols_caps_t *new_caps = (ols_caps_t *)bzalloc(sizeof(ols_caps_t));
     if(new_caps){
+
+        ols_caps_init(new_caps);
+
         new_caps->flag = OLS_CAPS_DEFAULT;
         da_init(new_caps->caps);
 
@@ -36,12 +51,15 @@ ols_caps_t *ols_caps_new(const char *caps_str){
            strlist_free(cap_list);
         }
     }
+
+    return new_caps;
 }
 
 ols_caps_t  *ols_caps_new_any(){
     ols_caps_t *new_caps = (ols_caps_t *)bzalloc(sizeof(ols_caps_t));
 
     if(new_caps){
+        ols_caps_init(new_caps);
         new_caps->flag = OLS_CAPS_ANY;
         da_init(new_caps->caps);
     }

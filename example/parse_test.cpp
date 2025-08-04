@@ -111,7 +111,14 @@ int main(int argc, char **argv) {
 
   ols_data_t * src_file_data = ols_data_create();
 
-  ols_data_set_string(src_file_data,"base_file","/home/zkun/TBoxLog_20240116_132405.zip");
+  const char *file_path ;
+#if 0
+  file_path = "/home/zkun/TBoxLog_20240116_132405.zip";
+#else
+  file_path = "/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip";
+#endif  
+
+  ols_data_set_string(src_file_data,"base_file",file_path);
   ols_data_set_string(src_file_data,"base_file_type_hint","zip");
   ols_data_set_string(src_file_data,"inner_dir","TBoxLog/log");
   ols_data_set_string(src_file_data,"file_name_wildcard","sv_user.log.*");
@@ -123,12 +130,13 @@ int main(int argc, char **argv) {
   ols_data_t * script_data = ols_data_create();
 
   const char *script_path ;
-#if 1
+#if 0
   script_path = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
 #else
   script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
 #endif
   ols_data_set_string(script_data,"script_file_path",script_path);
+  ols_data_set_string(script_data,"capacity","DSVVDCMAPP;DSVTSPConnectSVC");
 
   ols_process_t *process = ols_process_create("script_caller", "test_process", script_data);
 

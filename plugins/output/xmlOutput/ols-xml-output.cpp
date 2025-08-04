@@ -7,6 +7,8 @@
 #include <ols-module.h>
 #include <string>
 #include <map>
+#include <chrono>
+#include <time.h>
 #include <sys/stat.h>
 #include <util/platform.h>
 #include <util/task.h>
@@ -60,6 +62,9 @@ struct XmlOutput {
 
    std::map<std::string,AppNode> app_tags_;
 
+   OlsEventType curr_event_ = OLS_EVENT_STREAM_START;
+
+   bool data_flag_{false};
 
 	/* --------------------------- */
 	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
@@ -74,11 +79,15 @@ struct XmlOutput {
 
   void update(ols_data_t *settings);
 
-  ols_pad_t *createRecvPad(const char *caps);
+  ols_pad_t *createSinkPad(const char *caps);
 
   void onDataBuff(ols_buffer_t *buffer);
 
+  void onEvent(ols_event_t *event);
+
   void initOutfile();
+
+  void flushOutfile();
 };
 
 /* ------------------------------------------------------------------------- */
@@ -104,7 +113,17 @@ static OlsPadLinkReturn output_sink_link_func(ols_pad_t *pad,ols_object_t *paren
 }
 
 
-ols_pad_t * XmlOutput::createRecvPad(const char *caps){
+
+static bool output_sink_event_func(ols_pad_t *pad, ols_object_t *parent,ols_event_t *event){
+
+	XmlOutput *xml_output = reinterpret_cast<XmlOutput *>(parent->data);
+	xml_output->onEvent(event);
+
+	return true;
+}
+
+
+ols_pad_t * XmlOutput::createSinkPad(const char *caps){
 
 	ols_pad_t * sinkpad = ols_pad_new("xml-output-sink",OLS_PAD_SINK);
 
@@ -112,6 +131,8 @@ ols_pad_t * XmlOutput::createRecvPad(const char *caps){
 
 	ols_pad_set_link_function(sinkpad,output_sink_link_func );
 	ols_pad_set_chain_function(sinkpad,output_sink_chain_func);
+
+	ols_pad_set_event_function(sinkpad,output_sink_event_func);
 
 	ols_output_add_pad(output_, sinkpad);
 	return sinkpad;
@@ -152,14 +173,69 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}
 	
-	xmldoc_.Print();
+	data_flag_ = true;
 
+	//xmldoc_.Print();
+
+}
+
+void XmlOutput::onEvent(ols_event_t *event){
+
+	OlsEventType type = OLS_EVENT_TYPE(event);
+
+	blog(LOG_INFO,"XmlOutput::onEvent receive event type %d , current %d",type,curr_event_);
+
+	if(type == curr_event_){
+		return;
+	}
+	curr_event_ = type;
+	if(type == OLS_EVENT_EOS){
+		flushOutfile();
+	} else if(OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_START){
+		initOutfile();
+
+	} else if( OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_FLUSH  ){
+		flushOutfile();
+	}
+
+}
+
+void XmlOutput::flushOutfile(){
+
+	if(!data_flag_ ) return;
+
+	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+
+	dstr file;
+	dstr_init(&file);
+	dstr_printf(&file,"Tbox-Report-%d.xml",(int)now_time);
+
+	xmldoc_.SaveFile(file.array);
+
+	dstr_free(&file);
+
+	xmldoc_.Clear();
+
+	root_ = nullptr;
+
+	system_ = nullptr;
+ 
+	applications_ = nullptr;
+ 
+	apps_ = nullptr;
+ 
+	summary_ = nullptr;
+ 
+	app_tags_.clear();	
+
+	data_flag_ = false;
 }
 
 ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps){
 
 	if(strcmp("sink",name) == 0){
-		return  createRecvPad(caps);
+		return  createSinkPad(caps);
 	}
 
 	return NULL;
@@ -190,6 +266,7 @@ void XmlOutput::initOutfile(){
 
 	root_->InsertEndChild(applications_);
 
+	app_tags_.clear();
 }
 
 void XmlOutput::update(ols_data_t *settings){
