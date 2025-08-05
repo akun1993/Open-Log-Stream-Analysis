@@ -242,7 +242,6 @@ bool ols_module_load(void)
 
 	ols_register_process(&si);
 
-
 	return true;
 }
 

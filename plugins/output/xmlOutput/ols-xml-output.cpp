@@ -113,7 +113,6 @@ static OlsPadLinkReturn output_sink_link_func(ols_pad_t *pad,ols_object_t *paren
 }
 
 
-
 static bool output_sink_event_func(ols_pad_t *pad, ols_object_t *parent,ols_event_t *event){
 
 	XmlOutput *xml_output = reinterpret_cast<XmlOutput *>(parent->data);
@@ -323,7 +322,7 @@ bool ols_module_load(void){
 
 	si.request_new_pad = [](void *data, const char *name ,const char *caps) {
 		return  reinterpret_cast<XmlOutput *>(data)->requestNewPad(name,caps) ;
-	}; ; 
+	}; 
 
 	si.get_defaults = [](ols_data_t *settings) {
 		//defaults(settings, 1);
@@ -336,11 +335,9 @@ bool ols_module_load(void){
 
 	ols_register_output(&si);
 
-
 	return true;
 }
 
-void ols_module_unload(void)
-{
+void ols_module_unload(void){
 
 }
