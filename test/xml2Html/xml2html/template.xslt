@@ -1,6 +1,6 @@
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
-    <xsl:output method="html" version="2.0" encoding="utf-8" indent="yes"/>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.1">
+    <xsl:output method="html" version="1.1" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/">
 

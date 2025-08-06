@@ -8,6 +8,9 @@
 #include <string>
 #include <map>
 #include <chrono>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <time.h>
 #include <sys/stat.h>
 #include <util/platform.h>
@@ -137,6 +140,25 @@ ols_pad_t * XmlOutput::createSinkPad(const char *caps){
 	return sinkpad;
 }
 
+static std::string formatTime(uint64_t msec){
+
+	// 获取自纪元以来的毫秒数
+	auto milliseconds = msec % 1000;
+
+	std::chrono::system_clock::time_point tp(std::chrono::seconds(msec/1000));
+	// 转换为time_t类型
+	std::time_t tt = std::chrono::system_clock::to_time_t(tp);
+
+	// 转换为tm结构
+	auto time_tm = std::localtime(&tt);
+
+	std::ostringstream oss;
+	oss << std::put_time(time_tm, "%Y-%m-%d %H:%M:%S %Z");
+	oss << '.' << std::setw(3) << std::setfill('0') << milliseconds;
+
+	return oss.str();
+}
+
 void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	ols_meta_txt_t * meta_txt = (ols_meta_txt_t *) buffer->meta;
@@ -167,7 +189,27 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 	for(size_t i = 0; i < meta_result->info.num; ++i){
 	
 		tinyxml2::XMLElement * item = xmldoc_.NewElement("item");
-		item->SetText(meta_result->info.array[i]);
+		{
+			tinyxml2::XMLElement * time = xmldoc_.NewElement("time");
+
+			time->SetText(formatTime(meta_txt->msec).c_str());
+
+			item->InsertEndChild(time);
+
+			tinyxml2::XMLElement * title = xmldoc_.NewElement("title");
+			if(meta_result->info.array[i]->key){
+				title->SetText(meta_result->info.array[i]->key);
+			}
+			item->InsertEndChild(title);
+
+			tinyxml2::XMLElement * message = xmldoc_.NewElement("message");
+			if(meta_result->info.array[i]->val){
+				message->SetText(meta_result->info.array[i]->val);
+			}
+			item->InsertEndChild(message);
+
+		}
+
 		node.analysis_->InsertEndChild(item);
 		//printf("data is %s \n",(const char *)meta_result->info.array[i]);
 	}

@@ -22,7 +22,7 @@
 #include <util/darray.h>
 #include <util/dstr.h>
 #include <util/platform.h>
-
+#include "ols-meta-result.h"
 #include <ols.h>
 
 /* ========================================================================= */
@@ -105,10 +105,6 @@ static PyObject *py_get_current_script_path(PyObject *self, PyObject *args) {
 static bool load_python_script(struct ols_python_script *data) {
   PyObject *py_file = NULL;
   PyObject *py_module = NULL;
-  PyObject *py_success = NULL;
-  PyObject *py_tick = NULL;
-  PyObject *py_load = NULL;
-  PyObject *py_defaults = NULL;
   bool success = false;
   int ret;
 
@@ -155,10 +151,6 @@ static bool load_python_script(struct ols_python_script *data) {
   success = true;
 
 fail:
-  Py_XDECREF(py_load);
-  Py_XDECREF(py_tick);
-  Py_XDECREF(py_defaults);
-  Py_XDECREF(py_success);
   Py_XDECREF(py_file);
   if (!success)
     Py_XDECREF(py_module);
@@ -359,40 +351,50 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
-void ols_parse_list_value(PyObject *list_val){
+ols_meta_result_t * ols_parse_list_value(PyObject *list_val){
 
   Py_ssize_t size;
   PyObject *item;
 
+  ols_meta_result_t * result = NULL;
+
   size = PyList_Size(list_val);
 
-  for (Py_ssize_t i = 0; i < size; ++i) {
-    item = PyList_GetItem(list_val, i);
-    PyIter_Check(list_val);
+  if(size > 0){
 
-    if (PyUnicode_Check(item)) {
+    result = ols_meta_result_new();
 
-      Py_ssize_t len = 0;
-      char *desc = NULL;
-      PyObject *bytes = NULL;
+    for (Py_ssize_t i = 0; i < size; ++i) {
+      item = PyList_GetItem(list_val, i);
+      PyIter_Check(list_val);
 
-      bytes = PyUnicode_AsUTF8String(item);
-      PyBytes_AsStringAndSize(bytes, &desc, &len);
+      if (PyUnicode_Check(item)) {
 
-      char *info = bstrdup_n(desc, len);
-     // da_push_back(result.info, &info);
+        Py_ssize_t len = 0;
+        char *desc = NULL;
+        PyObject *bytes = NULL;
 
-      Py_DECREF(bytes);
-    } else {
+        bytes = PyUnicode_AsUTF8String(item);
+        PyBytes_AsStringAndSize(bytes, &desc, &len);
 
-      // printf("PyList_Check %s\n", cstr);
+        char *info = bstrdup_n(desc, len);
+        ols_meta_result_add_info(result,NULL,info);
+
+        Py_DECREF(bytes);
+      } else {
+          blog(LOG_ERROR,"unsupported meta list result info");
+      }
     }
   }
+  return result;
 }
 
-void ols_parse_dict_value(PyObject *dict_val){
+ols_meta_result_t * ols_parse_dict_value(PyObject *dict_val){
 
+  int i;
   Py_ssize_t size;
+  ols_meta_result_t * result = NULL;
+
   // Both are Python List objects
   PyObject *pKeys = PyDict_Keys(dict_val);
   PyObject *pValues = PyDict_Values(dict_val);
@@ -400,30 +402,44 @@ void ols_parse_dict_value(PyObject *dict_val){
   if(!pKeys || !pValues){
     Py_XDECREF(pKeys);
     Py_XDECREF(pValues);
-    return ;
+    return result;
   }
 
-  for (size = 0; size < PyDict_Size(dict_val); ++size) {
-      // PyString_AsString returns a char*
-    PyObject *pKey = PyList_GetItem(pKeys,  size);
-    PyObject *pVal = PyList_GetItem(pValues, size);
+  size = PyDict_Size(dict_val);
 
-    if (PyUnicode_Check(pKey) && PyUnicode_Check(pVal)) {
+  if(size > 0){
 
-      const char *ckey = PyUnicode_AsUTF8(pKey);
-      const char *cval =  PyUnicode_AsUTF8( pVal);
-      // printf("PyUnicode_AsUTF8 %s\n", cstr);
+    result = ols_meta_result_new();
+
+    for (i = 0; i < size; ++i) {
+        // PyString_AsString returns a char*
+      PyObject *pKey = PyList_GetItem(pKeys,  i);
+      PyObject *pVal = PyList_GetItem(pValues, i);
+
+      if (PyUnicode_Check(pKey) && PyUnicode_Check(pVal)) {
+
+        const char *ckey = PyUnicode_AsUTF8(pKey);
+        const char *cval =  PyUnicode_AsUTF8( pVal);
+
+        ols_meta_result_add_info(result,ckey,cval);
+        // printf("PyUnicode_AsUTF8 %s\n", cstr);
+      } else {
+        blog(LOG_ERROR,"unsupported meta dict result info");
+      }
     }
   }
+
   Py_XDECREF(pKeys);
   Py_XDECREF(pValues);
+
+  return result;
 }
 
 
 
-struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_info) {
-  struct ols_meta_result result;
-  memset(&result, 0, sizeof(result));
+ols_meta_result_t * ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_info) {
+
+  ols_meta_result_t *result = NULL;
 
   struct ols_python_script *python_script = (struct ols_python_script *)s;
   if (!s->loaded || !python_loaded)
@@ -436,17 +452,16 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * t
 
   PyObject *pValue = PyObject_CallObject(python_script->parse, args);
 
-
   // check if error occour
   if (PyErr_Occurred()) {
     PyErr_Print();
   } else {
 
     if (PyDict_Check(pValue)) {
-      ols_parse_dict_value(pValue);
+      result = ols_parse_dict_value(pValue);
 
     } else if (PyList_Check(pValue)) {
-      ols_parse_list_value(pValue);
+      result = ols_parse_list_value(pValue);
       
     } else if (PyUnicode_Check(pValue)) {
 

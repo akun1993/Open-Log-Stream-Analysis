@@ -152,10 +152,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 			if(script_ ){
 
-				ols_meta_result result = ols_scripting_prase(script_,ols_txt);
-		
-				buffer->result = (ols_meta_result *)bzalloc(sizeof(ols_meta_result));
-				*buffer->result = result;
+				buffer->result = ols_scripting_prase(script_,ols_txt);
 
 				dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
 		

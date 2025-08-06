@@ -63,6 +63,8 @@ target_sources(
           ols-meta.h
           ols-meta-txt.h
           ols-meta-txt.c
+          ols-meta-result.h
+          ols-meta-result.c          
           ols.hpp)
 
 target_sources(

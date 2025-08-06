@@ -343,15 +343,15 @@ void ols_lua_script_destroy(ols_script_t *s) {
   }
 }
 
-struct ols_meta_result ols_lua_parse_data(ols_script_t *s,ols_meta_txt_t * txt_info) {
+ols_meta_result_t * ols_lua_parse_data(ols_script_t *s,ols_meta_txt_t * txt_info) {
   struct ols_lua_script *lua_script = (struct ols_lua_script *)s;
   #if 0
   lua_pushstring(lua_script->script, data);
   call_func_(lua_script->script, lua_script->parse, 1, 0, "parse_data",
              "parse");
   #endif
-  struct ols_meta_result result;
-  memset(&result, 0, sizeof(result));
+  ols_meta_result_t * result = NULL;
+
   return result;
 }
 

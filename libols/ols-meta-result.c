@@ -2,6 +2,7 @@
 #include "util/base.h"
 #include "util/bmem.h"
 #include "util/darray.h"
+#include "util/debug.h"
 
 
 /* creation/deletion */
@@ -69,4 +70,30 @@ ols_meta_result_t * ols_meta_result_new (void)
   return meta_result;
 }
 
+void ols_meta_result_add_info(ols_meta_result_t * meta_result, const char *key, const char *val){
 
+  return_if_fail(meta_result != NULL);
+
+  if(!key && !val){
+    blog (LOG_ERROR, "result info key and val is NULL ");
+    return;
+  }
+
+  result_info_msg_t *msg = (result_info_msg_t *) bzalloc (sizeof(result_info_msg_t));;
+
+  if(msg){
+    if(key){
+      msg->key = bstrdup(key);
+    }
+    if(val){
+      msg->val = bstrdup(val);
+    }
+
+    da_push_back(meta_result->info,&msg);
+    
+  } else {
+
+    blog (LOG_ERROR, "alloc result info message failed ");
+  }
+
+}
