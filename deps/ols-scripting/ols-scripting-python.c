@@ -359,6 +359,68 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
+void ols_parse_list_value(PyObject *list_val){
+
+  Py_ssize_t size;
+  PyObject *item;
+
+  size = PyList_Size(list_val);
+
+  for (Py_ssize_t i = 0; i < size; ++i) {
+    item = PyList_GetItem(list_val, i);
+    PyIter_Check(list_val);
+
+    if (PyUnicode_Check(item)) {
+
+      Py_ssize_t len = 0;
+      char *desc = NULL;
+      PyObject *bytes = NULL;
+
+      bytes = PyUnicode_AsUTF8String(item);
+      PyBytes_AsStringAndSize(bytes, &desc, &len);
+
+      char *info = bstrdup_n(desc, len);
+     // da_push_back(result.info, &info);
+
+      Py_DECREF(bytes);
+    } else {
+
+      // printf("PyList_Check %s\n", cstr);
+    }
+  }
+}
+
+void ols_parse_dict_value(PyObject *dict_val){
+
+  Py_ssize_t size;
+  // Both are Python List objects
+  PyObject *pKeys = PyDict_Keys(dict_val);
+  PyObject *pValues = PyDict_Values(dict_val);
+
+  if(!pKeys || !pValues){
+    Py_XDECREF(pKeys);
+    Py_XDECREF(pValues);
+    return ;
+  }
+
+  for (size = 0; size < PyDict_Size(dict_val); ++size) {
+      // PyString_AsString returns a char*
+    PyObject *pKey = PyList_GetItem(pKeys,  size);
+    PyObject *pVal = PyList_GetItem(pValues, size);
+
+    if (PyUnicode_Check(pKey) && PyUnicode_Check(pVal)) {
+
+      const char *ckey = PyUnicode_AsUTF8(pKey);
+      const char *cval =  PyUnicode_AsUTF8( pVal);
+      // printf("PyUnicode_AsUTF8 %s\n", cstr);
+    }
+  }
+  Py_XDECREF(pKeys);
+  Py_XDECREF(pValues);
+}
+
+
+
 struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_info) {
   struct ols_meta_result result;
   memset(&result, 0, sizeof(result));
@@ -367,52 +429,25 @@ struct ols_meta_result ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * t
   if (!s->loaded || !python_loaded)
     return result;
 
-
   lock_python();
 
-  // printf("data %s len %d\n", data, strlen(data));
+  PyObject *args = Py_BuildValue("(liiiss)", txt_info->msec,txt_info->pid,txt_info->tid,txt_info->log_lv,
+                      txt_info->tag.array,(const char *)txt_info->buff + txt_info->data_offset);
 
-  PyObject *args = Py_BuildValue("(liiiss)", txt_info->msec,txt_info->pid,txt_info->tid,txt_info->log_lv,txt_info->tag.array,(const char *)txt_info->buff + txt_info->data_offset);
-  // printf("parse object %p args %p\n",python_script->parse,args);
   PyObject *pValue = PyObject_CallObject(python_script->parse, args);
-  // printf("parse object %p args %p py ret
-  // %p\n",python_script->parse,args,py_ret);
 
-  // 检查是否有错误发生
+
+  // check if error occour
   if (PyErr_Occurred()) {
     PyErr_Print();
   } else {
 
-    if (PyList_Check(pValue)) {
-      Py_ssize_t size;
-      PyObject *item;
+    if (PyDict_Check(pValue)) {
+      ols_parse_dict_value(pValue);
 
-      size = PyList_Size(pValue);
-
-      for (Py_ssize_t i = 0; i < size; ++i) {
-        item = PyList_GetItem(pValue, i);
-        PyIter_Check(pValue);
-
-        if (PyUnicode_Check(item)) {
-
-          Py_ssize_t len = 0;
-          char *desc = NULL;
-          PyObject *bytes = NULL;
-
-          bytes = PyUnicode_AsUTF8String(item);
-          PyBytes_AsStringAndSize(bytes, &desc, &len);
-
-          char *info = bstrdup_n(desc, len);
-          da_push_back(result.info, &info);
-
-          Py_DECREF(bytes);
-
-          // printf("PyList_Check %s\n", cstr);
-        } else {
-
-          // printf("PyList_Check %s\n", cstr);
-        }
-      }
+    } else if (PyList_Check(pValue)) {
+      ols_parse_list_value(pValue);
+      
     } else if (PyUnicode_Check(pValue)) {
 
       const char *cstr = PyUnicode_AsUTF8(pValue);

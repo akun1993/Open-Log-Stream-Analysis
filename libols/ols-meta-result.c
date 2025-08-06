@@ -15,6 +15,24 @@ _ols_meta_result_free (ols_meta_result_t * meta_result)
 #endif
 
   dstr_free(&meta_result->tag);
+
+  size_t i ;
+
+  for(i = 0; i < meta_result->info.num; ++i){
+
+    result_info_msg_t *info = meta_result->info.array[i];
+    if(info->key){
+      bfree(info->key);
+    }
+
+    if(info->val){
+      bfree(info->val);
+    }
+
+    bfree(info);
+  }
+
+
   bfree(meta_result);
 }
 

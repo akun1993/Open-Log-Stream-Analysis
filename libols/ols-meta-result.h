@@ -13,15 +13,19 @@ extern "C" {
 
 typedef struct ols_meta_result ols_meta_result_t;
 
+typedef struct result_info_msg {
+  char * key;
+  char * val;
+} result_info_msg_t;
+
+
 struct ols_meta_result {
   ols_meta_t meta;
-
+  //char      time[128];
   struct dstr tag;
+  DARRAY(result_info_msg_t *) info;
+};  
 
-  DARRAY(char *) info;
-
-  struct ols_meta_result *next;
-};
 
 EXPORT ols_meta_result_t *ols_meta_result_new(void);
 
