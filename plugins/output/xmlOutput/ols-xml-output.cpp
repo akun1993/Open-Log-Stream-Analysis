@@ -173,8 +173,7 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 	}
 	
 	data_flag_ = true;
-
-	//xmldoc_.Print();
+	ols_buffer_unref(buffer);
 
 }
 

@@ -344,14 +344,16 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				
 				std::list<ols_pad_t *> &list_pad = tag2Pad_[ols_txt->tag.array];
 				for (ols_pad_t * pad : list_pad) {
-					ols_pad_push(pad, buffer);
+					ols_pad_push(pad, ols_buffer_ref(buffer));
 				}
 			}
 			auto any_iter = tagAny_.begin();
 			while(any_iter != tagAny_.end()){
-				ols_pad_push(*any_iter, buffer);
+				ols_pad_push(*any_iter,ols_buffer_ref(buffer) );
 			}
     		//printf("tag is %s \n",tag);
+		} else {
+			goto LOG_FORMAT_ERR;
 		}
 	}
 
