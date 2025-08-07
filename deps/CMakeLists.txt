@@ -24,3 +24,31 @@ add_subdirectory(tinyxml2)
 add_subdirectory(ols-scripting)
 
 add_subdirectory(pcre2)
+
+if(OS_WINDOWS)
+  add_subdirectory(libxml2)
+  add_subdirectory(libxslt)  
+else()
+
+  
+  find_program(
+    XSLTPROC_EXECUTABLE
+    NAMES xsltproc
+    HINTS ENV )
+
+  if(NOT XSLTPROC_EXECUTABLE)
+    ols_status(STATUS "Using system Jansson library.")
+    find_package(LibXml2 CONFIG QUIET)
+    if(NOT TARGET LibXml2::LibXml2)
+      add_subdirectory(libxml2)
+    else()
+      ols_status(STATUS "Using system LibXml2 library.")
+    endif()
+    
+    add_subdirectory(libxslt)  
+  endif() # NOT XSLTPROC_EXECUTABLE
+
+endif()
+
+
+
