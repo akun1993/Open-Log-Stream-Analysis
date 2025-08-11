@@ -391,10 +391,6 @@ static ols_properties_t *get_properties(void *data)
 	return props;
 }
 
-  // ols_script_t *script = ols_script_create("/home/zkun/OpenSource/Open-Log-Stream-Analysis/build/rundir/RelWithDebInfo/lib/ols-scripting/parse_log_2.py",NULL);
-
-  // ols_scripting_prase(script,"parse this log in python",sizeof("parse this log in python") - 1);
-
 
 bool ols_module_load(void)
 {

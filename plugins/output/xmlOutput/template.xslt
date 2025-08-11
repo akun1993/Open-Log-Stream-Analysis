@@ -418,14 +418,14 @@
 					</table>
 
 					<span class="treeView_content" id="{concat('content_',$app_id_tag)}">
-					<table class="default_style" style="border-collapse:separate; border-spacing:0px 5px;">
+					<table class="default_style">
 							<xsl:for-each select="current()/analysis/item">
 							<tr>
-							<td valign="top" class="default_style" style="width:80mm">
-							<span class="default_style_b"><xsl:value-of select="current()/time"/></span>
+							<td valign="top" class="default_style" style="width:105mm">
+							<span class="default_style_b"></span>
+							<span class="default_style_b"><xsl:value-of select="current()"/></span>
 							</td>
-							<td valign="top" colspan="2" style="width:40mm" class="default_style_b"><xsl:value-of select="current()/title"/> </td>
-							<td valign="top" colspan="2" style="width:200mm" class="default_style"><xsl:value-of select="current()/message"/> </td>
+							<td valign="top" colspan="2" style="width:200mm" class="default_style"><xsl:value-of select="current()"/> </td>
 							</tr>
 							</xsl:for-each>
 					</table>

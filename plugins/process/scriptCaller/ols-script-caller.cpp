@@ -38,7 +38,7 @@ struct ScriptCallerProcess {
   ols_process_t *process_ = nullptr;
   ols_script_t *script_ = nullptr;
   std::string script_path_;
-
+  std::string output_tag_;
   std::string caps_;
 
   /* --------------------------- */
@@ -50,7 +50,6 @@ struct ScriptCallerProcess {
 	if(!script_path_.empty()){
 		script_ = ols_script_create(script_path_.c_str(),NULL);
 	}
-
   }
 
   inline ~ScriptCallerProcess() {}
@@ -152,22 +151,32 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 			if(script_ ){
 
-				buffer->result = ols_scripting_prase(script_,ols_txt);
+				ols_meta_result_t *meta_result = ols_scripting_prase(script_,ols_txt);
 
-				dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
-		
-				for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
-					ols_pad_t *pad = process_->context.srcpads.array[i];
-					ols_pad_push(pad, ols_buffer_ref(buffer) );
+				//blog(LOG_DEBUG,"meta result getted  %p\n",meta_result);
+				if(meta_result){
+					buffer->result = meta_result;
+					
+					if(output_tag_.empty()){
+						dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
+					} else {
+						dstr_copy(&buffer->result->tag ,output_tag_.c_str());
+					}
+					
+					for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
+						ols_pad_t *pad = process_->context.srcpads.array[i];
+						ols_pad_push(pad, ols_buffer_ref(buffer) );
+					}
 				}
+
 			} else {
 				goto release_ref;
 			}
-			//printf("tag is %s \n",tag);
 		} else {
 			goto release_ref;
 		}
 	}
+
 	return;
 
 release_ref:
@@ -184,9 +193,16 @@ void ScriptCallerProcess::update(ols_data_t *settings)
 
 	if (ols_data_get_string(settings, "capacity") != NULL ) {
 		caps_ = ols_data_get_string(settings, "capacity");
-		
 		blog(LOG_INFO, "set capacity  %s",caps_.c_str());
 	}
+
+	if (ols_data_get_string(settings, "output_tag") != NULL ) {
+		output_tag_ = ols_data_get_string(settings, "output_tag");
+		blog(LOG_INFO, "output tags   %s",output_tag_.c_str());
+	} else {
+
+	}
+
 }
 
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int

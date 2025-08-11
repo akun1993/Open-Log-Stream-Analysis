@@ -420,6 +420,7 @@ void ols_source_update_properties(ols_source_t *source) {
 }
 
 static void activate_source(ols_source_t *source) {
+  blog(LOG_DEBUG,"in activate_source");
   if (source->context.data && source->info.activate)
     source->info.activate(source->context.data);
   ols_source_dosignal(source, "source_activate", "activate");

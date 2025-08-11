@@ -377,6 +377,8 @@ void TextSource::decompressFile(const std::string &file, std::string &ext_hint,c
     }
   }
 
+  blog(LOG_INFO,"do decompress command %s",command.array);
+
   os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
 
   if(pipe){
@@ -453,6 +455,8 @@ bool TextSource::openNextValidFile(){
 /* open the file, necessary to go to READY state */
 bool TextSource::fileSrcStart() {
 
+  //blog(LOG_INFO,"%s",__FUNCTION__);
+
   struct stat stat_results;
   std::string  file_ext;
   std::string dest_dir;
@@ -462,7 +466,11 @@ bool TextSource::fileSrcStart() {
   if(base_file_.empty()){
     goto no_filename;
   }
-  
+
+  if (os_stat(base_file_.c_str(), &stat_results) < 0){
+      goto no_stat;
+  }
+
   if (!S_ISDIR(stat_results.st_mode)){
 
     if(base_type_hint_.empty()){
@@ -526,10 +534,14 @@ bool TextSource::fileSrcStart() {
 
   return openNextValidFile();
 
-
   /* ERROR */
   no_filename: {
     blog(LOG_ERROR, ("No file name specified for reading."));
+  }
+  return false;  
+
+  no_stat:{
+    blog(LOG_ERROR, ("Could not get info on \"%s\"."), base_file_.c_str());
   }
   return false;  
 }

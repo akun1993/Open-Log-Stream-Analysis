@@ -4,10 +4,12 @@ import re
 class OlsString(object):
     def __init__(self,str_val):
         self.__str_val = str_val
+        self.__str_val.strip()
         self.__split_list = []
         self.__split_list_len = 0 
+
     def split(self,delimiter = ' '):
-        self.__split_list = [expression for expression in self.__str_val.split(delimiter) if expression] 
+        self.__split_list = [expression for expression in self.__str_val.split(delimiter) if expression.strip()] 
         self.__split_list_len = len(self.__split_list)
     
 
@@ -22,7 +24,8 @@ class OlsString(object):
     Use re split str , delimiter can be 
     '''    
     def reSplit(self, delimiter ):
-        self.__split_list = [expression for expression in re.split(delimiter,self.__str_val) if expression] 
+        self.__split_list = [expression for expression in re.split(delimiter,self.__str_val) if expression.strip()] 
+        print (self.__split_list)
         self.__split_list_len = len(self.__split_list)
         
 

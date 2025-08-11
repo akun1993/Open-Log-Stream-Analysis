@@ -133,9 +133,12 @@ int main(int argc, char **argv) {
 #if 0
   script_path = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
 #else
-  script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
+  script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/exampleGbParse.py";
 #endif
   ols_data_set_string(script_data,"script_file_path",script_path);
+
+  ols_data_set_string(script_data,"output_tag","DSVVDCMAPP");
+
   ols_data_set_string(script_data,"capacity","DSVVDCMAPP;DSVTSPConnectSVC");
 
   ols_process_t *process = ols_process_create("script_caller", "test_process", script_data);

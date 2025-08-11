@@ -436,6 +436,17 @@ ols_meta_result_t * ols_parse_dict_value(PyObject *dict_val){
 }
 
 
+ols_meta_result_t * ols_parse_str_value(PyObject *str_val){
+
+  ols_meta_result_t * result = NULL;
+  const char *cstr = PyUnicode_AsUTF8(str_val);
+  if(cstr){
+    result = ols_meta_result_new();
+    ols_meta_result_add_info(result,NULL,cstr);
+  }
+  return result;
+}
+
 
 ols_meta_result_t * ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_info) {
 
@@ -459,14 +470,16 @@ ols_meta_result_t * ols_python_parse_data(ols_script_t *s, ols_meta_txt_t * txt_
 
     if (PyDict_Check(pValue)) {
       result = ols_parse_dict_value(pValue);
-
     } else if (PyList_Check(pValue)) {
+
       result = ols_parse_list_value(pValue);
       
     } else if (PyUnicode_Check(pValue)) {
 
-      const char *cstr = PyUnicode_AsUTF8(pValue);
-      // printf("PyUnicode_AsUTF8 %s\n", cstr);
+      result = ols_parse_str_value(pValue);
+
+    } else {
+      blog(LOG_ERROR,"Return value type %s has not been support",Py_TYPE(pValue)->tp_name);
     }
   }
 

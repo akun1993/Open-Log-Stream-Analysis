@@ -11,11 +11,14 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <queue>
+#include <mutex>
 #include <time.h>
 #include <sys/stat.h>
 #include <util/platform.h>
 #include <util/task.h>
 #include <util/util.hpp>
+#include <util/dstr.hpp>
 
 
 using namespace std;
@@ -45,6 +48,17 @@ using namespace std;
 //  </root>
 //</protocol>
 
+struct XmlDocToHtmlTaskItem {
+
+	tinyxml2::XMLDocument  *xmlDoc;
+	XmlDocToHtmlTaskItem():xmlDoc(nullptr){
+	}
+	~XmlDocToHtmlTaskItem(){
+		if(xmlDoc)
+			delete xmlDoc;
+	}
+};
+
 struct AppNode {
 	tinyxml2::XMLElement* app_root_ = nullptr;
 	tinyxml2::XMLElement* analysis_ = nullptr;
@@ -52,7 +66,7 @@ struct AppNode {
 
 struct XmlOutput {
    ols_output_t *output_ = nullptr;
-   tinyxml2::XMLDocument xmldoc_;
+   tinyxml2::XMLDocument *xmldoc_ = nullptr;
    tinyxml2::XMLElement *root_ = nullptr;
 
    tinyxml2::XMLElement* system_ = nullptr;
@@ -67,16 +81,27 @@ struct XmlOutput {
 
    OlsEventType curr_event_ = OLS_EVENT_STREAM_START;
 
+   os_task_queue_t * xml_2_html_task_;
+
+   std::queue<XmlDocToHtmlTaskItem *> task_items_;
+   std::mutex task_mtx_;
+
    bool data_flag_{false};
 
 	/* --------------------------- */
 	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
 	: output_(output) {
 		update( settings);
+
+		xml_2_html_task_ = os_task_queue_create();
+
 		initOutfile();
 	}
 
-  inline ~XmlOutput() {}
+  inline ~XmlOutput() {
+
+	os_task_queue_destroy(xml_2_html_task_);
+  }
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
@@ -91,6 +116,8 @@ struct XmlOutput {
   void initOutfile();
 
   void flushOutfile();
+
+  static void xmlToHtmlTaskFunc(void *param);
 };
 
 /* ------------------------------------------------------------------------- */
@@ -153,8 +180,9 @@ static std::string formatTime(uint64_t msec){
 	auto time_tm = std::localtime(&tt);
 
 	std::ostringstream oss;
-	oss << std::put_time(time_tm, "%Y-%m-%d %H:%M:%S %Z");
+	oss << std::put_time(time_tm, "%Y-%m-%d %H:%M:%S");
 	oss << '.' << std::setw(3) << std::setfill('0') << milliseconds;
+	oss << std::put_time(time_tm, " %z");
 
 	return oss.str();
 }
@@ -175,12 +203,12 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 	auto &node = app_tags_[tag];
 
 	if(node.app_root_ == nullptr){
-		node.app_root_ = xmldoc_.NewElement("app");
-		tinyxml2::XMLElement * name = xmldoc_.NewElement("name");
+		node.app_root_ = xmldoc_->NewElement("app");
+		tinyxml2::XMLElement * name = xmldoc_->NewElement("name");
 		name->SetText(meta_result->tag.array);
 		node.app_root_->InsertFirstChild(name);
 
-		node.analysis_ = xmldoc_.NewElement("analysis");
+		node.analysis_ = xmldoc_->NewElement("analysis");
 		node.app_root_->InsertEndChild(node.analysis_);
 
 		apps_->InsertEndChild(node.app_root_);
@@ -188,21 +216,21 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	for(size_t i = 0; i < meta_result->info.num; ++i){
 	
-		tinyxml2::XMLElement * item = xmldoc_.NewElement("item");
+		tinyxml2::XMLElement * item = xmldoc_->NewElement("item");
 		{
-			tinyxml2::XMLElement * time = xmldoc_.NewElement("time");
+			tinyxml2::XMLElement * time = xmldoc_->NewElement("time");
 
 			time->SetText(formatTime(meta_txt->msec).c_str());
 
 			item->InsertEndChild(time);
 
-			tinyxml2::XMLElement * title = xmldoc_.NewElement("title");
+			tinyxml2::XMLElement * title = xmldoc_->NewElement("title");
 			if(meta_result->info.array[i]->key){
 				title->SetText(meta_result->info.array[i]->key);
 			}
 			item->InsertEndChild(title);
 
-			tinyxml2::XMLElement * message = xmldoc_.NewElement("message");
+			tinyxml2::XMLElement * message = xmldoc_->NewElement("message");
 			if(meta_result->info.array[i]->val){
 				message->SetText(meta_result->info.array[i]->val);
 			}
@@ -231,31 +259,62 @@ void XmlOutput::onEvent(ols_event_t *event){
 	curr_event_ = type;
 	if(type == OLS_EVENT_EOS){
 		flushOutfile();
+
 	} else if(OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_START){
 		initOutfile();
 
 	} else if( OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_FLUSH  ){
 		flushOutfile();
+
 	}
+
+}
+
+void XmlOutput::xmlToHtmlTaskFunc(void *param){
+
+	XmlOutput *xmlOut = (XmlOutput *)param;
+
+
+	XmlDocToHtmlTaskItem * item = nullptr;
+	
+	{
+		std::lock_guard<std::mutex> lck(xmlOut->task_mtx_);
+
+		if(!xmlOut->task_items_.empty()){
+			item = xmlOut->task_items_.front();
+			
+			xmlOut->task_items_.pop();
+		}
+	}
+
+
+
 
 }
 
 void XmlOutput::flushOutfile(){
 
-	if(!data_flag_ ) return;
+	if(!data_flag_ ) {
+		blog(LOG_INFO,"No  data is need to flush");
+		return;
+	}
 
 	std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
 	std::time_t now_time = std::chrono::system_clock::to_time_t(now);
 
-	dstr file;
-	dstr_init(&file);
-	dstr_printf(&file,"Tbox-Report-%d.xml",(int)now_time);
 
-	xmldoc_.SaveFile(file.array);
+	XmlDocToHtmlTaskItem * task_data= new XmlDocToHtmlTaskItem();
 
-	dstr_free(&file);
+	task_data->xmlDoc = xmldoc_;
 
-	xmldoc_.Clear();
+	{
+		std::lock_guard<std::mutex> lck(task_mtx_);
+		task_items_.push(task_data);
+	}
+
+	os_task_queue_queue_task(xml_2_html_task_,xmlToHtmlTaskFunc,this);
+
+	xmldoc_ = nullptr;
 
 	root_ = nullptr;
 
@@ -284,24 +343,26 @@ ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps){
 
 void XmlOutput::initOutfile(){
 
-	tinyxml2::XMLDeclaration* decl = xmldoc_.NewDeclaration("xml version='1.0' encoding='UTF-8' standalone='yes'");
-	xmldoc_.InsertFirstChild(decl);
+	xmldoc_ = new tinyxml2::XMLDocument();
 
-	tinyxml2::XMLDeclaration* decl2 = xmldoc_.NewDeclaration("xml-stylesheet type=\"text/xsl\" href=\"Anything.xsl\"");
-	xmldoc_.InsertAfterChild(decl,decl2);
+	tinyxml2::XMLDeclaration* decl = xmldoc_->NewDeclaration("xml version='1.0' encoding='UTF-8' standalone='yes'");
+	xmldoc_->InsertFirstChild(decl);
 
-	root_ = xmldoc_.NewElement("protocol");
-	xmldoc_.InsertEndChild(root_);
+	tinyxml2::XMLDeclaration* decl2 = xmldoc_->NewDeclaration("xml-stylesheet type=\"text/xsl\" href=\"Anything.xsl\"");
+	xmldoc_->InsertAfterChild(decl,decl2);
 
-	system_ = xmldoc_.NewElement("system");
+	root_ = xmldoc_->NewElement("protocol");
+	xmldoc_->InsertEndChild(root_);
+
+	system_ = xmldoc_->NewElement("system");
 	root_->InsertFirstChild(system_);
 
-	applications_  = xmldoc_.NewElement("applications");
+	applications_  = xmldoc_->NewElement("applications");
 
-	summary_ = xmldoc_.NewElement("summary");
+	summary_ = xmldoc_->NewElement("summary");
 	applications_->InsertFirstChild(summary_);
 
-	apps_ = xmldoc_.NewElement("apps");
+	apps_ = xmldoc_->NewElement("apps");
 	applications_->InsertFirstChild(apps_);
 
 	root_->InsertEndChild(applications_);
