@@ -19,6 +19,7 @@
 #include <util/task.h>
 #include <util/util.hpp>
 #include <util/dstr.hpp>
+#include <util/pipe.h>
 
 
 using namespace std;
@@ -86,6 +87,7 @@ struct XmlOutput {
    std::queue<XmlDocToHtmlTaskItem *> task_items_;
    std::mutex task_mtx_;
 
+   int  idx_ {0};
    bool data_flag_{false};
 
 	/* --------------------------- */
@@ -287,8 +289,34 @@ void XmlOutput::xmlToHtmlTaskFunc(void *param){
 		}
 	}
 
+	if(item){
 
+		std::string fileName("Tbox-analysis-report-");
 
+		fileName.append(std::to_string(++xmlOut->idx_));
+		fileName.append(1,'-');
+		fileName.append(std::to_string(time(NULL)));
+		
+		std::string xmlFile = fileName + ".xml";
+		item->xmlDoc->SaveFile(xmlFile.c_str() );
+
+		DStr command ;
+		dstr_printf(command,"xsltproc -o %s.html template.xslt %s.xml",fileName.c_str(),fileName.c_str());
+
+		os_process_pipe_t * pipe = os_process_pipe_create(command->array,"r");
+
+		if(pipe){
+			size_t len = 0; 
+			uint8_t buff[512];
+			while( (len = os_process_pipe_read_err(pipe,buff,sizeof(buff))) != 0 ){
+			     //ignore
+			}
+			os_process_pipe_destroy(pipe);
+		} else {
+			blog(LOG_INFO,"XmlOutput::xmlToHtmlTaskFunc create command pipe %s failed",command->array);
+		}
+
+	}
 
 }
 
