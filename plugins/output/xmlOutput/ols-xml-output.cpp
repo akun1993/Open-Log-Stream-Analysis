@@ -287,8 +287,11 @@ void XmlOutput::xmlToHtmlTaskFunc(void *param){
 		}
 	}
 
+	if(item){
 
+		
 
+	}
 
 }
 

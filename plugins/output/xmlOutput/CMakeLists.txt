@@ -15,5 +15,4 @@ endif()
 
 target_sources(ols-xml-output PRIVATE ols-xml-output.cpp)
 
-
 setup_plugin_target(ols-xml-output)

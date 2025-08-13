@@ -6,7 +6,7 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in
 
 target_sources(
   libols
-  PRIVATE obs-win-crash-handler.c
+  PRIVATE ols-win-crash-handler.c
           ols-windows.c
           util/threading-windows.c
           util/threading-windows.h
@@ -24,16 +24,16 @@ target_sources(
           util/windows/CoTaskMemPtr.hpp
           util/windows/HRError.hpp
           util/windows/WinHandle.hpp
-          libobs.rc)
+          libols.rc)
 
 target_compile_definitions(
   libols PRIVATE UNICODE _UNICODE _CRT_SECURE_NO_WARNINGS
                  _CRT_NONSTDC_NO_WARNINGS)
 
-target_link_libraries(libols PRIVATE dxgi Avrt Dwmapi winmm)
+#target_link_libraries(libols PRIVATE  )
 
 if(MSVC)
-  target_link_libraries(libols PUBLIC OBS::w32-pthreads)
+  target_link_libraries(libols PUBLIC OLS::w32-pthreads)
 
   target_compile_options(libols PRIVATE "$<$<COMPILE_LANGUAGE:C>:/EHc->"
                                         "$<$<COMPILE_LANGUAGE:CXX>:/EHc->")

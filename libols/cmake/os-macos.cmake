@@ -12,10 +12,6 @@ target_link_libraries(
 target_sources(
   libols
   PRIVATE # cmake-format: sortable
-          audio-monitoring/osx/coreaudio-enum-devices.c
-          audio-monitoring/osx/coreaudio-monitoring-available.c
-          audio-monitoring/osx/coreaudio-output.c
-          audio-monitoring/osx/mac-helpers.h
           ols-cocoa.m
           util/apple/cfstring-utils.h
           util/pipe-posix.c
