@@ -8,7 +8,7 @@ target_link_libraries(ols-data-statistics PRIVATE OLS::libols )
 set_target_properties(ols-data-statistics PROPERTIES FOLDER "plugins")
 
 if(OS_WINDOWS)
-    configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in
+    configure_file(cmake/windows/ols-module.rc.in
     ols-data-statistics.rc)
     target_sources(ols-data-statistics  PRIVATE ols-data-statistics.rc)
 endif()

@@ -18,7 +18,6 @@
 
 #include "c99defs.h"
 #include <stdio.h>
-#include <sys/types.h>
 #include <wchar.h>
 
 /*

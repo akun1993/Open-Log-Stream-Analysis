@@ -97,7 +97,6 @@ if(TARGET Luajit::Luajit)
   add_custom_command(
     OUTPUT swig/swigluarun.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE}
             -lua -external-runtime swig/swigluarun.h
     COMMENT "ols-scripting - generating Luajit SWIG interface headers")
@@ -113,15 +112,12 @@ if(TARGET Luajit::Luajit)
 
   target_include_directories(ols-scripting PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-
-
 endif()
 
 if(TARGET Python::Python)
   add_custom_command(
     OUTPUT swig/swigpyrun.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    PRE_BUILD
     COMMAND
       ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
       $<IF:$<AND:$<BOOL:${OS_POSIX}>,$<NOT:$<BOOL:${OS_MACOS}>>>,-py3,-py3-stable-abi>

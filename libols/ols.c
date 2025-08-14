@@ -948,7 +948,7 @@ bool ols_context_check_pad_uniqueness(struct ols_context_data *context,
 bool ols_context_add_pad(struct ols_context_data *context,
                          struct ols_pad *pad) {
   char *pad_name;
-  bool active;
+  //bool active;
 
   /* locking pad to look at the name */
   OLS_PAD_LOCK(pad);

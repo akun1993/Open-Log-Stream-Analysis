@@ -6,6 +6,8 @@ find_package(Sysinfo REQUIRED)
 target_sources(
   libols
   PRIVATE # cmake-format: sortable
+          ols-nix.c
+          ols-nix.h
           util/pipe-posix.c
           util/platform-nix.c
           util/threading-posix.c

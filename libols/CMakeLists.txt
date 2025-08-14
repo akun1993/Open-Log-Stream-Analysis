@@ -12,6 +12,7 @@ find_package(Threads REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
+
 if(ENABLE_UI)
   find_qt(COMPONENTS Core)
 else()
@@ -44,8 +45,6 @@ target_sources(
           ols-process.h
           ols.c
           ols.h
-          ols-nix.c
-          ols-nix.h
           ols-task.c
           ols-task.h          
           ols-caps.c
@@ -141,9 +140,9 @@ target_compile_definitions(
 
 target_link_libraries(
   libols
-  PRIVATE Jansson::Jansson
-          ZLIB::ZLIB
+  PRIVATE  $<BUILD_INTERFACE:Jansson::Jansson>
           OLS::uthash
+          ZLIB::ZLIB
   PUBLIC Threads::Threads)
 
 set_target_properties(
@@ -154,7 +153,7 @@ set_target_properties(
               SOVERSION "0")
 
 target_compile_features(libols PRIVATE cxx_alias_templates)
-message("dir is ${uthash__INCLUDE_DIRS}")
+#message("dir is ${uthash__INCLUDE_DIRS}")
 target_include_directories(
   libols PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                 $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config> 
@@ -174,7 +173,10 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/olsconfig.h.in "${CMAKE_BINARY_DIR}/config/olsconfig.h" @ONLY)
 
 target_include_directories(libols PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
-                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
+                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../deps/libz/include"  )
+#message("dir is ${CMAKE_BINARY_DIR}")
+#message("dir is ${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_compile_definitions(libols PUBLIC HAVE_OLSCONFIG_H)
 

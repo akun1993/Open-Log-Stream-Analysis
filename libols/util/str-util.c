@@ -1,4 +1,3 @@
-
 #include "str-util.h"
 #include <string.h>
 #include <ctype.h>
@@ -219,7 +218,6 @@ char *str_strncat(char *front, const char *back, size_t count) {
 
 char *str_ltrim(char *str) {
 
-  // 去除前导空格
   while (isspace((unsigned char)*str))
     str++;
 
@@ -228,14 +226,12 @@ char *str_ltrim(char *str) {
 
 void str_rtrim(char *str, int len) {
   char *end;
-  if (*str == 0) // 如果全是空格，则直接返回空字符串
+  if (*str == 0) 
     return;
 
-  // 去除尾部空格，从字符串末尾开始向前搜索非空格字符
   end = str + len - 1;
   while (end > str && isspace((unsigned char)*end))
     end--;
-  // 在字符串末尾加上字符串结束符，覆盖最后一个非空格字符后的所有字符
   *(end + 1) = 0;
 }
 
@@ -243,6 +239,6 @@ void str_rtrim(char *str, int len) {
 bool str_endwith(const char *str, const char *suffix) {
     size_t len_str = strlen(str);
     size_t len_suffix = strlen(suffix);
-    if (len_suffix > len_str) return 0; // 后缀比字符串还长，不可能匹配
+    if (len_suffix > len_str) return 0;
     return strcmp(str + len_str - len_suffix, suffix) == 0;
 }

@@ -6,7 +6,7 @@ BEGIN
     BLOCK "040904B0"
     BEGIN
       VALUE "CompanyName", "${OLS_COMPANY_NAME}"
-      VALUE "FileDescription", "OLS GDI+ text module"
+      VALUE "FileDescription", "OLS text module"
       VALUE "FileVersion", "${OLS_VERSION_CANONICAL}"
       VALUE "ProductName", "${OLS_PRODUCT_NAME}"
       VALUE "ProductVersion", "${OLS_VERSION_CANONICAL}"

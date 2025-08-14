@@ -8,12 +8,11 @@ target_link_libraries(ols-script-caller PRIVATE OLS::libols OLS::scripting  OLS:
 set_target_properties(ols-script-caller PROPERTIES FOLDER "plugins")
 
 if(OS_WINDOWS)
-    configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in
-        ols-script-caller.rc)
+    configure_file(cmake/windows/ols-module.rc.in ols-script-caller.rc)
     target_sources(ols-script-caller  PRIVATE ols-script-caller.rc)
 endif()
 
-target_sources(ols-script-caller PRIVATE ols-script-caller)
+target_sources(ols-script-caller PRIVATE ols-script-caller.cpp)
 
 
 setup_plugin_target(ols-script-caller)

@@ -26,11 +26,9 @@ add_subdirectory(ols-scripting)
 add_subdirectory(pcre2)
 
 if(OS_WINDOWS)
-  add_subdirectory(libxml2)
-  add_subdirectory(libxslt)  
+  #add_subdirectory(libxml2)
+  #add_subdirectory(libxslt)  
 else()
-
-  
   find_program(
     XSLTPROC_EXECUTABLE
     NAMES xsltproc

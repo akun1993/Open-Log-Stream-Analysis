@@ -16,20 +16,18 @@
 
 #include <intrin.h>
 #include <math.h>
-#include <mmsystem.h>
-#include <psapi.h>
+
 #include <rpc.h>
 #include <shellapi.h>
 #include <shlobj.h>
 #include <windows.h>
-
+#include <psapi.h>
 #include "base.h"
 #include "darray.h"
 #include "dstr.h"
-#include "olsconfig.h"
+#include "ols-config.h"
 #include "platform.h"
 #include "util_uint64.h"
-#include "windows/win-registry.h"
 #include "windows/win-version.h"
 
 #include "../../deps/w32-pthreads/pthread.h"
@@ -1031,30 +1029,7 @@ bool os_get_emulation_status(void) {
 #endif
 }
 
-void get_reg_dword(HKEY hkey, LPCWSTR sub_key, LPCWSTR value_name,
-                   struct reg_dword *info) {
-  struct reg_dword reg = {0};
-  HKEY key;
-  LSTATUS status;
 
-  status = RegOpenKeyEx(hkey, sub_key, 0, KEY_READ, &key);
-
-  if (status != ERROR_SUCCESS) {
-    info->status = status;
-    info->size = 0;
-    info->return_value = 0;
-    return;
-  }
-
-  reg.size = sizeof(reg.return_value);
-
-  reg.status = RegQueryValueExW(key, value_name, NULL, NULL,
-                                (LPBYTE)&reg.return_value, &reg.size);
-
-  RegCloseKey(key);
-
-  *info = reg;
-}
 
 #define WINVER_REG_KEY L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"
 

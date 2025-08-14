@@ -1,7 +1,7 @@
 #include "window-helpers.h"
 
 #include <util/windows/obfuscate.h>
-
+#include <Windows.h>
 #include <dwmapi.h>
 #include <psapi.h>
 
@@ -44,7 +44,7 @@ void ms_build_window_strings(const char *str, char **class, char **title,
 	strlist_free(strlist);
 }
 
-static void insert_preserved_val(obs_property_t *p, const char *val, size_t idx)
+static void insert_preserved_val(ols_property_t *p, const char *val, size_t idx)
 {
 	char *window_class = NULL;
 	char *title = NULL;
@@ -54,8 +54,8 @@ static void insert_preserved_val(obs_property_t *p, const char *val, size_t idx)
 	ms_build_window_strings(val, &window_class, &title, &executable);
 
 	dstr_printf(&desc, "[%s]: %s", executable, title);
-	obs_property_list_insert_string(p, idx, desc.array, val);
-	obs_property_list_item_disable(p, idx, true);
+	ols_property_list_insert_string(p, idx, desc.array, val);
+	ols_property_list_item_disable(p, idx, true);
 
 	dstr_free(&desc);
 	bfree(window_class);
@@ -63,21 +63,21 @@ static void insert_preserved_val(obs_property_t *p, const char *val, size_t idx)
 	bfree(executable);
 }
 
-bool ms_check_window_property_setting(obs_properties_t *ppts, obs_property_t *p,
-				      obs_data_t *settings, const char *val,
+bool ms_check_window_property_setting(ols_properties_t *ppts, ols_property_t *p,
+				      ols_data_t *settings, const char *val,
 				      size_t idx)
 {
 	const char *cur_val;
 	bool match = false;
 	size_t i = 0;
 
-	cur_val = obs_data_get_string(settings, val);
+	cur_val = ols_data_get_string(settings, val);
 	if (!cur_val) {
 		return false;
 	}
 
 	for (;;) {
-		const char *val = obs_property_list_item_string(p, i++);
+		const char *val = ols_property_list_item_string(p, i++);
 		if (!val)
 			break;
 
@@ -234,7 +234,7 @@ static bool is_microsoft_internal_window_exe(const char *exe)
 	return false;
 }
 
-static void add_window(obs_property_t *p, HWND hwnd, add_window_cb callback)
+static void add_window(ols_property_t *p, HWND hwnd, add_window_cb callback)
 {
 	struct dstr class = {0};
 	struct dstr title = {0};
@@ -277,7 +277,7 @@ static void add_window(obs_property_t *p, HWND hwnd, add_window_cb callback)
 	dstr_cat(&encoded, ":");
 	dstr_cat_dstr(&encoded, &exe);
 
-	obs_property_list_add_string(p, desc.array, encoded.array);
+	ols_property_list_add_string(p, desc.array, encoded.array);
 
 	dstr_free(&encoded);
 	dstr_free(&desc);
@@ -418,7 +418,7 @@ static HWND first_window(enum window_search_mode mode, HWND *parent,
 	return window;
 }
 
-void ms_fill_window_list(obs_property_t *p, enum window_search_mode mode,
+void ms_fill_window_list(ols_property_t *p, enum window_search_mode mode,
 			 add_window_cb callback)
 {
 	HWND parent;

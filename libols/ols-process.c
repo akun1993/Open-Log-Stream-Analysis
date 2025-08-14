@@ -226,7 +226,7 @@ void ols_process_destroy(struct ols_process *process) {
 }
 
 void ols_process_destroy_defer(struct ols_process *process) {
-  size_t i;
+
 
   /* prevents the destruction of processs if destroy triggered inside of
    * a video tick call */

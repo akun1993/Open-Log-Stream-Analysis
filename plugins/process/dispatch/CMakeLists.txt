@@ -1,7 +1,7 @@
 project(ols-data-dispatch)
 
 add_library(ols-data-dispatch MODULE)
-add_library(ols::scriptCaller ALIAS ols-data-dispatch)
+add_library(ols::dataDispatch ALIAS ols-data-dispatch)
 
 target_link_libraries(ols-data-dispatch PRIVATE OLS::libols )
 

@@ -216,7 +216,7 @@ void ols_source_destroy(struct ols_source *source) {
 }
 
 void ols_source_destroy_defer(struct ols_source *source) {
-  size_t i;
+
 
   /* prevents the destruction of sources if destroy triggered inside of
    * a video tick call */
@@ -521,6 +521,7 @@ bool ols_source_set_active(ols_source_t *source, bool is_active) {
   }
 
   source->active = is_active;
+  return true;
 }
 
 static inline uint64_t uint64_diff(uint64_t ts1, uint64_t ts2) {

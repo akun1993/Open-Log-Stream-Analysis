@@ -13,9 +13,11 @@
 //   limitations under the License.
 #include "time-parse.h"
 
+#if 0
 #if !defined(HAS_STRPTIME)
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__VXWORKS__)
 #define HAS_STRPTIME 1 // Assume everyone else has strptime().
+#endif
 #endif
 #endif
 
@@ -37,6 +39,7 @@
 #include <string.h>
 #include <time.h>
 
+#if 0
 #if !HAS_STRPTIME
 // Build a strptime() using C++11's std::get_time().
 char *strptime(const char *s, const char *fmt, std::tm *tm) {
@@ -47,6 +50,7 @@ char *strptime(const char *s, const char *fmt, std::tm *tm) {
   return const_cast<char *>(s) +
          (input.eof() ? strlen(s) : static_cast<std::size_t>(input.tellg()));
 }
+#endif
 #endif
 
 #if 0

@@ -48,7 +48,7 @@ if(MSVC)
   option(JANSSON_STATIC_CRT "Link the static CRT libraries" ON)
 endif()
 
-# Disabled by OBS
+# Disabled by OLS
 option(JANSSON_EXAMPLES "Compile example applications" OFF)
 
 if(UNIX)
