@@ -721,4 +721,7 @@ set(CPACK_RPM_programs_PACKAGE_REQUIRES "${PACKAGE_NAME}")
 set(CPACK_RPM_runtime_PACKAGE_NAME "${PACKAGE_NAME}")
 set(CPACK_RPM_runtime_PACKAGE_SUGGESTS "${PACKAGE_NAME}-utils")
 
+setup_binary_target(LibXml2)
+setup_binary_target(LibXml2Mod)
+
 #include(CPack)

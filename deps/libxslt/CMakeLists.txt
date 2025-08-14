@@ -519,4 +519,9 @@ set(CPACK_RPM_programs_PACKAGE_REQUIRES "${PACKAGE_NAME}")
 set(CPACK_RPM_runtime_PACKAGE_NAME "${PACKAGE_NAME}")
 set(CPACK_RPM_runtime_PACKAGE_SUGGESTS "${PACKAGE_NAME}-utils")
 
+setup_binary_target(LibXslt)
+setup_binary_target(LibExslt)
+setup_binary_target(xsltproc)
+
+
 #include(CPack)
