@@ -1,4 +1,5 @@
 #pragma once
+#include "util/c99defs.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -135,14 +136,14 @@ typedef bool (*ols_mini_object_dispose_function)(ols_mini_object_t *obj);
  */
 typedef void (*ols_mini_object_free_function)(ols_mini_object_t *obj);
 
-void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
+EXPORT void ols_mini_object_init(ols_mini_object_t *mini_object, uint32_t flags,
                           miniType type,
                           ols_mini_object_copy_function copy_func,
                           ols_mini_object_dispose_function dispose_func,
                           ols_mini_object_free_function free_func);
 
-ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object);
-void ols_mini_object_unref(ols_mini_object_t *mini_object);
+EXPORT ols_mini_object_t *ols_mini_object_ref(ols_mini_object_t *mini_object);
+EXPORT void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
 
 // void  ols_mini_object_weak_ref (ols_mini_object_t *object, void * data);
@@ -150,15 +151,15 @@ void ols_mini_object_unref(ols_mini_object_t *mini_object);
 
 /* locking */
 
-bool   ols_mini_object_lock            (ols_mini_object_t *object, OlsLockFlags flags);
+EXPORT bool   ols_mini_object_lock            (ols_mini_object_t *object, OlsLockFlags flags);
 
-void  ols_mini_object_unlock          (ols_mini_object_t *object, OlsLockFlags flags);
+EXPORT void  ols_mini_object_unlock          (ols_mini_object_t *object, OlsLockFlags flags);
 
 
 /* copy */
 
 
-ols_mini_object_t * ols_mini_object_copy(const ols_mini_object_t *mini_object) ;//G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT
+EXPORT ols_mini_object_t * ols_mini_object_copy(const ols_mini_object_t *mini_object) ;//G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT
 
 
 

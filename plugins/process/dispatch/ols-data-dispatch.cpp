@@ -1,5 +1,6 @@
 
 #include "ols-meta-txt.h"
+#include "ols-event.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -329,7 +330,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				goto LOG_FORMAT_ERR;
 			}
 			
-			ols_txt->data_offset = parse_len + 1; //+ 1 for skip ':'
+			ols_txt->data_offset = (int32_t)parse_len + 1; //+ 1 for skip ':'
 
 			if(*p == ':') --p;
 
@@ -383,10 +384,10 @@ MODULE_EXPORT const char *ols_module_description(void)
 static ols_properties_t *get_properties(void *data)
 {
 	DataDispatch *s = reinterpret_cast<DataDispatch *>(data);
-	string path;
+	//string path;
 
 	ols_properties_t *props = ols_properties_create();
-	ols_property_t *p;
+	//ols_property_t *p;
 
 	return props;
 }

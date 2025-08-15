@@ -3,8 +3,14 @@
 #include "ols-mini-object.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct ols_event;
 typedef struct ols_event ols_event_t;
+
 
 /**
  * OlsEventTypeFlags:
@@ -112,6 +118,11 @@ typedef enum {
 
 } OlsEventType;
 
+struct ols_event {
+  ols_mini_object_t mini_object;
+  OlsEventType ev_type;
+};
+
 #ifndef OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS
 /* refcounting */
 static inline ols_event_t *ols_event_ref(ols_event_t *event) {
@@ -128,11 +139,11 @@ static inline ols_event_t *ols_event_copy(const ols_event_t *event) {
       ols_mini_object_copy(OLS_MINI_OBJECT_CONST_CAST(event)));
 }
 
-ols_event_t *ols_event_new_eos();
+EXPORT ols_event_t *ols_event_new_eos();
 
-ols_event_t *ols_event_new_stream_start();
+EXPORT ols_event_t *ols_event_new_stream_start();
 
-ols_event_t *ols_event_new_stream_flush();
+EXPORT ols_event_t *ols_event_new_stream_flush();
 
 #else  /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
@@ -143,7 +154,6 @@ void ols_event_unref(ols_event_t *event);
 ols_event_t *ols_event_copy(const ols_event_t *event);
 #endif /* OLS_DISABLE_MINIOBJECT_INLINE_FUNCTIONS */
 
-struct ols_event {
-  ols_mini_object_t mini_object;
-  OlsEventType ev_type;
-};
+#ifdef __cplusplus
+}
+#endif

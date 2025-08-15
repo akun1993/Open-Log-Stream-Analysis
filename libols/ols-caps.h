@@ -2,6 +2,7 @@
 #pragma once
 #include "ols-mini-object.h"
 #include "util/darray.h"
+#include "util/c99defs.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -49,13 +50,13 @@ struct ols_caps
     DARRAY(char *) caps;
 };
 
-ols_caps_t *ols_caps_new(const char *caps_str);
+EXPORT ols_caps_t *ols_caps_new(const char *caps_str);
 
-ols_caps_t  *ols_caps_new_any();
+EXPORT ols_caps_t  *ols_caps_new_any();
 
-const char * ols_caps_by_idx(ols_caps_t *,size_t idx);
+EXPORT const char * ols_caps_by_idx(ols_caps_t *,size_t idx);
 
-size_t ols_caps_count(ols_caps_t *);
+EXPORT size_t ols_caps_count(ols_caps_t *);
 
 /* refcounting */
 static inline ols_caps_t *ols_caps_ref(ols_caps_t *ols_caps) {

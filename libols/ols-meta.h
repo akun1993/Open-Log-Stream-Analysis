@@ -26,7 +26,7 @@ typedef enum {
 typedef struct ols_meta ols_meta_t;
 
 #define OLS_META_CAST(obj)        ((ols_meta_t*)(obj))
-#define OSL_META(obj)             (OLS_META_CAST(obj))
+#define OLS_META(obj)             (OLS_META_CAST(obj))
 
 struct ols_meta {
   ols_mini_object_t  obj;
@@ -108,7 +108,7 @@ static inline void  ols_meta_unlock (ols_meta_t *meta, OlsLockFlags flags){
 static inline ols_meta_t *
 ols_meta_copy (const ols_meta_t * meta)
 {
-  return OSL_META (ols_mini_object_copy (OLS_MINI_OBJECT_CAST (meta)));
+  return OLS_META (ols_mini_object_copy (OLS_MINI_OBJECT_CAST (meta)));
 }
 
 

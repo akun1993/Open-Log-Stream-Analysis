@@ -150,10 +150,10 @@ MODULE_EXPORT const char *ols_module_description(void)
 static ols_properties_t *get_properties(void *data)
 {
 	DataStatistics *s = reinterpret_cast<DataStatistics *>(data);
-	string path;
+	//string path;
 
 	ols_properties_t *props = ols_properties_create();
-	ols_property_t *p;
+	//ols_property_t *p;
 
 	return props;
 }

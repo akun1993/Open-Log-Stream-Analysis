@@ -12,7 +12,7 @@ if("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
       "remove CMakeCache.txt and CMakeFiles.")
 endif()
 
-project(osl-studio VERSION ${OLS_VERSION_CANONICAL})
+project(ols-studio VERSION ${OLS_VERSION_CANONICAL})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 
@@ -32,7 +32,7 @@ endif()
 # Global project options
 
 option(BUILD_FOR_DISTRIBUTION "Build for distribution (enables optimizations)" OFF)
-option(ENABLE_UI "Enable building with UI (requires Qt)" ON)
+option(ENABLE_UI "Enable building with UI (requires Qt)" OFF)
 option(ENABLE_SCRIPTING "Enable scripting support" ON)
 option(USE_LIBCXX "Use libc++ instead of libstdc++" ${APPLE})
 option(BUILD_TESTS "Build test directory (includes test sources and possibly a platform test executable)" OFF)

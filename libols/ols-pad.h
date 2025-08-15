@@ -2,6 +2,7 @@
 
 #pragma once
 #include <stdint.h>
+#include "util/c99defs.h"
 #include "ols-caps.h"
 #include "ols-task.h"
 #include "ols.h"
@@ -346,10 +347,10 @@ typedef enum {
 } OlsFlowReturn;
 
 /* creating pads */
-ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction);
+EXPORT ols_pad_t *ols_pad_new(const char *name, OLSPadDirection direction);
 
 
-void ols_pad_destory( ols_pad_t *pad) ;
+EXPORT void ols_pad_destory( ols_pad_t *pad) ;
 
 /* data passing */
 /**
@@ -482,38 +483,38 @@ typedef void (*ols_pad_unlink_function)(ols_pad_t *pad, ols_object_t *parent);
 typedef bool (*ols_pad_forward_function)	(ols_pad_t *pad, void * user_data);
 
 
-bool pad_link_maybe_ghosting(ols_pad_t *srcpad, ols_pad_t *sinkpad);
+EXPORT bool pad_link_maybe_ghosting(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
-void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
+EXPORT void ols_pad_set_link_function_full(ols_pad_t *pad, ols_pad_link_function link,
                                     void *user_data);
 
-OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
+EXPORT OlsPadLinkReturn ols_pad_link_full(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
 
-bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad);
+EXPORT bool ols_pad_unlink(ols_pad_t *srcpad, ols_pad_t *sinkpad);
 
-bool ols_pad_is_linked(ols_pad_t *pad);
+EXPORT bool ols_pad_is_linked(ols_pad_t *pad);
 
-OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer);
+EXPORT OlsFlowReturn ols_pad_push(ols_pad_t *pad, ols_buffer_t *buffer);
 
-bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event);
+EXPORT bool ols_pad_push_event(ols_pad_t *pad, ols_event_t *event);
 
-void ols_pad_set_chain_function_full(ols_pad_t *pad,ols_pad_chain_function chain,void *user_data);
+EXPORT void ols_pad_set_chain_function_full(ols_pad_t *pad,ols_pad_chain_function chain,void *user_data);
 
-void	ols_pad_set_event_function_full(ols_pad_t *pad,ols_pad_event_function event,void *user_data);                                     
+EXPORT void	ols_pad_set_event_function_full(ols_pad_t *pad,ols_pad_event_function event,void *user_data);                                     
 
-bool ols_pad_set_parent(ols_pad_t *pad, ols_object_t *parent);
+EXPORT bool ols_pad_set_parent(ols_pad_t *pad, ols_object_t *parent);
 
-ols_object_t *ols_pad_get_parent(ols_pad_t *pad);
+EXPORT ols_object_t *ols_pad_get_parent(ols_pad_t *pad);
 
-void ols_pad_set_caps(ols_pad_t *pad , ols_caps_t *caps);
+EXPORT void ols_pad_set_caps(ols_pad_t *pad , ols_caps_t *caps);
 
 /* pad tasks */
-bool ols_pad_start_task(ols_pad_t *pad, os_task_t func, void *user_data);
+EXPORT bool ols_pad_start_task(ols_pad_t *pad, os_task_t func, void *user_data);
 
-bool ols_pad_pause_task(ols_pad_t *pad);
+EXPORT bool ols_pad_pause_task(ols_pad_t *pad);
 
-bool ols_pad_stop_task(ols_pad_t *pad);
+EXPORT bool ols_pad_stop_task(ols_pad_t *pad);
 
 // GstTaskState	gst_pad_get_task_state(GstPad *pad);
 

@@ -3,6 +3,7 @@
 #include "ols-meta-result.h"
 #include "ols-mini-object.h"
 #include "util/dstr.h"
+#include "util/c99defs.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -100,9 +101,9 @@ static inline ols_buffer_t *ols_buffer_copy(const ols_buffer_t *buf) {
   return OLS_BUFFER(ols_mini_object_copy(OLS_MINI_OBJECT_CONST_CAST(buf)));
 }
 
-ols_buffer_t *ols_buffer_copy_deep(const ols_buffer_t *buf);
+EXPORT ols_buffer_t *ols_buffer_copy_deep(const ols_buffer_t *buf);
 
-void ols_buffer_set_meta(ols_buffer_t *buf, struct ols_meta *meta);
+EXPORT void ols_buffer_set_meta(ols_buffer_t *buf, struct ols_meta *meta);
 
 #ifdef __cplusplus
 }
