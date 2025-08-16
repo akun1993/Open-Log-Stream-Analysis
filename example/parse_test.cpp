@@ -6,6 +6,11 @@
 #include <util/platform.h>
 #include "ols-context.h"
 
+int GetProgramDataPath(char *path, size_t size, const char *name)
+{
+	return os_get_program_data_path(path, size, name);
+}
+
 int GetConfigPath(char *path, size_t size, const char *name) {
 #if ALLOW_PORTABLE_MODE
   if (portable_mode) {
@@ -145,11 +150,11 @@ int main(int argc, char **argv) {
 
   ols_output_t *xml_output = ols_output_create("xml_output", "test_output", nullptr);
 
-  ols_context_link(&source->context, &dispatch->context);
+  // ols_context_link(&source->context, &dispatch->context);
 
-  ols_context_link(&dispatch->context, &process->context);
+  // ols_context_link(&dispatch->context, &process->context);
 
-  ols_context_link(&process->context, &xml_output->context);
+  // ols_context_link(&process->context, &xml_output->context);
 
   // source->link->process2->link->output;
 

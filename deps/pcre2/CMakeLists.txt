@@ -1212,6 +1212,13 @@ if(PCRE2_BUILD_PCRE2GREP)
   add_executable(pcre2grep src/pcre2grep.c)
   set_property(TARGET pcre2grep PROPERTY COMPILE_DEFINITIONS PCRE2_CODE_UNIT_WIDTH=8)
   list(APPEND TARGETS pcre2grep)
+
+if(OS_WINDOWS)
+  target_compile_options(
+  pcre2grep PRIVATE /wd4133
+  )
+endif()
+
   target_link_libraries(pcre2grep pcre2-posix ${PCRE2GREP_LIBS})
 endif()
 

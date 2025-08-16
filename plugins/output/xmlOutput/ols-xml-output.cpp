@@ -171,14 +171,14 @@ ols_pad_t * XmlOutput::createSinkPad(const char *caps){
 
 static std::string formatTime(uint64_t msec){
 
-	// 获取自纪元以来的毫秒数
+	// 
 	auto milliseconds = msec % 1000;
 
 	std::chrono::system_clock::time_point tp(std::chrono::seconds(msec/1000));
-	// 转换为time_t类型
+	// 
 	std::time_t tt = std::chrono::system_clock::to_time_t(tp);
 
-	// 转换为tm结构
+	//
 	auto time_tm = std::localtime(&tt);
 
 	std::ostringstream oss;
@@ -412,10 +412,10 @@ MODULE_EXPORT const char *ols_module_description(void){
 
 static ols_properties_t *get_properties(void *data){
 	XmlOutput *s = reinterpret_cast<XmlOutput *>(data);
-	string path;
+	//string path;
 
 	ols_properties_t *props = ols_properties_create();
-	ols_property_t *p;
+	//ols_property_t *p;
 
 	return props;
 }

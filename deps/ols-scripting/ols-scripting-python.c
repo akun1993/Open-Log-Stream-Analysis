@@ -165,6 +165,16 @@ static void unload_python_script(struct ols_python_script *data) {
 
   cur_python_script = data;
 
+  py_func = PyObject_GetAttrString(py_module, "script_unload");
+	if (PyErr_Occurred() || !py_func) {
+		PyErr_Clear();
+		goto fail;
+	}
+
+	py_ret = PyObject_CallObject(py_func, NULL);
+	if (py_error())
+		goto fail;
+
 fail:
   Py_XDECREF(py_ret);
   Py_XDECREF(py_func);
@@ -351,6 +361,8 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
   return (ols_script_t *)data;
 }
 
+
+
 ols_meta_result_t * ols_parse_list_value(PyObject *list_val){
 
   Py_ssize_t size;
@@ -366,23 +378,28 @@ ols_meta_result_t * ols_parse_list_value(PyObject *list_val){
 
     for (Py_ssize_t i = 0; i < size; ++i) {
       item = PyList_GetItem(list_val, i);
-      PyIter_Check(list_val);
+      if ((item == NULL) || (item->ob_type == NULL))
+          continue;
 
-      if (PyUnicode_Check(item)) {
+      if (PyCapsule_CheckExact(item)) {
+#ifdef DEBUG
+          blog(LOG_INFO,"Got a Capsule\n");
+#endif
+      } else if (PyUnicode_Check(item) ) {
 
-        Py_ssize_t len = 0;
-        char *desc = NULL;
-        PyObject *bytes = NULL;
+        PyObject *utf8 = NULL;
 
-        bytes = PyUnicode_AsUTF8String(item);
-        PyBytes_AsStringAndSize(bytes, &desc, &len);
+        utf8 = PyUnicode_AsUTF8String(item);
+        
+        if(utf8){
+           ols_meta_result_add_info(result,NULL,(const char  *) PyBytes_AS_STRING(utf8));   
+        }
 
-        char *info = bstrdup_n(desc, len);
-        ols_meta_result_add_info(result,NULL,info);
-
-        Py_DECREF(bytes);
+        Py_DECREF(utf8);
       } else {
-          blog(LOG_ERROR,"unsupported meta list result info");
+#ifdef DEBUG
+          blog(LOG_ERROR,"Unknown object in Python return list\n");
+#endif
       }
     }
   }
@@ -418,10 +435,29 @@ ols_meta_result_t * ols_parse_dict_value(PyObject *dict_val){
 
       if (PyUnicode_Check(pKey) && PyUnicode_Check(pVal)) {
 
-        const char *ckey = PyUnicode_AsUTF8(pKey);
-        const char *cval =  PyUnicode_AsUTF8( pVal);
+        PyObject  *ckey = PyUnicode_AsUTF8String(pKey);
+        PyObject  *cval =  PyUnicode_AsUTF8String( pVal);
 
-        ols_meta_result_add_info(result,ckey,cval);
+        if (ckey != NULL  || cval != NULL) {
+            const char *ckey_str = NULL;
+
+            const char *cval_str = NULL;
+            
+            if(ckey){
+               ckey_str = (const char  *) PyBytes_AS_STRING(ckey);
+               Py_XDECREF(ckey);
+            }
+            
+            if(cval){
+               cval_str = (const char  *) PyBytes_AS_STRING(cval);
+               Py_XDECREF(cval);
+            }
+
+            ols_meta_result_add_info(result,ckey_str,cval_str);
+
+        }
+
+       
         // printf("PyUnicode_AsUTF8 %s\n", cstr);
       } else {
         blog(LOG_ERROR,"unsupported meta dict result info");
@@ -436,14 +472,20 @@ ols_meta_result_t * ols_parse_dict_value(PyObject *dict_val){
 }
 
 
-ols_meta_result_t * ols_parse_str_value(PyObject *str_val){
+ols_meta_result_t * ols_parse_str_value(PyObject *str_obj){
 
   ols_meta_result_t * result = NULL;
-  const char *cstr = PyUnicode_AsUTF8(str_val);
-  if(cstr){
+
+ // Py_ssize_t size;
+  /* tmp doesn't need to be deallocated */
+  PyObject  *utf8 = PyUnicode_AsUTF8String(str_obj);
+
+  if (utf8 != NULL  ) {
     result = ols_meta_result_new();
-    ols_meta_result_add_info(result,NULL,cstr);
+    ols_meta_result_add_info(result,NULL,(const char  *) PyBytes_AS_STRING(utf8));   
+    Py_XDECREF(utf8);
   }
+
   return result;
 }
 

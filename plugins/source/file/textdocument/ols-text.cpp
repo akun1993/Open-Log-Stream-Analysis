@@ -1,4 +1,3 @@
-
 #include "ols-meta-txt.h"
 #include <algorithm>
 #include <locale>
@@ -8,6 +7,7 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <functional>
 #include <sys/stat.h>
 #include <util/base.h>
 #include <util/platform.h>
@@ -19,6 +19,16 @@
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
+
+#ifndef S_ISREG
+#define S_ISREG(mode) ((mode)&_S_IFREG)
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(mode) ((mode)&_S_IFDIR)
+#endif
+#ifndef S_ISSOCK
+#define S_ISSOCK(x) (0)
+#endif
 
 using namespace std;
 
@@ -74,7 +84,7 @@ const char * get_matched_extension(const char *file_name){
   return UNKNOW_FILE_EXT;
 }
 
-//声明一个模板  
+//template
 typedef std::function<void (uint8_t *, size_t )> ReadCallback; 
 
 bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback callback){
@@ -255,7 +265,7 @@ int TextSource::fileSrcGetData(ols_buffer_t *buf) {
     }
   }
 
-  ols_txt->line = line_cnt;
+  ols_txt->line = (int32_t)line_cnt;
   ols_txt->len = size;
 
   ols_buffer_set_meta(buf, OLS_META_CAST(ols_txt));
@@ -302,7 +312,7 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
     
 
     for (;;) {
-      const char *ext;
+      //const char *ext;
   
       ent = os_readdir(dir);
       if (!ent)
@@ -584,7 +594,7 @@ static ols_properties_t *get_properties(void *data) {
   string path;
 
   ols_properties_t *props = ols_properties_create();
-  ols_property_t *p;
+  //ols_property_t *p;
 
   if (s && !s->curr_filename_.empty()) {
     const char *slash;

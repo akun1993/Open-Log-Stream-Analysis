@@ -144,6 +144,16 @@ PY_EXTERN int (*Import_PyArg_VaParse)(PyObject *, const char *, va_list);
 PY_EXTERN PyObject(*Import__Py_NoneStruct);
 PY_EXTERN PyObject *(*Import_PyTuple_New)(Py_ssize_t size);
 PY_EXTERN int (*Import_PyType_GetFlags)(PyTypeObject *o);
+
+PY_EXTERN int (*Import_PyBytes_AsStringAndSize)(PyObject *obj, char **buffer, Py_ssize_t *length);
+PY_EXTERN PyObject * (*Import_PyDict_Keys)(PyObject *obj);
+PY_EXTERN PyObject * (*Import_PyDict_Values)(PyObject *obj);
+PY_EXTERN Py_ssize_t (*Import_PyDict_Size)(PyObject *obj);
+PY_EXTERN const char *(*Import_PyUnicode_AsUTF8)(PyObject *unicode);
+PY_EXTERN int (*Import_PyCapsule_CheckExact)(PyObject *p);
+PY_EXTERN PyTypeObject(*Import_PyCapsule_Type);
+
+
 #if defined(Py_DEBUG) || PY_VERSION_HEX >= 0x030900b0
 PY_EXTERN void (*Import__Py_Dealloc)(PyObject *obj);
 #endif
@@ -230,6 +240,12 @@ extern bool import_python(const char *python_path,
 #define PyArg_VaParse Import_PyArg_VaParse
 #define _Py_NoneStruct (*Import__Py_NoneStruct)
 #define PyTuple_New Import_PyTuple_New
+#define PyBytes_AsStringAndSize Import_PyBytes_AsStringAndSize
+#define PyDict_Keys Import_PyDict_Keys
+#define PyDict_Values Import_PyDict_Values
+#define PyDict_Size  Import_PyDict_Size
+#define PyCapsule_Type (*Import_PyCapsule_Type)
+
 #if defined(Py_DEBUG) || PY_VERSION_HEX >= 0x030900b0
 #define _Py_Dealloc Import__Py_Dealloc
 #endif

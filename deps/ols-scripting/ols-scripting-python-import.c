@@ -195,6 +195,17 @@ bool import_python(const char *python_path, python_version_t *python_version)
 	IMPORT_FUNC(PyArg_VaParse);
 	IMPORT_FUNC(_Py_NoneStruct);
 	IMPORT_FUNC(PyTuple_New);
+	IMPORT_FUNC(PyDict_Keys);
+	IMPORT_FUNC(PyDict_Values);
+	IMPORT_FUNC(PyDict_Size);
+	IMPORT_FUNC(PyBytes_AsStringAndSize);
+	IMPORT_FUNC(PyUnicode_AsUTF8);
+	IMPORT_FUNC(PyCapsule_CheckExact);
+	IMPORT_FUNC(PyCapsule_CheckExact);
+	IMPORT_FUNC(PyCapsule_Type);
+	
+
+
 	if (python_version->major == 3 && python_version->minor >= 9) {
 		IMPORT_FUNC(PyType_GetFlags);
 	}

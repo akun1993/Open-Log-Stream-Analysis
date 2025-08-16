@@ -220,7 +220,7 @@ static ols_properties_t *get_properties(void *data)
 	string path;
 
 	ols_properties_t *props = ols_properties_create();
-	ols_property_t *p;
+	//ols_property_t *p;
 
 	return props;
 }
