@@ -52,50 +52,50 @@ struct ols_context_data {
     UT_hash_handle hh_uuid;
 };
 
-extern bool ols_context_data_init(struct ols_context_data *context,
+EXPORT bool ols_context_data_init(struct ols_context_data *context,
                                 enum ols_obj_type type, ols_data_t *settings,
                                 const char *name, const char *uuid);
                                 
-extern void ols_context_init_control(struct ols_context_data *context,
+EXPORT void ols_context_init_control(struct ols_context_data *context,
                                     void *object, ols_destroy_cb destroy);
-extern void ols_context_data_free(struct ols_context_data *context);
+EXPORT void ols_context_data_free(struct ols_context_data *context);
 
-extern void ols_context_data_insert_name(struct ols_context_data *context,
+EXPORT void ols_context_data_insert_name(struct ols_context_data *context,
                                         pthread_mutex_t *mutex, void *first);
 
-extern void ols_context_data_insert_uuid(struct ols_context_data *context,
+EXPORT void ols_context_data_insert_uuid(struct ols_context_data *context,
                                         pthread_mutex_t *mutex,
                                         void *first_uuid);
 
-extern void ols_context_data_remove(struct ols_context_data *context);
-extern void ols_context_data_remove_name(struct ols_context_data *context,
+EXPORT void ols_context_data_remove(struct ols_context_data *context);
+EXPORT void ols_context_data_remove_name(struct ols_context_data *context,
                                         void *phead);
-extern void ols_context_data_remove_uuid(struct ols_context_data *context,
+EXPORT void ols_context_data_remove_uuid(struct ols_context_data *context,
                                         void *puuid_head);
 
-extern void ols_context_wait(struct ols_context_data *context);
+EXPORT void ols_context_wait(struct ols_context_data *context);
 
-extern void ols_context_data_setname_ht(struct ols_context_data *context,
+EXPORT void ols_context_data_setname_ht(struct ols_context_data *context,
                                         const char *name, void *phead);
 
-extern bool ols_context_add_pad(struct ols_context_data *context,
+EXPORT bool ols_context_add_pad(struct ols_context_data *context,
                                 struct ols_pad *pad);
 
-extern bool ols_context_remove_pad(struct ols_context_data *context,
+EXPORT bool ols_context_remove_pad(struct ols_context_data *context,
                                     struct ols_pad *pad);
 
-extern bool ols_context_link(struct ols_context_data *src,
+EXPORT bool ols_context_link(struct ols_context_data *src,
                             struct ols_context_data *dest);
 
-extern void ols_context_unlink(struct ols_context_data *src,
+EXPORT void ols_context_unlink(struct ols_context_data *src,
                                 struct ols_context_data *dest);
 
-extern bool ols_context_link_pads(struct ols_context_data *src,
+EXPORT bool ols_context_link_pads(struct ols_context_data *src,
                                 const char *srcpadname,
                                 struct ols_context_data *dest,
                                 const char *destpadname);
 
-extern void ols_context_unlink_pads(struct ols_context_data *src,
+EXPORT void ols_context_unlink_pads(struct ols_context_data *src,
                                     const char *srcpadname,
                                     struct ols_context_data *dest,
                                     const char *destpadname);

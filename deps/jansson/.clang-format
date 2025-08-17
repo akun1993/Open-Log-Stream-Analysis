@@ -1,3 +1,5 @@
-Language: Cpp
-SortIncludes: false
-DisableFormat: true
+BasedOnStyle: LLVM
+AlignConsecutiveMacros: true
+ColumnLimit: 90
+IndentCaseLabels: true
+IndentWidth: 4
