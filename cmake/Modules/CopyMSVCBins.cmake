@@ -46,6 +46,64 @@ file(
   "${LUAJIT_INCLUDE_DIR}/bin/lua*.dll"
   "${LUAJIT_INCLUDE_DIR}/lua*.dll")
 
+if(7Z_EXECUTABLE)
+  get_filename_component(7Z_BIN_DIR ${7Z_EXECUTABLE} PATH)
+endif()
+  
+file(
+  GLOB
+  7Z_BIN_FILES
+  "${7Z_BIN_DIR}/../../bin${_bin_suffix}/7z.dll"
+  "${7Z_BIN_DIR}/../../bin${_bin_suffix}/7z.exe"
+  "${7Z_BIN_DIR}/../../bin/7z.exe"
+  "${7Z_BIN_DIR}/../../bin/7z.dll"
+  "${7Z_BIN_DIR}/../bin${_bin_suffix}/7z.exe"
+  "${7Z_BIN_DIR}/../bin${_bin_suffix}/7z.dll"  
+  "${7Z_BIN_DIR}/../bin/7z.exe"
+  "${7Z_BIN_DIR}/../bin/7z.dll"  
+  "${7Z_BIN_DIR}/bin${_bin_suffix}/7z.exe"
+  "${7Z_BIN_DIR}/bin${_bin_suffix}/7z.dll"  
+  "${7Z_BIN_DIR}/bin/7z.exe"
+  "${7Z_BIN_DIR}/bin/7z.dll"  
+  "${7Z_BIN_DIR}/7z.exe"
+  "${7Z_BIN_DIR}/7z.dll")
+
+if(XSLTPROC_EXECUTABLE)
+  get_filename_component(XSLTPROC_BIN_DIR ${XSLTPROC_EXECUTABLE} PATH)
+endif()
+  
+file(
+  GLOB
+  XSLTPROC_BIN_FILES
+  "${XSLTPROC_BIN_DIR}/../../bin${_bin_suffix}/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/../../bin${_bin_suffix}/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/../../bin${_bin_suffix}/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/../../bin${_bin_suffix}/libexslt*.dll"   
+  "${XSLTPROC_BIN_DIR}/../../bin/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/../../bin/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/../../bin/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/../../bin/libexslt*.dll" 
+  "${XSLTPROC_BIN_DIR}/../bin${_bin_suffix}/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/../bin${_bin_suffix}/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/../bin${_bin_suffix}/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/../bin${_bin_suffix}/libexslt*.dll" 
+  "${XSLTPROC_BIN_DIR}/../bin/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/../bin/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/../bin/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/../bin/libexslt*.dll" 
+  "${XSLTPROC_BIN_DIR}/bin${_bin_suffix}/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/bin${_bin_suffix}/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/bin${_bin_suffix}/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/bin${_bin_suffix}/libexslt*.dll" 
+  "${XSLTPROC_BIN_DIR}/bin/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/bin/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/bin/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/bin/libexslt*.dll" 
+  "${XSLTPROC_BIN_DIR}/xsltproc.exe"
+  "${XSLTPROC_BIN_DIR}/libxslt*.dll"
+  "${XSLTPROC_BIN_DIR}/libxml2*.dll"  
+  "${XSLTPROC_BIN_DIR}/libexslt*.dll")
+
 if(ZLIB_LIB)
   get_filename_component(ZLIB_BIN_PATH ${ZLIB_LIB} PATH)
 endif()
@@ -97,6 +155,8 @@ file(GLOB QT_ICU_BIN_FILES "${QtCore_BIN_DIR}/icu*.dll")
 
 set(ALL_BASE_BIN_FILES
     ${LUA_BIN_FILES}
+    ${XSLTPROC_BIN_FILES}
+    ${7Z_BIN_FILES}
     ${SSL_BIN_FILES}
     ${ZLIB_BIN_FILES}
     ${QT_ICU_BIN_FILES})
@@ -143,6 +203,8 @@ foreach(
   endif()
 endforeach()
 
+ols_status(STATUS "xsltproc files: ${XSLTPROC_BIN_FILES}")
+ols_status(STATUS "7z files: ${7Z_BIN_FILES}")
 ols_status(STATUS "lua files: ${LUA_BIN_FILES}")
 ols_status(STATUS "ssl files: ${SSL_BIN_FILES}")
 ols_status(STATUS "zlib files: ${ZLIB_BIN_FILES}")

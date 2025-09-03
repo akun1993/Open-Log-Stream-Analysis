@@ -140,7 +140,7 @@ target_compile_definitions(
 
 target_link_libraries(
   libols
-  PRIVATE  $<BUILD_INTERFACE:Jansson::Jansson>
+  PRIVATE Jansson::Jansson
           OLS::uthash
           ZLIB::ZLIB
   PUBLIC Threads::Threads)

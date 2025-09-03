@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 3.16...3.21)
-
-
 option(ENABLE_SCRIPTING_LUA "Enable Lua scripting support" ON)
 option(ENABLE_SCRIPTING_PYTHON "Enable Python scripting support" ON)
 
@@ -48,13 +45,7 @@ if(NOT TARGET Luajit::Luajit AND NOT TARGET Python::Python)
   return()
 endif()
 
-if(OS_MACOS)
-  find_package(SWIG 4 REQUIRED)
-elseif(OS_POSIX)
-  find_package(SWIG 3 REQUIRED)
-elseif(OS_WINDOWS)
-  find_package(SwigWindows 3 REQUIRED)
-endif()
+find_package(SWIG 4 REQUIRED)
 
 add_library(ols-scripting SHARED)
 add_library(OLS::scripting ALIAS ols-scripting)
@@ -97,6 +88,7 @@ if(TARGET Luajit::Luajit)
   add_custom_command(
     OUTPUT swig/swigluarun.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+   # PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE}
             -lua -external-runtime swig/swigluarun.h
     COMMENT "ols-scripting - generating Luajit SWIG interface headers")
@@ -112,16 +104,16 @@ if(TARGET Luajit::Luajit)
 
   target_include_directories(ols-scripting PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+
 endif()
 
 if(TARGET Python::Python)
   add_custom_command(
     OUTPUT swig/swigpyrun.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMAND
-      ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
-      $<IF:$<AND:$<BOOL:${OS_POSIX}>,$<NOT:$<BOOL:${OS_MACOS}>>>,-py3,-py3-stable-abi>
-      -external-runtime swig/swigpyrun.h
+   # PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E env "SWIG_LIB=${SWIG_DIR}" ${SWIG_EXECUTABLE} -python
+            $<IF:$<BOOL:${OS_LINUX}>,-py3,-py3-stable-abi> -external-runtime swig/swigpyrun.h
     COMMENT "ols-scripting - generating Python 3 SWIG interface headers")
 
   set_source_files_properties(swig/swigpyrun.h PROPERTIES GENERATED ON)
@@ -157,7 +149,6 @@ if(TARGET Python::Python)
   else()
     target_link_libraries(ols-scripting PRIVATE Python::Python)
   endif()
-
 
 endif()
 

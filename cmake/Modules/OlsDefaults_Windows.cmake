@@ -104,21 +104,6 @@ macro(setup_ols_project)
     list(APPEND CMAKE_PREFIX_PATH "${QTDIR}")
   endif()
 
-  if(DEFINED ENV{VLCPath})
-    set(VLCPath "$ENV{VLCPath}")
-  elseif(DEFINED ENV{OLS_VLCPath})
-    set(VLCPath "$ENV{OLS_VLCPath}")
-  endif()
-
-  if(DEFINED VLCPath)
-    set(VLC_PATH "${VLCPath}")
-  endif()
-
-  if(DEFINED ENV{CEF_ROOT_DIR})
-    set(CEF_ROOT_DIR "$ENV{CEF_ROOT_DIR}")
-  elseif(DEFINED ENV{OLS_CEF_ROOT_DIR})
-    set(CEF_ROOT_DIR "$ENV{OLS_CEF_ROOT_DIR}")
-  endif()
 
   if(DEFINED ENV{OLS_InstallerTempDir})
     file(TO_CMAKE_PATH "$ENV{OLS_InstallerTempDir}" _INSTALLER_TEMP_DIR)

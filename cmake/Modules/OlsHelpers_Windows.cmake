@@ -283,62 +283,6 @@ function(export_target target)
     EXCLUDE_FROM_ALL)
 endfunction()
 
-# Helper function to do additional setup for browser source plugin
-function(setup_target_browser target)
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Resources/
-    DESTINATION ${OLS_PLUGIN_DESTINATION}
-    COMPONENT ${target}_Runtime)
-
-  install(
-    DIRECTORY ${CEF_ROOT_DIR}/Resources/
-    DESTINATION ${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_PLUGIN_DESTINATION}
-    COMPONENT ols_rundir
-    EXCLUDE_FROM_ALL)
-
-  if(DEFINED ENV{OLS_InstallerTempDir})
-    install(
-      DIRECTORY ${CEF_ROOT_DIR}/Resources/
-      DESTINATION $ENV{OLS_InstallerTempDir}/${OLS_PLUGIN_DESTINATION}
-      COMPONENT ols_rundir
-      EXCLUDE_FROM_ALL)
-  endif()
-
-  set(_ADDITIONAL_BROWSER_FILES
-      "libcef.dll"
-      "libEGL.dll"
-      "libGLESv2.dll"
-      "snapshot_blob.bin"
-      "v8_context_snapshot.bin"
-      "natives_blob.bin"
-      "chrome_elf.dll")
-
-  foreach(_ADDITIONAL_BROWSER_FILE IN LISTS _ADDITIONAL_BROWSER_FILES)
-    list(REMOVE_ITEM _ADDITIONAL_BROWSER_FILES "${_ADDITIONAL_BROWSER_FILE}")
-    if(EXISTS "${CEF_ROOT_DIR}/Release/${_ADDITIONAL_BROWSER_FILE}")
-      list(APPEND _ADDITIONAL_BROWSER_FILES "${CEF_ROOT_DIR}/Release/${_ADDITIONAL_BROWSER_FILE}")
-    endif()
-  endforeach()
-
-  install(
-    FILES ${_ADDITIONAL_BROWSER_FILES}
-    DESTINATION ${OLS_PLUGIN_DESTINATION}/
-    COMPONENT ${target}_Runtime)
-
-  install(
-    FILES ${_ADDITIONAL_BROWSER_FILES}
-    DESTINATION ${OLS_OUTPUT_DIR}/$<CONFIG>/${OLS_PLUGIN_DESTINATION}/
-    COMPONENT ols_rundir
-    EXCLUDE_FROM_ALL)
-
-  if(DEFINED ENV{OLS_InstallerTempDir})
-    install(
-      FILES ${_ADDITIONAL_BROWSER_FILES}
-      DESTINATION $ENV{OLS_InstallerTempDir}/${OLS_PLUGIN_DESTINATION}/
-      COMPONENT ols_rundir
-      EXCLUDE_FROM_ALL)
-  endif()
-endfunction()
 
 # Helper function to gather external libraries depended-on by libols
 function(setup_libols_target target)
@@ -431,21 +375,10 @@ function(install_headers target)
     PATTERN "ols-hevc.h" EXCLUDE
     PATTERN "ols-nix-*.h" EXCLUDE
     PATTERN "*-posix.h" EXCLUDE
-    PATTERN "audio-monitoring/null" EXCLUDE
-    PATTERN "audio-monitoring/osx" EXCLUDE
-    PATTERN "audio-monitoring/pulse" EXCLUDE
     PATTERN "util/apple" EXCLUDE
     PATTERN "cmake" EXCLUDE
     PATTERN "pkgconfig" EXCLUDE
     PATTERN "data" EXCLUDE)
-
-  if(ENABLE_HEVC)
-    install(
-      FILES "${CMAKE_CURRENT_SOURCE_DIR}/ols-hevc.h"
-      DESTINATION "${OLS_INCLUDE_DESTINATION}"
-      COMPONENT ols_libraries
-      EXCLUDE_FROM_ALL)
-  endif()
 
   if(NOT EXISTS "${OLS_INCLUDE_DESTINATION}/olsconfig.h")
     install(
