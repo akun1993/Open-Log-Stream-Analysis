@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+#cmake_minimum_required (VERSION 3.1)
 project(jansson C)
 
 # Options
@@ -665,3 +665,6 @@ endif()
 
 # For use when simply using add_library from a parent project to build jansson.
 set(JANSSON_LIBRARIES jansson CACHE STRING "jansson libraries")
+target_include_directories(jansson PUBLIC src
+                                          "${CMAKE_CURRENT_BINARY_DIR}/include")
+

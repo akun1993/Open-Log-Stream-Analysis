@@ -173,8 +173,7 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/olsconfig.h.in "${CMAKE_BINARY_DIR}/config/olsconfig.h" @ONLY)
 
 target_include_directories(libols PUBLIC "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/config>"
-                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/../deps/libz/include"  )
+                                         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" )
 #message("dir is ${CMAKE_BINARY_DIR}")
 #message("dir is ${CMAKE_CURRENT_SOURCE_DIR}")
 

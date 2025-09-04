@@ -117,15 +117,29 @@ int main(int argc, char **argv) {
   ols_data_t * src_file_data = ols_data_create();
 
   const char *file_path ;
-#if 0
-  file_path = "/home/zkun/TBoxLog_20240116_132405.zip";
+
+#if defined(_WIN32)
+  file_path = "E:\\Bug Analyse\\ndlb\\log.tar.gz";
+#elif defined(__APPLE__)
+  int ret = GetConfigPath(base_module_dir, sizeof(base_module_dir),
+                          "ols-studio/plugins/%module%.plugin");
 #else
-  file_path = "/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip";
-#endif  
+  #if 0
+    file_path = "/home/zkun/TBoxLog_20240116_132405.zip";
+  #else
+    file_path = "/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip";
+  #endif  
+#endif
 
   ols_data_set_string(src_file_data,"base_file",file_path);
   ols_data_set_string(src_file_data,"base_file_type_hint","zip");
+
+#if defined(_WIN32)
+  ols_data_set_string(src_file_data,"inner_dir","TBoxLog\\log");
+#else
   ols_data_set_string(src_file_data,"inner_dir","TBoxLog/log");
+#endif   
+ 
   ols_data_set_string(src_file_data,"file_name_wildcard","sv_user.log.*");
 
   ols_source_t *source = ols_source_create("text_file", "test_read", src_file_data);
@@ -135,11 +149,17 @@ int main(int argc, char **argv) {
   ols_data_t * script_data = ols_data_create();
 
   const char *script_path ;
-#if 0
-  script_path = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
+
+#if defined(_WIN32)
+  script_path = "E:\\Project\\ols-studio\\Open-Log-Stream-Analysis\\script_python\\exampleGbParse.py";
 #else
-  script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/exampleGbParse.py";
-#endif
+  #if 0
+    script_path = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
+  #else
+    script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/exampleGbParse.py";
+  #endif
+#endif  
+
   ols_data_set_string(script_data,"script_file_path",script_path);
 
   ols_data_set_string(script_data,"output_tag","DSVVDCMAPP");

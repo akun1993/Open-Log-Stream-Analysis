@@ -15,4 +15,5 @@ endif()
 
 set_target_properties(parse_test PROPERTIES FOLDER "example")
 
+setup_binary_target(parse_test)
 #setup_ols_app(parse_test)

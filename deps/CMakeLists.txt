@@ -14,6 +14,7 @@ if(NOT TARGET Jansson::Jansson)
   ols_status(STATUS "Jansson >=2.5 not found, building bundled version.")
 
   add_subdirectory(jansson)
+  #set(JANSSON_LIBRARIES ${Jansson_LIB})
   add_library(Jansson::Jansson ALIAS jansson)
 else()
   ols_status(STATUS "Using system Jansson library.")
