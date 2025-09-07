@@ -191,17 +191,7 @@ endfunction()
 # Helper function to set up OLS app target
 function(setup_ols_app target)
   # detect outdated ols-browser submodule
-  if(NOT TARGET OLS::browser AND TARGET ols-browser)
-    if(MSVC)
-      target_compile_options(ols-browser PRIVATE $<IF:$<CONFIG:DEBUG>,/MTd,/MT>)
 
-      target_compile_options(ols-browser-page PRIVATE $<IF:$<CONFIG:DEBUG>,/MTd,/MT>)
-    endif()
-
-    target_link_options(ols-browser PRIVATE "LINKER:/IGNORE:4099")
-
-    target_link_options(ols-browser-page PRIVATE "LINKER:/IGNORE:4099" "LINKER:/SUBSYSTEM:WINDOWS")
-  endif()
 
   _setup_ols_app(${ARGV})
 

@@ -4,7 +4,6 @@ else()
   set(_LIB_SUFFIX 32)
 endif()
 
-unset(XSLTPROC_EXECUTABLE CACHE)
 
 find_program(
   XSLTPROC_EXECUTABLE
