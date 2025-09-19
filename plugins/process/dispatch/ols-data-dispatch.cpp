@@ -345,12 +345,17 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				
 				std::list<ols_pad_t *> &list_pad = tag2Pad_[ols_txt->tag.array];
 				for (ols_pad_t * pad : list_pad) {
-					ols_pad_push(pad, ols_buffer_ref(buffer));
+					ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
+					ols_pad_push(pad, cp_buffer);
+					ols_buffer_unref(cp_buffer);
 				}
 			}
+
 			auto any_iter = tagAny_.begin();
 			while(any_iter != tagAny_.end()){
-				ols_pad_push(*any_iter,ols_buffer_ref(buffer) );
+				ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
+				ols_pad_push(*any_iter,cp_buffer );
+				ols_buffer_unref(cp_buffer);
 			}
     		//printf("tag is %s \n",tag);
 		} else {
