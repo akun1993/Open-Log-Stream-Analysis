@@ -150,13 +150,17 @@ int main(int argc, char **argv) {
 
   const char *script_path ;
 
+  const char *script_path_2 ;
+
 #if defined(_WIN32)
   script_path = "E:\\Project\\ols-studio\\Open-Log-Stream-Analysis\\script_python\\exampleGbParse.py";
+  script_path_2 = "E:\\Project\\ols-studio\\Open-Log-Stream-Analysis\\script_python\\exampleGbParse.py";
 #else
   #if 0
     script_path = "/home/zkun/OpenSource/Open-Log-Stream-Analysis/script_python/parse_log_2.py";
   #else
     script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/exampleGbParse.py";
+    script_path_2 = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/script_others.py";
   #endif
 #endif  
 
@@ -168,13 +172,28 @@ int main(int argc, char **argv) {
 
   ols_process_t *process = ols_process_create("script_caller", "test_process", script_data);
 
+
+  ols_data_t * script_data2 = ols_data_create();
+  ols_data_set_string(script_data2,"script_file_path",script_path_2);
+
+  //ols_data_set_string(script_data2,"output_tag","DSVVDCMAPP");
+
+  ols_data_set_string(script_data2,"capacity","DSVLocationAPP");
+
+  ols_process_t *process_2 = ols_process_create("script_caller", "test_process_2", script_data2);
+
   ols_output_t *xml_output = ols_output_create("xml_output", "test_output", nullptr);
 
-  // ols_context_link(&source->context, &dispatch->context);
+  ols_context_link(&source->context, &dispatch->context);
 
-  // ols_context_link(&dispatch->context, &process->context);
+  ols_context_link(&dispatch->context, &process_2->context);
 
-  // ols_context_link(&process->context, &xml_output->context);
+  ols_context_link(&dispatch->context, &process->context);
+
+  ols_context_link(&process_2->context, &xml_output->context);
+
+  ols_context_link(&process->context, &xml_output->context);
+
 
   // source->link->process2->link->output;
 

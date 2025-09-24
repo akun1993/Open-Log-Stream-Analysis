@@ -78,15 +78,6 @@ bool ols_process_init_context(struct ols_process *process, ols_data_t *settings,
                              name, uuid))
     return false;
 
-  // process->context.sink =
-  //     gst_ghost_pad_new_from_template("sink", scale->sinkpads->data,
-  //     template);
-  // ols_pad_set_chain_function(process->sinkpad,
-  //                            (ols_pad_chain_function)process_default_chain);
-  // gst_element_add_pad(GST_ELEMENT(self), process->sink);
-  // gst_object_unref(template);
-
-  // gst_element_add_pad(GST_ELEMENT(self), pad);
 
   return signal_handler_add_array(process->context.signals, process_signals);
 }

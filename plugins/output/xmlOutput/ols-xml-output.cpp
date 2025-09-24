@@ -87,6 +87,7 @@ struct XmlOutput {
    std::queue<XmlDocToHtmlTaskItem *> task_items_;
    std::mutex task_mtx_;
 
+   int sinkIdx_{0};
    int  idx_ {0};
    bool data_flag_{false};
 
@@ -156,7 +157,10 @@ static bool output_sink_event_func(ols_pad_t *pad, ols_object_t *parent,ols_even
 
 ols_pad_t * XmlOutput::createSinkPad(const char *caps){
 
-	ols_pad_t * sinkpad = ols_pad_new("xml-output-sink",OLS_PAD_SINK);
+	std::string name("xml-output-sink-");	
+	name.append(std::to_string(sinkIdx_++));
+
+	ols_pad_t * sinkpad = ols_pad_new(name.c_str(),OLS_PAD_SINK);
 
 	blog(LOG_DEBUG, "create recv pad success");
 
@@ -305,6 +309,7 @@ void XmlOutput::xmlToHtmlTaskFunc(void *param){
 
 		os_process_pipe_t * pipe = os_process_pipe_create(command->array,"r");
 
+		blog(LOG_INFO,"xsltproc commnad is %s ",command->array);
 		if(pipe){
 			size_t len = 0; 
 			uint8_t buff[512];
