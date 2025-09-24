@@ -1,0 +1,745 @@
+{
+    "states": {
+        "下水口安装": {
+            "name": "下水口安装",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117684.6546333,
+            "end_time": 1754117684.6547239
+        },
+        "残泥清理": {
+            "name": "残泥清理",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117684.5543325,
+            "end_time": 1754117684.5544064
+        },
+        "氩气管安装": {
+            "name": "氩气管安装",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117675.3371515,
+            "end_time": 1754117676.3378234
+        },
+        "底吹东孔": {
+            "name": "底吹东孔",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117678.3444998,
+            "end_time": 1754117682.449044
+        },
+        "返回安全位": {
+            "name": "返回安全位",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117686.7593777,
+            "end_time": 1754117687.7597921
+        },
+        "底吹西孔": {
+            "name": "底吹西孔",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117683.4521127,
+            "end_time": 1754117693.1681528
+        },
+        "拿水口烧眼夹具": {
+            "name": "拿水口烧眼夹具",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117676.340193,
+            "end_time": 1754117677.3411622
+        },
+        "残棉清理": {
+            "name": "残棉清理",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117683.4521439,
+            "end_time": 1754117684.452842
+        },
+        "水口烧眼": {
+            "name": "水口烧眼",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117678.3445292,
+            "end_time": 1754117679.3461118
+        },
+        "倾翻86度": {
+            "name": "倾翻86度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117674.3350425,
+            "end_time": 1754117675.3357487
+        },
+        "倾翻6度": {
+            "name": "倾翻6度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118892.3956316,
+            "end_time": 1754118893.3962595
+        },
+        "悬臂加砂后复位": {
+            "name": "悬臂加砂后复位",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118892.3956659,
+            "end_time": 1754118893.3962252
+        },
+        "打开耳轴": {
+            "name": "打开耳轴",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118893.3976383,
+            "end_time": 1754118894.3982956
+        },
+        "包口除尘关闭": {
+            "name": "包口除尘关闭",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117693.168802,
+            "end_time": 1754117694.169395
+        },
+        "氩气管拆卸": {
+            "name": "氩气管拆卸",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117685.7570117,
+            "end_time": 1754117686.7575719
+        },
+        "围堰吹扫": {
+            "name": "围堰吹扫",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117676.3400669,
+            "end_time": 1754117677.3410764
+        },
+        "机械臂加砂": {
+            "name": "机械臂加砂",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117674.3351765,
+            "end_time": 1754117675.3357768
+        },
+        "包口除尘启动": {
+            "name": "包口除尘启动",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117675.3370655,
+            "end_time": 1754117676.3378918
+        },
+        "下水口拆卸": {
+            "name": "下水口拆卸",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117684.4540808,
+            "end_time": 1754117684.4541881
+        },
+        "开始": {
+            "name": "开始",
+            "type": "StateBase",
+            "respond_list": [
+                ""
+            ],
+            "status": "WORKING",
+            "is_skip": false,
+            "start_time": 1754118894.3991566,
+            "end_time": 1754117674.3295534
+        },
+        "油缸拆卸": {
+            "name": "油缸拆卸",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117685.757061,
+            "end_time": 1754117686.7575455
+        },
+        "倾翻94度": {
+            "name": "倾翻94度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117677.34276,
+            "end_time": 1754117678.3435049
+        },
+        "倾翻0度": {
+            "name": "倾翻0度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118890.3923523,
+            "end_time": 1754118891.3930273
+        },
+        "油缸安装": {
+            "name": "油缸安装",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117675.3372402,
+            "end_time": 1754117676.3377738
+        },
+        "倾翻90度": {
+            "name": "倾翻90度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117682.4506555,
+            "end_time": 1754117683.4512641
+        },
+        "悬臂加砂": {
+            "name": "悬臂加砂",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118891.3942211,
+            "end_time": 1754118892.3947413
+        },
+        "悬臂预加砂": {
+            "name": "悬臂预加砂",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754118890.392452,
+            "end_time": 1754118891.3930986
+        },
+        "倾翻103度": {
+            "name": "倾翻103度",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117694.1702225,
+            "end_time": 1754118890.3307102
+        },
+        "下水口掏泥": {
+            "name": "下水口掏泥",
+            "type": "StateGrpc",
+            "respond_list": [
+                "finish"
+            ],
+            "status": "IDLE",
+            "is_skip": false,
+            "start_time": 1754117684.7551863,
+            "end_time": 1754117685.7558174
+        }
+    },
+    "transs": [
+        {
+            "source": "开始",
+            "target": "倾翻86度",
+            "expr": "hmi_start",
+            "conds": {
+                "hmi_start": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "开始",
+            "target": "机械臂加砂",
+            "expr": "hmi_start",
+            "conds": {
+                "hmi_start": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻86度",
+            "target": "氩气管安装",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻86度",
+            "target": "油缸安装",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻86度",
+            "target": "包口除尘启动",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "机械臂加砂",
+            "target": "悬臂预加砂",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "包口除尘启动",
+            "target": "水口烧眼",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "包口除尘启动",
+            "target": "围堰吹扫",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "围堰吹扫",
+            "target": "倾翻94度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "氩气管安装",
+            "target": "拿水口烧眼夹具",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "氩气管安装",
+            "target": "倾翻94度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "油缸安装",
+            "target": "拿水口烧眼夹具",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "油缸安装",
+            "target": "倾翻94度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "拿水口烧眼夹具",
+            "target": "水口烧眼",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻94度",
+            "target": "底吹东孔",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻94度",
+            "target": "水口烧眼",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "底吹东孔",
+            "target": "倾翻90度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "水口烧眼",
+            "target": "包口除尘关闭",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "水口烧眼",
+            "target": "倾翻90度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻90度",
+            "target": "底吹西孔",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻90度",
+            "target": "残棉清理",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "底吹西孔",
+            "target": "包口除尘关闭",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "包口除尘关闭",
+            "target": "倾翻103度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "残棉清理",
+            "target": "下水口拆卸",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "下水口拆卸",
+            "target": "残泥清理",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "残泥清理",
+            "target": "下水口安装",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "下水口安装",
+            "target": "下水口掏泥",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "下水口掏泥",
+            "target": "氩气管拆卸",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "下水口掏泥",
+            "target": "油缸拆卸",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "油缸拆卸",
+            "target": "倾翻103度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "氩气管拆卸",
+            "target": "倾翻103度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "氩气管拆卸",
+            "target": "返回安全位",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "返回安全位",
+            "target": "倾翻0度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻103度",
+            "target": "倾翻0度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻103度",
+            "target": "悬臂预加砂",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻0度",
+            "target": "悬臂加砂",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "悬臂预加砂",
+            "target": "悬臂加砂",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "悬臂加砂",
+            "target": "悬臂加砂后复位",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "悬臂加砂",
+            "target": "倾翻6度",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "悬臂加砂后复位",
+            "target": "开始",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "倾翻6度",
+            "target": "打开耳轴",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        },
+        {
+            "source": "打开耳轴",
+            "target": "开始",
+            "expr": "finish",
+            "conds": {
+                "finish": false
+            },
+            "value": false,
+            "enable": true
+        }
+    ]
+}
