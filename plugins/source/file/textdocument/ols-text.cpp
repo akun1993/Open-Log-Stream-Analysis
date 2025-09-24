@@ -103,7 +103,9 @@ bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback
   return false;
 }
 
-void  decompress_file(const std::string &file){
+void  decompress_log_file(const std::string &file){
+
+#if defined(_WIN32)
   struct dstr command = {0};
 
   std::string extension = get_matched_extension(file.c_str());
@@ -142,6 +144,49 @@ void  decompress_file(const std::string &file){
   }
 
   dstr_free(&command);
+#else
+  struct dstr command = {0};
+
+  std::string extension = get_matched_extension(file.c_str());
+
+  if(extension == "tar.gz"){
+    dstr_printf(&command,"tar -zvxf %s --overwrite",file.c_str());
+  } else if(extension == "gz") {
+    std::string dest_file = file;
+    dest_file.erase(dest_file.size() - (sizeof(".gz") - 1));
+    dstr_printf(&command,"gunzip -c %s > %s",file.c_str(),dest_file.c_str());
+  } else {
+    return ;
+  }
+  
+  bool format_errno = false ;
+  uint8_t buffer[1024];
+  do_command(command.array,buffer,1024,[extension,&format_errno](uint8_t *buff, size_t buff_len){
+      //blog(LOG_INFO,"ext is %s read %s",extension.c_str(),buff);
+      if(extension == "tar.gz"){
+        if(strstr((const char *)buff,"not in gzip format") != nullptr){
+          format_errno = true;
+      }
+    }
+  });
+
+  if(format_errno){
+    size_t pos  = file.find_last_of('/');
+    std::string dest_dir;
+    if(pos != std::string::npos){
+      dest_dir = file.substr(0,pos);
+      dstr_printf(&command,"cd %s; tar -xvf %s --overwrite | xargs gunzip ",dest_dir.c_str(),file.c_str());
+      do_command(command.array,buffer,1024,[](uint8_t *buff, size_t buff_len){
+  
+      });
+    }
+  }
+
+  dstr_free(&command);
+#endif  
+
+
+
 }
 
 struct TextSource {
@@ -523,7 +568,7 @@ bool TextSource::fileSrcStart() {
 
   //decompress
   for(auto &file : files){
-    decompress_file(file);
+    decompress_log_file(file);
   }
 
   //reload after decompress
