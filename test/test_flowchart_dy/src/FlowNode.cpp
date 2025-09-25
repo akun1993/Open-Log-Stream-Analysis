@@ -6,6 +6,8 @@
 #include <QToolTip>
 #include <QGraphicsView>
 #include <QGraphicsSceneHoverEvent>
+#include "FlowEdge.h"
+#include <QDebug>
 
 FlowNode::FlowNode(const QString &id, const QString &label,
                    QGraphicsItem *parent)
@@ -14,14 +16,14 @@ FlowNode::FlowNode(const QString &id, const QString &label,
     // 设置大小
     setRect(0, 0, NODE_WIDTH, NODE_HEIGHT);
 
+
     // 更新颜色方案 - 增强对比度
     m_normalBrush = QBrush(QColor(120, 120, 120));   // 未激活 - 深灰色
     m_activatedBrush = QBrush(QColor(65, 105, 225)); // 已激活 - 皇家蓝（更鲜艳）
     m_activeBrush = QBrush(QColor(50, 200, 50));     // 运行中 - 亮绿色
     m_disabledBrush = QBrush(QColor(100, 100, 100)); // 禁用 - 灰色
     m_errorBrush = QBrush(QColor(220, 20, 60));      // 错误 - 猩红色
-    m_skipBrush = QBrush(QColor(148, 0, 211));       // 紫色 - 跳过状态
-    m_skipPen = QPen(QColor(200, 200, 255), 2);      // 浅紫色边框
+
 
     m_activatedPen = QPen(QColor(200, 230, 255), 2); // 已激活边框
     m_activePen = QPen(QColor(144, 238, 144), 3);    // 运行中边框
@@ -32,6 +34,7 @@ FlowNode::FlowNode(const QString &id, const QString &label,
     // 设置字体
     m_font = QFont("Microsoft YaHei", 18, QFont::Medium);
     setFlags(ItemIsSelectable | ItemIsMovable);
+    setFlag(ItemSendsGeometryChanges);
     // 启用鼠标悬停事件
     setAcceptHoverEvents(true);
 }
@@ -64,41 +67,35 @@ void FlowNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     // 根据状态和激活状态选择画笔和画刷
     QBrush brush;
     QPen pen;
-    if (m_isSkip)
+
+    switch (m_state)
     {
-        brush = m_skipBrush;
-        pen = m_skipPen;
-    }
-    else
-    {
-        switch (m_state)
+    case ActiveState:
+        brush = m_activeBrush;
+        pen = m_activePen;
+        break;
+    case DisabledState:
+        brush = m_disabledBrush;
+        pen = m_disabledPen;
+        break;
+    case ErrorState:
+        brush = m_errorBrush;
+        pen = m_errorPen;
+        break;
+    default:
+        if (m_hasActivated)
         {
-        case ActiveState:
-            brush = m_activeBrush;
-            pen = m_activePen;
-            break;
-        case DisabledState:
-            brush = m_disabledBrush;
-            pen = m_disabledPen;
-            break;
-        case ErrorState:
-            brush = m_errorBrush;
-            pen = m_errorPen;
-            break;
-        default:
-            if (m_hasActivated)
-            {
-                brush = m_activatedBrush; // 已激活状态
-                pen = m_activatedPen;
-            }
-            else
-            {
-                brush = m_disabledBrush; // 未激活状态
-                pen = m_disabledPen;
-            }
-            break;
+            brush = m_activatedBrush; // 已激活状态
+            pen = m_activatedPen;
         }
+        else
+        {
+            brush = m_disabledBrush; // 未激活状态
+            pen = m_disabledPen;
+        }
+        break;
     }
+
 
     // 绘制圆角矩形
     QRectF rect = boundingRect();
@@ -161,6 +158,25 @@ void FlowNode::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     QGraphicsRectItem::hoverLeaveEvent(event);
 }
 
+
+QVariant FlowNode::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    switch (change) {
+    case ItemPositionHasChanged:
+
+        qDebug() << "item pos changed";
+        foreach (FlowEdge *edge, m_outEdges)
+            edge->updatePath();
+
+        foreach (FlowEdge *edge, m_inEdges)
+            edge->updatePath();
+        break;
+    default:
+        break;
+    };
+
+    return QGraphicsItem::itemChange(change, value);
+}
 
 //! [12]
 // void FlowNode::mousePressEvent(QGraphicsSceneMouseEvent *event)

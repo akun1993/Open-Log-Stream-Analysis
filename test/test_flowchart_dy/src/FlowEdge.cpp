@@ -67,6 +67,7 @@ void FlowEdge::drawOrthogonalPath()
 
     // 目标节点入边偏移：确保同一目标节点的入边分散
     const double targetBaseSpacing = 10.0;
+
     // 动态调整间距：入边越多间距越大（避免拥挤）
     double targetSpacing = targetBaseSpacing * (1 + m_targetTotalChannels / 5.0);
     double targetVerticalOffset = 0;
@@ -81,6 +82,7 @@ void FlowEdge::drawOrthogonalPath()
         sourceRect.right(),
         sourceRect.center().y() + sourceVerticalOffset // 源节点偏移
     );
+
     QPointF endPoint(
         targetRect.left(),
         targetRect.center().y() + targetVerticalOffset // 目标节点偏移（解决入边重叠）
@@ -221,22 +223,22 @@ void FlowEdge::drawOrthogonalPath()
     // 添加标签（带背景）
     if (!m_label.isEmpty())
     {
-        QPointF labelPos = path.pointAtPercent(0.5);
-        QGraphicsSimpleTextItem *labelItem = new QGraphicsSimpleTextItem(m_label, this);
-        labelItem->setFont(QFont("Arial", 12, QFont::Bold));
+//        QPointF labelPos = path.pointAtPercent(0.5);
+//        QGraphicsSimpleTextItem *labelItem = new QGraphicsSimpleTextItem(m_label, this);
+//        labelItem->setFont(QFont("Arial", 12, QFont::Bold));
 
-        QGraphicsRectItem *bgItem = new QGraphicsRectItem(this);
-        QRectF textRect = labelItem->boundingRect();
-        bgItem->setRect(textRect.adjusted(-2, -1, 2, 1));
-        bgItem->setPos(labelPos - QPointF(textRect.width() / 2, textRect.height() / 2));
-        bgItem->setBrush(QBrush(QColor(255, 255, 255, 200)));
-        bgItem->setPen(Qt::NoPen);
-        bgItem->setZValue(1);
+//        QGraphicsRectItem *bgItem = new QGraphicsRectItem(this);
+//        QRectF textRect = labelItem->boundingRect();
+//        bgItem->setRect(textRect.adjusted(-2, -1, 2, 1));
+//        bgItem->setPos(labelPos - QPointF(textRect.width() / 2, textRect.height() / 2));
+//        bgItem->setBrush(QBrush(QColor(255, 255, 255, 200)));
+//        bgItem->setPen(Qt::NoPen);
+//        bgItem->setZValue(1);
 
-        QColor textColor = m_hasActivated ? QColor(78, 155, 121) : Qt::darkGray;
-        labelItem->setBrush(textColor);
-        labelItem->setPos(labelPos - QPointF(textRect.width() / 2, textRect.height() / 2));
-        labelItem->setZValue(2);
+//        QColor textColor = m_hasActivated ? QColor(78, 155, 121) : Qt::darkGray;
+//        labelItem->setBrush(textColor);
+//        labelItem->setPos(labelPos - QPointF(textRect.width() / 2, textRect.height() / 2));
+//        labelItem->setZValue(2);
     }
 }
 

@@ -27,6 +27,12 @@ FlowChartScene::FlowChartScene(QObject *parent)
     setForegroundBrush(QBrush(QColor(100, 100, 100, 20), Qt::CrossPattern));
 }
 
+
+void FlowChartScene::setMode(Mode mode)
+{
+    m_mode = mode;
+}
+
 void FlowChartScene::loadFlowChart(const QJsonObject &json)
 {
     // 检查"开始"节点状态变化
@@ -194,6 +200,10 @@ void FlowChartScene::createEdges()
         FlowNode *sourceNode = edge->sourceNode();
         if (sourceNode)
             sourceNode->addOutEdge(edge);
+
+        FlowNode *targetNode = edge->targetNode();
+        if (targetNode)
+            targetNode->addInEdge(edge);
     }
 }
 
@@ -569,40 +579,40 @@ void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
     if (mouseEvent->button() != Qt::LeftButton)
         return;
 
-//     DiagramItem *item;
-//     switch (myMode) {
-//         case InsertItem:
-//             item = new DiagramItem(myItemType, myItemMenu);
-//             item->setBrush(myItemColor);
-//             addItem(item);
-//             item->setPos(mouseEvent->scenePos());
-//             emit itemInserted(item);
-//             break;
-// //! [6] //! [7]
-//         case InsertLine:
-//             line = new QGraphicsLineItem(QLineF(mouseEvent->scenePos(),
-//                                         mouseEvent->scenePos()));
-//             line->setPen(QPen(myLineColor, 2));
-//             addItem(line);
-//             break;
-// //! [7] //! [8]
-//         case InsertText:
-//             textItem = new DiagramTextItem();
-//             textItem->setFont(myFont);
-//             textItem->setTextInteractionFlags(Qt::TextEditorInteraction);
-//             textItem->setZValue(1000.0);
-//             connect(textItem, SIGNAL(lostFocus(DiagramTextItem*)),
-//                     this, SLOT(editorLostFocus(DiagramTextItem*)));
-//             connect(textItem, SIGNAL(selectedChange(QGraphicsItem*)),
-//                     this, SIGNAL(itemSelected(QGraphicsItem*)));
-//             addItem(textItem);
-//             textItem->setDefaultTextColor(myTextColor);
-//             textItem->setPos(mouseEvent->scenePos());
-//             emit textInserted(textItem);
-// //! [8] //! [9]
-//     default:
-//         ;
-//     }
+    FlowNode *item;
+    switch (m_mode) {
+        case InsertItem:
+            item = new FlowNode("fsf", "fsf");
+            //item->setBrush(myItemColor);
+            addItem(item);
+            item->setPos(mouseEvent->scenePos());
+            //emit itemInserted(item);
+            break;
+//! [6] //! [7]
+        case InsertLine:
+//            line = new QGraphicsLineItem(QLineF(mouseEvent->scenePos(),
+//                                        mouseEvent->scenePos()));
+//            line->setPen(QPen(myLineColor, 2));
+//            addItem(line);
+            break;
+//! [7] //! [8]
+        case InsertText:
+//            textItem = new DiagramTextItem();
+//            textItem->setFont(myFont);
+//            textItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+//            textItem->setZValue(1000.0);
+//            connect(textItem, SIGNAL(lostFocus(DiagramTextItem*)),
+//                    this, SLOT(editorLostFocus(DiagramTextItem*)));
+//            connect(textItem, SIGNAL(selectedChange(QGraphicsItem*)),
+//                    this, SIGNAL(itemSelected(QGraphicsItem*)));
+//            addItem(textItem);
+//            textItem->setDefaultTextColor(myTextColor);
+//            textItem->setPos(mouseEvent->scenePos());
+//            emit textInserted(textItem);
+//! [8] //! [9]
+    default:
+        ;
+    }
     QGraphicsScene::mousePressEvent(mouseEvent);
 }
 //! [9]
@@ -610,48 +620,58 @@ void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 //! [10]
 void FlowChartScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    // if (myMode == InsertLine && line != 0) {
-    //     QLineF newLine(line->line().p1(), mouseEvent->scenePos());
-    //     line->setLine(newLine);
-    // } else if (myMode == MoveItem) {
-        
-    // }
-
-    QGraphicsScene::mouseMoveEvent(mouseEvent);
+    if (m_mode == InsertLine && line != 0) {
+        //QLineF newLine(line->line().p1(), mouseEvent->scenePos());
+       // line->setLine(newLine);
+    } else if (m_mode == MoveItem) {
+        QGraphicsScene::mouseMoveEvent(mouseEvent);
+    }
 }
 //! [10]
 
 //! [11]
 void FlowChartScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-//     if (line != 0 && myMode == InsertLine) {
-//         QList<QGraphicsItem *> startItems = items(line->line().p1());
-//         if (startItems.count() && startItems.first() == line)
-//             startItems.removeFirst();
-//         QList<QGraphicsItem *> endItems = items(line->line().p2());
-//         if (endItems.count() && endItems.first() == line)
-//             endItems.removeFirst();
+//    if (line != 0 && myMode == InsertLine) {
+//        QList<QGraphicsItem *> startItems = items(line->line().p1());
+//        if (startItems.count() && startItems.first() == line)
+//            startItems.removeFirst();
+//        QList<QGraphicsItem *> endItems = items(line->line().p2());
+//        if (endItems.count() && endItems.first() == line)
+//            endItems.removeFirst();
 
-//         removeItem(line);
-//         delete line;
-// //! [11] //! [12]
+//        removeItem(line);
+//        delete line;
+////! [11] //! [12]
 
-//         if (startItems.count() > 0 && endItems.count() > 0 &&
-//             startItems.first()->type() == DiagramItem::Type &&
-//             endItems.first()->type() == DiagramItem::Type &&
-//             startItems.first() != endItems.first()) {
-//             DiagramItem *startItem = qgraphicsitem_cast<DiagramItem *>(startItems.first());
-//             DiagramItem *endItem = qgraphicsitem_cast<DiagramItem *>(endItems.first());
-//             Arrow *arrow = new Arrow(startItem, endItem);
-//             arrow->setColor(myLineColor);
-//             startItem->addArrow(arrow);
-//             endItem->addArrow(arrow);
-//             arrow->setZValue(-1000.0);
-//             addItem(arrow);
-//             arrow->updatePosition();
-//         }
-//     }
+//        if (startItems.count() > 0 && endItems.count() > 0 &&
+//            startItems.first()->type() == DiagramItem::Type &&
+//            endItems.first()->type() == DiagramItem::Type &&
+//            startItems.first() != endItems.first()) {
+//            DiagramItem *startItem = qgraphicsitem_cast<DiagramItem *>(startItems.first());
+//            DiagramItem *endItem = qgraphicsitem_cast<DiagramItem *>(endItems.first());
+//            Arrow *arrow = new Arrow(startItem, endItem);
+//            arrow->setColor(myLineColor);
+//            startItem->addArrow(arrow);
+//            endItem->addArrow(arrow);
+//            arrow->setZValue(-1000.0);
+//            addItem(arrow);
+//            arrow->updatePosition();
+//        }
+//    }
 //! [12] //! [13]
     //line = 0;
     QGraphicsScene::mouseReleaseEvent(mouseEvent);
 }
+//! [13]
+
+//! [14]
+bool FlowChartScene::isItemChange(int type)
+{
+    foreach (QGraphicsItem *item, selectedItems()) {
+        if (item->type() == type)
+            return true;
+    }
+    return false;
+}
+//! [14]

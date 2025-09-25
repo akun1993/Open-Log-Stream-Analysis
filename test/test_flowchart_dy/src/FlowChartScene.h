@@ -24,6 +24,8 @@ class FlowChartScene : public QGraphicsScene
     Q_OBJECT
 
 public:
+   enum Mode { InsertItem, InsertLine, InsertText, MoveItem };
+
     explicit FlowChartScene(QObject *parent = nullptr);
 
     void loadFlowChart(const QJsonObject &json);
@@ -31,6 +33,9 @@ public:
     void arrangeLayout();
     NodeState mapJsonStatusToNodeState(const QString &status);
 
+public slots:
+    void setMode(Mode mode);
+    //void setItemType(DiagramItem::DiagramType type);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
@@ -49,7 +54,10 @@ private:
 
     void createLegend();
 
+     bool isItemChange(int type);
 private:
+    Mode m_mode;
+    QGraphicsLineItem *line{nullptr};
     QJsonObject m_jsonData;                 // 存储流程图的JSON数据
     QMap<QString, FlowNode *> m_nodes;      // 节点ID到节点对象的映射
     QList<FlowEdge *> m_edges;              // 所有边的列表

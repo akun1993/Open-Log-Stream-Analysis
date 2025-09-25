@@ -58,8 +58,7 @@ void MainWindow::initGrpcClient() {
   //     connect(this, &MainWindow::safeUpdateWorkingStatus,
   //             this, &MainWindow::handleeWorkingStatus, Qt::QueuedConnection);
 
-  QFile file("G:\\OpenSource\\Open-Log-Stream-Analysis\\test\\test_flowchart_dy\\"
-             "config/test.json");
+  QFile file("/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/test/test_flowchart_dy/config/test.json");
 
   if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 
