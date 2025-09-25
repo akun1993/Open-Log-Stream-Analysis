@@ -225,6 +225,15 @@ EXPORT char *os_generate_uuid(void);
 #endif
 /* clang-format on */
 
+
+/* clang-format off */
+# ifdef _WIN32
+#define FILE_SEPARATOR '\\'
+# else
+#define FILE_SEPARATOR '/'
+#endif
+/* clang-format on */
+
 #ifdef __cplusplus
 }
 #endif

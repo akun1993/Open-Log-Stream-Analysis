@@ -39,6 +39,8 @@ struct DataDispatch {
   ols_process_t *process_ = nullptr;
 
   int year_{1970};
+  int srcIdx_{0};
+  int sinkIdx_{0};
   
   std::map<std::string, std::list<ols_pad_t *>> tag2Pad_;
 
@@ -63,6 +65,8 @@ struct DataDispatch {
   void onDataBuff(ols_buffer_t *buffer);
 
   void onPeerLink(ols_pad_t *pad,ols_pad_t *peer);
+
+
 };
 
 /* ------------------------------------------------------------------------- */
@@ -126,7 +130,10 @@ void  DataDispatch::onPeerLink(ols_pad_t *pad,ols_pad_t *peer){
 
 ols_pad_t * DataDispatch::createSinkPad(const char *caps){
 
-	ols_pad_t * sinkpad = ols_pad_new("dispatch-sink",OLS_PAD_SINK);
+	std::string name("dispatch-sink-");	
+	name.append(std::to_string(sinkIdx_++));
+
+	ols_pad_t * sinkpad = ols_pad_new(name.c_str(),OLS_PAD_SINK);
 
 	blog(LOG_DEBUG, "create recv pad success");
 
@@ -138,7 +145,11 @@ ols_pad_t * DataDispatch::createSinkPad(const char *caps){
 }
 
 ols_pad_t * DataDispatch::createSrcPad(const char *caps){
-	ols_pad_t  * srcpad = ols_pad_new("dispatch-src",OLS_PAD_SRC);
+
+	std::string name("dispatch-src-");	
+	name.append(std::to_string(srcIdx_++));
+
+	ols_pad_t  * srcpad = ols_pad_new(name.c_str(),OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,dispatch_src_link_func);
 
@@ -345,12 +356,17 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				
 				std::list<ols_pad_t *> &list_pad = tag2Pad_[ols_txt->tag.array];
 				for (ols_pad_t * pad : list_pad) {
-					ols_pad_push(pad, ols_buffer_ref(buffer));
+					ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
+					ols_pad_push(pad, cp_buffer);
+					ols_buffer_unref(cp_buffer);
 				}
 			}
+
 			auto any_iter = tagAny_.begin();
 			while(any_iter != tagAny_.end()){
-				ols_pad_push(*any_iter,ols_buffer_ref(buffer) );
+				ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
+				ols_pad_push(*any_iter,cp_buffer );
+				ols_buffer_unref(cp_buffer);
 			}
     		//printf("tag is %s \n",tag);
 		} else {

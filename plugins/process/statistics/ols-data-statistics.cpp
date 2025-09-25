@@ -43,6 +43,8 @@ struct TimeStatistics {
 
 struct DataStatistics {
   ols_process_t *process_ = nullptr;
+  int srcIdx_{0};
+  int sinkIdx_{0};
 
   /* --------------------------- */
 
@@ -91,7 +93,10 @@ static OlsPadLinkReturn statistics_src_link_func(ols_pad_t *pad,ols_object_t *pa
 
 ols_pad_t * DataStatistics::createSinkPad(const char *caps){
 
-	ols_pad_t * sinkpad = ols_pad_new("statistics-sink",OLS_PAD_SINK);
+	std::string name("statistics-sink-");	
+	name.append(std::to_string(sinkIdx_++));
+
+	ols_pad_t * sinkpad = ols_pad_new(name.c_str(),OLS_PAD_SINK);
 
 	blog(LOG_DEBUG, "create recv pad success");
 
@@ -103,7 +108,11 @@ ols_pad_t * DataStatistics::createSinkPad(const char *caps){
 }
 
 ols_pad_t * DataStatistics::createSrcPad(const char *caps){
-	ols_pad_t  * srcpad = ols_pad_new("statistics-src",OLS_PAD_SRC);
+	
+	std::string name("statistics-src-");	
+	name.append(std::to_string(srcIdx_++));
+
+	ols_pad_t  * srcpad = ols_pad_new(name.c_str(),OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,statistics_src_link_func);
 

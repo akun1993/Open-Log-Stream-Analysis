@@ -40,6 +40,8 @@ struct ScriptCallerProcess {
   std::string script_path_;
   std::string output_tag_;
   std::string caps_;
+  int srcIdx_{0};
+  int sinkIdx_{0};
 
   /* --------------------------- */
 
@@ -96,7 +98,11 @@ ols_pad_t * ScriptCallerProcess::createSinkPad(const char *caps_str){
 
 	ols_caps_t *caps = ols_caps_new(caps_.c_str());
 
-	ols_pad_t * sinkpad = ols_pad_new("script-process-sink",OLS_PAD_SINK);
+
+	std::string name("script-process-sink-");	
+	name.append(std::to_string(sinkIdx_++));
+
+	ols_pad_t * sinkpad = ols_pad_new(name.c_str(),OLS_PAD_SINK);
 
 	ols_pad_set_link_function(sinkpad,script_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,script_sink_chain_func);
@@ -110,7 +116,11 @@ ols_pad_t * ScriptCallerProcess::createSinkPad(const char *caps_str){
 
 ols_pad_t * ScriptCallerProcess::createSrcPad(const char *caps){
 	
-	ols_pad_t  * srcpad = ols_pad_new("script-process-src",OLS_PAD_SRC);
+
+	std::string name("script-process-src-");	
+	name.append(std::to_string(srcIdx_++));
+
+	ols_pad_t  * srcpad = ols_pad_new(name.c_str(),OLS_PAD_SRC);
 
 	ols_pad_set_link_function(srcpad,script_src_link_func);
 
