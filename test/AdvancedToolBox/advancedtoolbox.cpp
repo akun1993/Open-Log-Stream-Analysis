@@ -17,6 +17,7 @@
 #include <QtMath>
 #include <functional>
 
+
 class ToolBoxPageContainer : public QWidget
 {
   public:

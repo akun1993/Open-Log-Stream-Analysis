@@ -5,7 +5,7 @@
 #include <QBrush>
 #include <QPen>
 #include <QFont>
-//#include "FlowChartScene.h"
+
 
 class FlowEdge;
 
@@ -17,7 +17,7 @@ public:
 
     enum FlowNodeType { Step, Conditional, StartEnd, Io };
 
-    explicit FlowNode(const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
+    explicit FlowNode(FlowNodeType type,const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
 
     QString id() const { return m_id; }
     QString label() const { return m_label; }
@@ -64,7 +64,7 @@ protected:
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
     //! [5]
-    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 
     // void mousePressEvent(QGraphicsSceneMouseEvent *event);
 
@@ -114,8 +114,8 @@ private:
 
     QFont m_font; // 节点文本字体
 
-    static constexpr double NODE_WIDTH = 200; // 节点默认宽度
-    static constexpr double NODE_HEIGHT = 150; // 节点默认高度
+    static constexpr double NODE_WIDTH = 300; // 节点默认宽度
+    static constexpr double NODE_HEIGHT = 250; // 节点默认高度
 };
 
 #endif // FLOWNODE_H
