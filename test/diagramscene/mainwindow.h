@@ -51,11 +51,13 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "diagramitem.h"
 
+
+#include "FlowNode.h"
 #include <QMainWindow>
 
-class DiagramScene;
+class FlowChartScene;
+class FlowChartView;
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -87,7 +89,7 @@ private slots:
     void pointerGroupClicked();
     void bringToFront();
     void sendToBack();
-    void itemInserted(DiagramItem *item);
+    void itemInserted(FlowNode *item);
     void textInserted(QGraphicsTextItem *item);
     void currentFontChanged(const QFont &font);
     void fontSizeChanged(const QString &size);
@@ -110,13 +112,13 @@ private:
     QWidget *createBackgroundCellWidget(const QString &text,
                                         const QString &image);
     QWidget *createCellWidget(const QString &text,
-                              DiagramItem::DiagramType type);
+                              FlowNode::FlowNodeType type);
     QMenu *createColorMenu(const char *slot, QColor defaultColor);
     QIcon createColorToolButtonIcon(const QString &image, QColor color);
     QIcon createColorIcon(QColor color);
 
-    DiagramScene *scene;
-    QGraphicsView *view;
+    FlowChartScene *scene;
+    FlowChartView *view;
 
     QAction *exitAction;
     QAction *addAction;

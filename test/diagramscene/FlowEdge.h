@@ -94,21 +94,21 @@
 #include <QGraphicsEllipseItem>
 //#include "FlowChartScene.h"
 
-class DiagramItem;
-//class FlowNode;
+
+class FlowNode;
 
 class FlowEdge : public QGraphicsPathItem
 {
 public:
-    FlowEdge(DiagramItem *source, DiagramItem *target, const QString &label,
+    FlowEdge(FlowNode *source, FlowNode *target, const QString &label,
              QGraphicsItem *parent = nullptr);
 
     void updatePath();
    // void setState(NodeState state);
    // NodeState state() const { return m_state; }
 
-    DiagramItem *sourceNode() const { return m_source; }
-    DiagramItem *targetNode() const { return m_target; }
+    FlowNode *sourceNode() const { return m_source; }
+    FlowNode *targetNode() const { return m_target; }
     QString label() const { return m_label; }
 
     // 新增：同时设置源和目标通道索引
@@ -132,19 +132,19 @@ private:
     /// @param path 路径
     /// @param allNodes 所有节点
     /// @return 是否冲突
-    bool pathCollidesWithNodes(const QPainterPath &path, const QList<DiagramItem *> &allNodes);
+    bool pathCollidesWithNodes(const QPainterPath &path, const QList<FlowNode *> &allNodes);
     /// @brief  计算路径与节点的碰撞区域
     /// @param region 区域
     /// @param allNodes 所有节点
     /// @return 区域密度
-    double calculateRegionDensity(const QRectF &region, const QList<DiagramItem *> &allNodes);
+    double calculateRegionDensity(const QRectF &region, const QList<FlowNode *> &allNodes);
     /// @brief 计算最佳绕行方向(长+中距离)
     /// @param start 起始点
     /// @param end 结束点
     /// @param sceneCenter 场景中心
     /// @param allNodes 所有节点
     /// @return 最佳垂直偏移量
-    double calculateBestVerticalOffset(const QPointF &start, const QPointF &end, const QPointF &sceneCenter, const QList<DiagramItem *> &allNodes);
+    double calculateBestVerticalOffset(const QPointF &start, const QPointF &end, const QPointF &sceneCenter, const QList<FlowNode *> &allNodes);
     /// @brief 计算绕行方向 (中距离)
     /// @param start 起始点
     /// @param end 结束点
@@ -153,8 +153,8 @@ private:
     double calculateDirectionalOffset(const QPointF &start, const QPointF &end, double baseOffset);
 
 private:
-    DiagramItem *m_source;  // 源节点
-    DiagramItem *m_target;  // 目标节点
+    FlowNode *m_source;  // 源节点
+    FlowNode *m_target;  // 目标节点
     QString m_label;     // 边的标签文本
     //NodeState m_state;   // 边的状态
     bool m_hasActivated; // 激活状态标志

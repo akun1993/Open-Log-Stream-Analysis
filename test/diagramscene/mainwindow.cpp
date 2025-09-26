@@ -48,10 +48,9 @@
 **
 ****************************************************************************/
 
-#include "arrow.h"
-#include "diagramitem.h"
-#include "diagramscene.h"
-#include "diagramtextitem.h"
+#include "FlowEdge.h"
+#include "FlowChartScene.h"
+#include "FlowChartView.h"
 #include "mainwindow.h"
 
 #include <QtWidgets>
@@ -65,19 +64,23 @@ MainWindow::MainWindow()
     createToolBox();
     createMenus();
 
-    scene = new DiagramScene(itemMenu, this);
+    scene = new FlowChartScene(itemMenu, this);
     scene->setSceneRect(QRectF(0, 0, 5000, 5000));
-    connect(scene, &DiagramScene::itemInserted,
+
+    connect(scene, &FlowChartScene::itemInserted,
             this, &MainWindow::itemInserted);
-    connect(scene, &DiagramScene::textInserted,
-            this, &MainWindow::textInserted);
-    connect(scene, &DiagramScene::itemSelected,
+//    connect(scene, &DiagramScene::textInserted,
+//            this, &MainWindow::textInserted);
+    connect(scene, &FlowChartScene::itemSelected,
             this, &MainWindow::itemSelected);
+
     createToolbars();
 
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(toolBox);
-    view = new QGraphicsView(scene);
+
+    view = new FlowChartView(scene);
+
     layout->addWidget(view);
 
     QWidget *widget = new QWidget;
@@ -97,15 +100,15 @@ void MainWindow::backgroundButtonGroupClicked(QAbstractButton *button)
         if (myButton != button)
             button->setChecked(false);
     }
-    QString text = button->text();
-    if (text == tr("Blue Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background1.png"));
-    else if (text == tr("White Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background2.png"));
-    else if (text == tr("Gray Grid"))
-        scene->setBackgroundBrush(QPixmap(":/images/background3.png"));
-    else
-        scene->setBackgroundBrush(QPixmap(":/images/background4.png"));
+   // QString text = button->text();
+//    if (text == tr("Blue Grid"))
+//        scene->setBackgroundBrush(QPixmap(":/images/background1.png"));
+//    else if (text == tr("White Grid"))
+//        scene->setBackgroundBrush(QPixmap(":/images/background2.png"));
+//    else if (text == tr("Gray Grid"))
+//        scene->setBackgroundBrush(QPixmap(":/images/background3.png"));
+//    else
+//        scene->setBackgroundBrush(QPixmap(":/images/background4.png"));
 
     scene->update();
     view->update();
@@ -121,11 +124,10 @@ void MainWindow::buttonGroupClicked(QAbstractButton *button)
             button->setChecked(false);
     }
     const int id = buttonGroup->id(button);
-    if (id == InsertTextButton) {
-        scene->setMode(DiagramScene::InsertText);
-    } else {
-        scene->setItemType(DiagramItem::DiagramType(id));
-        scene->setMode(DiagramScene::InsertItem);
+
+     {
+        scene->setItemType(FlowNode::FlowNodeType(id));
+        scene->setMode(FlowChartScene::InsertItem);
     }
 }
 //! [2]
@@ -146,8 +148,8 @@ void MainWindow::deleteItem()
 
     selectedItems = scene->selectedItems();
     for (QGraphicsItem *item : qAsConst(selectedItems)) {
-         if (item->type() == DiagramItem::Type)
-             qgraphicsitem_cast<DiagramItem *>(item)->removeArrows();
+         if (item->type() == FlowNode::Type)
+             qgraphicsitem_cast<FlowNode *>(item)->removeArrows();
          scene->removeItem(item);
          delete item;
      }
@@ -157,7 +159,7 @@ void MainWindow::deleteItem()
 //! [4]
 void MainWindow::pointerGroupClicked()
 {
-    scene->setMode(DiagramScene::Mode(pointerTypeGroup->checkedId()));
+    scene->setMode(FlowChartScene::Mode(pointerTypeGroup->checkedId()));
 }
 //! [4]
 
@@ -172,7 +174,7 @@ void MainWindow::bringToFront()
 
     qreal zValue = 0;
     for (const QGraphicsItem *item : overlapItems) {
-        if (item->zValue() >= zValue && item->type() == DiagramItem::Type)
+        if (item->zValue() >= zValue && item->type() == FlowNode::Type)
             zValue = item->zValue() + 0.1;
     }
     selectedItem->setZValue(zValue);
@@ -190,7 +192,7 @@ void MainWindow::sendToBack()
 
     qreal zValue = 0;
     for (const QGraphicsItem *item : overlapItems) {
-        if (item->zValue() <= zValue && item->type() == DiagramItem::Type)
+        if (item->zValue() <= zValue && item->type() == FlowNode::Type)
             zValue = item->zValue() - 0.1;
     }
     selectedItem->setZValue(zValue);
@@ -198,11 +200,11 @@ void MainWindow::sendToBack()
 //! [6]
 
 //! [7]
-void MainWindow::itemInserted(DiagramItem *item)
+void MainWindow::itemInserted(FlowNode *item)
 {
-    pointerTypeGroup->button(int(DiagramScene::MoveItem))->setChecked(true);
-    scene->setMode(DiagramScene::Mode(pointerTypeGroup->checkedId()));
-    buttonGroup->button(int(item->diagramType()))->setChecked(false);
+    pointerTypeGroup->button(int(FlowChartScene::MoveItem))->setChecked(true);
+    scene->setMode(FlowChartScene::Mode(pointerTypeGroup->checkedId()));
+    buttonGroup->button(int(item->flowNodeType()))->setChecked(false);
 }
 //! [7]
 
@@ -210,7 +212,7 @@ void MainWindow::itemInserted(DiagramItem *item)
 void MainWindow::textInserted(QGraphicsTextItem *)
 {
     buttonGroup->button(InsertTextButton)->setChecked(false);
-    scene->setMode(DiagramScene::Mode(pointerTypeGroup->checkedId()));
+    scene->setMode(FlowChartScene::Mode(pointerTypeGroup->checkedId()));
 }
 //! [8]
 
@@ -275,21 +277,21 @@ void MainWindow::lineColorChanged()
 //! [15]
 void MainWindow::textButtonTriggered()
 {
-    scene->setTextColor(qvariant_cast<QColor>(textAction->data()));
+   // scene->setTextColor(qvariant_cast<QColor>(textAction->data()));
 }
 //! [15]
 
 //! [16]
 void MainWindow::fillButtonTriggered()
 {
-    scene->setItemColor(qvariant_cast<QColor>(fillAction->data()));
+    //scene->setItemColor(qvariant_cast<QColor>(fillAction->data()));
 }
 //! [16]
 
 //! [17]
 void MainWindow::lineButtonTriggered()
 {
-    scene->setLineColor(qvariant_cast<QColor>(lineAction->data()));
+   // scene->setLineColor(qvariant_cast<QColor>(lineAction->data()));
 }
 //! [17]
 
@@ -302,22 +304,22 @@ void MainWindow::handleFontChange()
     font.setItalic(italicAction->isChecked());
     font.setUnderline(underlineAction->isChecked());
 
-    scene->setFont(font);
+   // scene->setFont(font);
 }
 //! [18]
 
 //! [19]
 void MainWindow::itemSelected(QGraphicsItem *item)
 {
-    DiagramTextItem *textItem =
-    qgraphicsitem_cast<DiagramTextItem *>(item);
+//    DiagramTextItem *textItem =
+//    qgraphicsitem_cast<DiagramTextItem *>(item);
 
-    QFont font = textItem->font();
-    fontCombo->setCurrentFont(font);
-    fontSizeCombo->setEditText(QString().setNum(font.pointSize()));
-    boldAction->setChecked(font.weight() == QFont::Bold);
-    italicAction->setChecked(font.italic());
-    underlineAction->setChecked(font.underline());
+//    QFont font = textItem->font();
+//    fontCombo->setCurrentFont(font);
+//    fontSizeCombo->setEditText(QString().setNum(font.pointSize()));
+//    boldAction->setChecked(font.weight() == QFont::Bold);
+//    italicAction->setChecked(font.italic());
+//    underlineAction->setChecked(font.underline());
 }
 //! [19]
 
@@ -338,9 +340,9 @@ void MainWindow::createToolBox()
     connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
             this, &MainWindow::buttonGroupClicked);
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(createCellWidget(tr("Conditional"), DiagramItem::Conditional), 0, 0);
-    layout->addWidget(createCellWidget(tr("Process"), DiagramItem::Step),0, 1);
-    layout->addWidget(createCellWidget(tr("Input/Output"), DiagramItem::Io), 1, 0);
+    layout->addWidget(createCellWidget(tr("Conditional"), FlowNode::Conditional), 0, 0);
+    layout->addWidget(createCellWidget(tr("Process"), FlowNode::Step),0, 1);
+    layout->addWidget(createCellWidget(tr("Input/Output"), FlowNode::Io), 1, 0);
 //! [21]
 
     QToolButton *textButton = new QToolButton;
@@ -527,8 +529,8 @@ void MainWindow::createToolbars()
     linePointerButton->setIcon(QIcon(":/images/linepointer.png"));
 
     pointerTypeGroup = new QButtonGroup(this);
-    pointerTypeGroup->addButton(pointerButton, int(DiagramScene::MoveItem));
-    pointerTypeGroup->addButton(linePointerButton, int(DiagramScene::InsertLine));
+    pointerTypeGroup->addButton(pointerButton, int(FlowChartScene::MoveItem));
+    pointerTypeGroup->addButton(linePointerButton, int(FlowChartScene::InsertLine));
     connect(pointerTypeGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
             this, &MainWindow::pointerGroupClicked);
 
@@ -570,10 +572,10 @@ QWidget *MainWindow::createBackgroundCellWidget(const QString &text, const QStri
 //! [28]
 
 //! [29]
-QWidget *MainWindow::createCellWidget(const QString &text, DiagramItem::DiagramType type)
+QWidget *MainWindow::createCellWidget(const QString &text, FlowNode::FlowNodeType type)
 {
 
-    DiagramItem item(type, itemMenu);
+    FlowNode item("id","fsf", itemMenu);
     QIcon icon(item.image());
 
     QToolButton *button = new QToolButton;

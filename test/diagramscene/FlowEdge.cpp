@@ -149,9 +149,8 @@
 // //! [7]
 
 
-#include "arrow.h"
-#include "diagramitem.h"
-#include "diagramscene.h"
+#include "FlowEdge.h"
+#include "FlowChartScene.h"
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 #include <QPen>
@@ -159,7 +158,7 @@
 #include <QDebug>
 #include <cmath>
 
-FlowEdge::FlowEdge(DiagramItem *source, DiagramItem *target, const QString &label,
+FlowEdge::FlowEdge(FlowNode *source, FlowNode *target, const QString &label,
                    QGraphicsItem *parent)
     : QGraphicsPathItem(parent),
     m_source(source),
@@ -262,10 +261,10 @@ void FlowEdge::drawOrthogonalPath()
     setPen(currentPen);
 
     // 获取场景中所有节点（用于避障）
-    QList<DiagramItem *> allNodes;
+    QList<FlowNode *> allNodes;
     for (QGraphicsItem *item : scene()->items())
     {
-        if (DiagramItem *node = dynamic_cast<DiagramItem *>(item))
+        if (FlowNode *node = dynamic_cast<FlowNode *>(item))
         {
             allNodes.append(node);
         }
@@ -448,7 +447,7 @@ void FlowEdge::updateSourceDotPosition()
 //     m_state = state;
 // }
 
-double FlowEdge::calculateBestVerticalOffset(const QPointF &start, const QPointF &end, const QPointF &sceneCenter, const QList<DiagramItem *> &allNodes)
+double FlowEdge::calculateBestVerticalOffset(const QPointF &start, const QPointF &end, const QPointF &sceneCenter, const QList<FlowNode *> &allNodes)
 {
     // 分析场景区域节点密度
     double topDensity = calculateRegionDensity(
@@ -490,7 +489,7 @@ double FlowEdge::calculateBestVerticalOffset(const QPointF &start, const QPointF
 
 double FlowEdge::calculateRegionDensity(
     const QRectF &region,
-    const QList<DiagramItem *> &allNodes)
+    const QList<FlowNode *> &allNodes)
 {
     int nodeCount = 0;
     double totalArea = region.width() * region.height();
@@ -498,7 +497,7 @@ double FlowEdge::calculateRegionDensity(
     if (totalArea <= 0)
         return 0.0;
 
-    for (DiagramItem *node : allNodes)
+    for (FlowNode *node : allNodes)
     {
         if (region.intersects(node->sceneBoundingRect()))
         {
@@ -511,9 +510,9 @@ double FlowEdge::calculateRegionDensity(
 
 bool FlowEdge::pathCollidesWithNodes(
     const QPainterPath &path,
-    const QList<DiagramItem *> &allNodes)
+    const QList<FlowNode *> &allNodes)
 {
-    for (DiagramItem *node : allNodes)
+    for (FlowNode *node : allNodes)
     {
         if (node == m_source || node == m_target)
             continue;

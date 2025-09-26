@@ -2,16 +2,16 @@ QT += widgets
 requires(qtConfig(fontcombobox))
 
 HEADERS	    =   mainwindow.h \
-		diagramitem.h \
-		diagramscene.h \
-		arrow.h \
-		diagramtextitem.h
+		FlowChartScene.h \
+		FlowChartView.h \
+		FlowEdge.h \
+		FlowNode.h
 SOURCES	    =   mainwindow.cpp \
-		diagramitem.cpp \
-		main.cpp \
-		arrow.cpp \
-		diagramtextitem.cpp \
-		diagramscene.cpp
+		FlowChartScene.cpp \
+		FlowChartView.cpp \
+		FlowEdge.cpp \
+		FlowNode.cpp \
+		main.cpp
 RESOURCES   =	diagramscene.qrc
 
 
