@@ -25,6 +25,8 @@ FlowChartScene::FlowChartScene(QObject *parent)
 
     // 设置场景网格
     setForegroundBrush(QBrush(QColor(100, 100, 100, 20), Qt::CrossPattern));
+
+    //m_mode = InsertItem;
 }
 
 
