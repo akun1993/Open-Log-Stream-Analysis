@@ -1,0 +1,21 @@
+add_qtc_executable(fancydemo
+  DEPENDS qcanpool Qt5::Core Qt5::Widgets
+  SOURCES
+    fancydemo.qrc
+    fancydemo.rc
+    AdvancedToolBox.h
+    AdvancedToolBox.cpp
+    DesignWid.cpp
+    DesignWid.h
+    FlowChartScene.cpp
+    FlowChartScene.h
+    FlowChartView.cpp
+    FlowChartView.h
+    FlowEdge.cpp
+    FlowEdge.h
+    FlowNode.cpp
+    FlowNode.h
+    main.cpp
+    mainwindow.cpp 
+    mainwindow.h
+)

@@ -1,12 +1,18 @@
 QT += widgets
 requires(qtConfig(fontcombobox))
 
-HEADERS	    =   mainwindow.h \
+TEMPLATE = app
+
+HEADERS	    =   \
+		AdvancedToolBox.h \
+		DesignWid.h \
 		FlowChartScene.h \
 		FlowChartView.h \
 		FlowEdge.h \
 		FlowNode.h
-SOURCES	    =   mainwindow.cpp \
+SOURCES	    =   \
+		AdvancedToolBox.cpp \
+		DesignWid.cpp \
 		FlowChartScene.cpp \
 		FlowChartView.cpp \
 		FlowEdge.cpp \

@@ -48,7 +48,7 @@
 **
 ****************************************************************************/
 
-#include "mainwindow.h"
+#include "DesignWid.h"
 
 #include <QApplication>
 
@@ -60,7 +60,7 @@ int main(int argv, char *args[])
 #endif
 
     QApplication app(argv, args);
-    MainWindow mainWindow;
+    DesignWid mainWindow;
     mainWindow.setGeometry(100, 100, 800, 500);
     mainWindow.show();
 
