@@ -1,5 +1,4 @@
 #include "FlowChartView.h"
-#include "FlowChartScene.h"
 #include <QWheelEvent>
 #include <QResizeEvent>
 #include <QScrollBar>

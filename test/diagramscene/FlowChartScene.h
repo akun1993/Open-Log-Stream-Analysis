@@ -99,6 +99,7 @@ private:
     bool isItemChange(int type) const;
 
     QMenu *myItemMenu;
+    FlowNode::FlowNodeType myItemType;
     Mode myMode;
     bool leftButtonDown;
     QPointF startPoint;

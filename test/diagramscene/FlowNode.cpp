@@ -10,8 +10,8 @@
 #include "FlowEdge.h"
 #include <QDebug>
 
-FlowNode::FlowNode(const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
-    : QGraphicsRectItem(parent), m_id(id), m_label(label),myContextMenu(contextMenu)
+FlowNode::FlowNode(FlowNodeType type,const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
+    : QGraphicsRectItem(parent), m_id(id), m_label(label),myFlowNodeType(type),myContextMenu(contextMenu)
 {
     // 设置大小
     setRect(0, 0, NODE_WIDTH, NODE_HEIGHT);
@@ -227,17 +227,8 @@ void FlowNode::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 }
 //! [5]
 
-//! [6]
-//QVariant FlowNode::itemChange(GraphicsItemChange change, const QVariant &value)
-//{
-//    if (change == QGraphicsItem::ItemPositionChange) {
-//        for (FlowEdge *arrow : qAsConst(arrows))
-//            arrow->updatePath();
-//    }
 
-//    return value;
-//}
-//! [6]
+
 
 
 //! [12]

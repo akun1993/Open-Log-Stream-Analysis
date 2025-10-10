@@ -60,7 +60,7 @@ FlowChartScene::FlowChartScene(QMenu *itemMenu, QObject *parent)
 {
     myItemMenu = itemMenu;
     myMode = MoveItem;
-    //myItemType = DiagramItem::Step;
+    myItemType = FlowNode::Step;
     line = nullptr;
     //textItem = nullptr;
     myItemColor = Qt::white;
@@ -76,7 +76,7 @@ void FlowChartScene::setLineColor(const QColor &color)
 {
     myLineColor = color;
     if (isItemChange(FlowEdge::Type)) {
-        FlowEdge *item = qgraphicsitem_cast<FlowEdge *>(selectedItems().first());
+       // FlowEdge *item = qgraphicsitem_cast<FlowEdge *>(selectedItems().first());
        // item->setColor(myLineColor);
         update();
     }
@@ -93,8 +93,6 @@ void FlowChartScene::setItemColor(const QColor &color)
     }
 }
 
-
-
 void FlowChartScene::setMode(Mode mode)
 {
     myMode = mode;
@@ -102,10 +100,8 @@ void FlowChartScene::setMode(Mode mode)
 
 void FlowChartScene::setItemType(FlowNode::FlowNodeType type)
 {
-    //myItemType = type;
+    myItemType = type;
 }
-
-
 
 //! [6]
 void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
@@ -116,7 +112,7 @@ void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
     FlowNode *item;
     switch (myMode) {
         case InsertItem:
-            item = new FlowNode("sf","fd", myItemMenu);
+            item = new FlowNode(myItemType,"sf","fd", myItemMenu);
             item->setBrush(myItemColor);
             addItem(item);
             item->setPos(mouseEvent->scenePos());

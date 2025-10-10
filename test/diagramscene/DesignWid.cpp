@@ -66,7 +66,7 @@ DesignWid::DesignWid()
     createToolBox();
 
     scene = new FlowChartScene(itemMenu, this);
-    scene->setSceneRect(QRectF(0, 0, 5000, 5000));
+    scene->setSceneRect(QRectF(0, 0, 2000, 2000));
 
     connect(scene, &FlowChartScene::itemInserted,
             this, &DesignWid::itemInserted);
@@ -641,7 +641,7 @@ QWidget *DesignWid::createBackgroundCellWidget(const QString &text, const QStrin
 QWidget *DesignWid::createCellWidget(const QString &text, FlowNode::FlowNodeType type)
 {
 
-    FlowNode item("id","fsf", itemMenu);
+    FlowNode item(type,"id","fsf", itemMenu);
     QIcon icon(item.image());
 
     QToolButton *button = new QToolButton;

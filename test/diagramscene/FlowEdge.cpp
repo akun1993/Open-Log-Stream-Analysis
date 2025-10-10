@@ -314,7 +314,7 @@ void FlowEdge::drawOrthogonalPath()
             path.cubicTo(controlPoint1, controlPoint2, endPoint);
         }
     }
-    else if (distance > 500)
+    else if (distance > 800)
     {
         const double maxVerticalOffset = 150.0; // 最大垂直偏移
         const double minVerticalOffset = 50.0;  // 最小垂直偏移

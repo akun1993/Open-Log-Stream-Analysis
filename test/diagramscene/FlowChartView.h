@@ -23,7 +23,6 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    //FlowChartScene *m_scene;
     double m_minScale; // 最小缩放比例
     double m_maxScale; // 最大缩放比例
     bool m_isUserZoomed = false;
