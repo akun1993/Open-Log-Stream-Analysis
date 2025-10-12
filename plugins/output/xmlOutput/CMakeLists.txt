@@ -7,7 +7,7 @@ target_link_libraries(ols-xml-output PRIVATE OLS::libols OLS::scripting tinyxml2
 
 set_target_properties(ols-xml-output PROPERTIES FOLDER "plugins")
 
-find_program(XSlTPROC REQUIRED)
+find_package(XSlTPROC REQUIRED)
 
 if(OS_WINDOWS)
     configure_file(${CMAKE_SOURCE_DIR}/cmake/bundle/windows/ols-module.rc.in

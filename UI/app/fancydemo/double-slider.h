@@ -14,10 +14,10 @@ public:
     void setDoubleConstraints(double newMin, double newMax, double newStep,
         double val);
 
-signals:
+Q_SIGNALS:
     void doubleValChanged(double val);
 
-public slots:
+public Q_SLOTS:
     void intValChanged(int val);
     void setDoubleVal(double val);
 };

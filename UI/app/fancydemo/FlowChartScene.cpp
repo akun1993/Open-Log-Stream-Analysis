@@ -120,7 +120,7 @@ void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
             item->setBrush(myItemColor);
             addItem(item);
             item->setPos(mouseEvent->scenePos());
-            emit itemInserted(item);
+            Q_EMIT itemInserted(item);
             break;
 //! [6] //! [7]
         case InsertLine:

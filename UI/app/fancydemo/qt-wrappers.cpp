@@ -39,7 +39,9 @@ static inline void OBSErrorBoxva(QWidget* parent, const char* msg, va_list args)
     char full_message[4096];
     vsnprintf(full_message, 4095, msg, args);
 
-    QMessageBox::critical(parent, "Error", full_message);
+    QString message = QString::fromUtf8(full_message);
+
+    QMessageBox::critical(parent, "Error", message);
 }
 
 void OBSErrorBox(QWidget* parent, const char* msg, ...)

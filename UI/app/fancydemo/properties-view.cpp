@@ -36,7 +36,7 @@
 #include <qtimer.h>
 #include <string>
 
-#include "olsapp.h"
+#include "OlsApp.h"
 
 using namespace std;
 
@@ -150,7 +150,7 @@ void OLSPropertiesView::RefreshProperties()
         layout->addWidget(noPropertiesLabel);
     }
 
-    emit PropertiesRefreshed();
+    Q_EMIT PropertiesRefreshed();
 }
 
 void OLSPropertiesView::SetScrollPos(int h, int v)
@@ -232,7 +232,7 @@ OLSPropertiesView::OLSPropertiesView(OLSData settings_, const char* type_,
 
 void OLSPropertiesView::resizeEvent(QResizeEvent* event)
 {
-    emit PropertiesResized();
+    Q_EMIT PropertiesResized();
     VScrollArea::resizeEvent(event);
 }
 
@@ -1035,7 +1035,7 @@ void OLSPropertiesView::AddProperty(ols_property_t* property,
 
 void OLSPropertiesView::SignalChanged()
 {
-    emit Changed();
+    Q_EMIT Changed();
 }
 
 void WidgetInfo::BoolChanged(const char* setting)

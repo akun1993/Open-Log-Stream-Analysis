@@ -3,15 +3,7 @@
         <file alias="classic">res/qss/classic.css</file>
         <file alias="flatdark">res/qss/flatdark.css</file>
     </qresource>
-    <qresource prefix="/main">
-        <file alias="logo">res/main/logo.png</file>
-        <file>design.png</file>
-        <file>project.png</file>
-        <file>reset.png</file>
-        <file>running.png</file>
-        <file>setting.png</file>
-        <file>stop.png</file>
-    </qresource>
+    <qresource prefix="/main"/>
     <qresource prefix="/tools">
         <file alias="new">res/tools/new.png</file>
         <file alias="open">res/tools/open.png</file>
@@ -62,5 +54,12 @@
         <file>images/setting.png</file>
         <file>images/smile.png</file>
         <file>images/user.png</file>
+        <file>res/main/design.png</file>
+        <file>res/main/logo.png</file>
+        <file>res/main/project.png</file>
+        <file>res/main/reset.png</file>
+        <file>res/main/running.png</file>
+        <file>res/main/setting.png</file>
+        <file>res/main/stop.png</file>
     </qresource>
 </RCC>

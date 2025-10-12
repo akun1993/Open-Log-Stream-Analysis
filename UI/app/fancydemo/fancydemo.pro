@@ -24,21 +24,42 @@ SOURCES += \
     FlowChartView.cpp \
     FlowEdge.cpp \
     FlowNode.cpp \
+    OlsApp.cpp \
+    OlsMainwindow.cpp \
+    double-slider.cpp \
     main.cpp \
-    mainwindow.cpp
+    plain-text-edit.cpp \
+    properties-view.cpp \
+    qt-wrappers.cpp \
+    slider-ignorewheel.cpp \
+    spinbox-ignorewheel.cpp \
+    vertical-scroll-area.cpp
 
 HEADERS += \
     AdvancedToolBox.h \
+    OlsApp.h \
+    OlsMainwindow.h \
     DesignWid.h \
     FlowChartScene.h \
     FlowChartView.h \
     FlowEdge.h \
     FlowNode.h \
-    mainwindow.h
+    double-slider.h \
+    plain-text-edit.h \
+    properties-view.h \
+    qt-wrappers.h \
+    slider-ignorewheel.h \
+    spinbox-ignorewheel.h \
+    vertical-scroll-area.h
 
 RESOURCES += \
     fancydemo.qrc
 
-LIBS+= qcanpool
+LIBS+=
+
+INCLUDEPATH += ../../../libols \
+            ../../../deps/w32-pthreads \
+            ../../../deps/uthash-header
+
 
 RC_FILE = fancydemo.rc

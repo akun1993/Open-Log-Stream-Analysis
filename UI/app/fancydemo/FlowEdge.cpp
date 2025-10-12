@@ -23,13 +23,12 @@ FlowEdge::FlowEdge(FlowNode *source, FlowNode *target, const QString &label,
     m_targetTotalChannels(1),
     m_sourceDot(new QGraphicsEllipseItem(this))
 {
-    // 原点样式初始化
+
     m_sourceDot->setRect(-DOT_RADIUS, -DOT_RADIUS, DOT_RADIUS * 2, DOT_RADIUS * 2);
     m_sourceDot->setBrush(Qt::white);
     m_sourceDot->setPen(Qt::NoPen);
     m_sourceDot->setZValue(3);
 
-    // 画笔样式
 
     m_activatedPen = QPen(QColor(100, 149, 237), 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     m_activePen = QPen(QColor(50, 200, 50), 3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);

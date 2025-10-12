@@ -4,7 +4,8 @@
 #include "callback/proc.h"
 #include "callback/signal.h"
 #include "ols-ref.h"
-#include "ols.h"
+#include "ols-data.h"
+#include "ols-pad.h"
 #include "util/c99defs.h"
 #include "util/darray.h"
 #include "util/uthash.h"
@@ -13,6 +14,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 struct ols_weak_object {
     struct ols_weak_ref ref;

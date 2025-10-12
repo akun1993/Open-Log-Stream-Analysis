@@ -32,7 +32,7 @@ class ToolBoxPageContainer : public QWidget
 class ToolBoxTitle : public QAbstractButton
 {
     Q_OBJECT
-  signals:
+  Q_SIGNALS:
     void titleClicked(int index);
     void titleContextMenuRequest(int index, const QPoint &pos);
 
@@ -149,15 +149,15 @@ class AdvancedToolBoxPrivate : public QObject
 class AdvancedToolBoxPrivate::ToolBoxItem
 {
     QWidget *widget = nullptr;
-    ToolBoxSplitterHandle *handle = nullptr; // 移动handle
-    ToolBoxTitle *tabTitle = nullptr;        // 标题栏文字、图标等
-    QWidget *tabContainer = nullptr;         // 容器，方便做折叠动画
+    ToolBoxSplitterHandle *handle = nullptr; //
+    ToolBoxTitle *tabTitle = nullptr;        //
+    QWidget *tabContainer = nullptr;         //
 
-    int layoutHeight = 0;             // 实际布局高度
-    QSize sizeHint;                 // 建议高度
-    QSize minSize;                  // 最小高度
-    QSize maxSize;                  // 最大高度
-    int manualHeight = 0;             // 手动高度，用于在调整高度或者展开折叠后做一次缓存，避免resize时抖动
+    int layoutHeight = 0;             //
+    QSize sizeHint;                 //
+    QSize minSize;                  //
+    QSize maxSize;                  //
+    int manualHeight = 0;             //
 
     bool freezeTarget = false;
     bool isExpanded = true;
@@ -613,7 +613,7 @@ void AdvancedToolBoxPrivate::setIndexVisible(int index, bool visible)
     if(visible)
         resetManualSize();
 
-    // 这里选择重新布局，可以考虑尽可能维持该页面后布局，提升体验
+    //
     doLayout();
 }
 
@@ -702,7 +702,7 @@ void AdvancedToolBoxPrivate::doLayout()
             totalSize += item->layoutHeight;
             totalSize += handleWidth;
         }
-        // handle 要少一个
+        //
         totalSize -= (totalSize > 0 ?  handleWidth : 0);
         space = q->rect().height() - totalSize;
     }
@@ -728,9 +728,7 @@ void AdvancedToolBoxPrivate::doLayout()
             }
         }
 
-        // 目前默认按照初始窗口当前尺寸来按比例分配空间
-        // viewsSize变为0, 则认为layoutHeight都因为某些原因为0（不存在布局等）
-        // 此时平均分配
+
         auto calcAddSize = [&viewsSize, &expandedItems](int curr, int space){
             if(viewsSize <= 0)
                 return qCeil(qreal(space) / expandedItems.count());
@@ -738,8 +736,7 @@ void AdvancedToolBoxPrivate::doLayout()
                 return qCeil(qreal(space) * curr / viewsSize);
         };
 
-        // 空间不足或者有空余时，调整可伸缩的窗口，按照上一次手动调整后的比例，分配或者压缩空间
-        // 先尝试按比例分配空间，超过最大、最小的先处理掉。
+
         bool done = false;
         while(!expandedItems.isEmpty() && !done)
         {
@@ -797,7 +794,7 @@ void AdvancedToolBoxPrivate::expandStateChanged(int index, bool expand)
             for(int i = count - 1; i >= 0 && space > 0; i--)
             {
                 auto item = items.at(i);
-                if(item->canResize() && i != index) // 暂时忽略当前page
+                if(item->canResize() && i != index)
                 {
                     int diff = qMin(item->layoutHeight - item->minSize.height(), space);
                     item->layoutHeight -= diff;
@@ -843,7 +840,7 @@ void AdvancedToolBoxPrivate::moveHandle(int index, int distance)
     if(distance == 0)
         return;
 
-    // adjectHandle入口在鼠标移动事件，当鼠标按下时，resetManualSize将当前布局存储
+    //
     QVector<ToolBoxItem *> shrink_part, expand_part;
     for(int i = index; i < items.count(); i++)
     {
@@ -858,7 +855,7 @@ void AdvancedToolBoxPrivate::moveHandle(int index, int distance)
             shrink_part.append(item);
     }
 
-    if(distance > 0) // 交换一下
+    if(distance > 0)
         std::swap(shrink_part, expand_part);
 
     int expand = 0, shrink = 0;
@@ -872,7 +869,7 @@ void AdvancedToolBoxPrivate::moveHandle(int index, int distance)
     if(min_dis == 0)
         return;
 
-    //调整
+    //
     int space = min_dis;
     for(int i = 0; i < shrink_part.count(); i++)
     {
@@ -893,7 +890,7 @@ void AdvancedToolBoxPrivate::moveHandle(int index, int distance)
     updateGeometries();
 }
 
-// 根据计算好的布局，设置窗口位置等
+//
 void AdvancedToolBoxPrivate::updateGeometries(bool animate)
 {
     Q_Q(AdvancedToolBox);
@@ -987,7 +984,7 @@ void AdvancedToolBoxPrivate::updateGeometries(bool animate)
     nextIsAnimation = false;
 }
 
-// 更新handle顺序以及重新设置隐藏和显示
+// update handle squence and reset what show or hide
 void AdvancedToolBoxPrivate::resetPages()
 {
     int count = items.count();
@@ -1007,7 +1004,7 @@ void AdvancedToolBoxPrivate::resetPages()
         {
             item->tabTitle->show();
             item->tabContainer->show();
-            item->handle->setVisible(visible); // 将第一个handle隐藏
+            item->handle->setVisible(visible); //
             visible = true;
         }
     }
@@ -1103,8 +1100,7 @@ void AdvancedToolBoxPrivate::updateTitleIndent()
     }
 }
 
-// 将当前当前布局尺寸保存
-// 手动调整分割线位置、折叠展开，都会触发该逻辑
+
 void AdvancedToolBoxPrivate::resetManualSize()
 {
     for(auto item : items)
@@ -1218,10 +1214,10 @@ ToolBoxTitle::ToolBoxTitle(const QString &label, const QIcon &icon, AdvancedTool
     setIcon(icon);
     setIconSize(QSize(16, 16));
     connect(this, &ToolBoxTitle::clicked, this, [this]()
-            { emit titleClicked(tabIndex); });
+            { Q_EMIT titleClicked(tabIndex); });
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &ToolBoxTitle::customContextMenuRequested, this, [this](const QPoint &pos)
-            { emit titleContextMenuRequest(tabIndex, this->mapToGlobal(pos)); });
+            { Q_EMIT titleContextMenuRequest(tabIndex, this->mapToGlobal(pos)); });
 
     setAttribute(Qt::WA_Hover);
 }
@@ -1368,7 +1364,7 @@ void ToolBoxTitle::paintEvent(QPaintEvent *)
     if(!tabopt.text.isEmpty())
     {
         tabopt.icon = QIcon();
-        // QStyleOptionToolBox固定左对齐。可以考虑使用 QStyleOptionTab 绘制文本，以支持样式对齐，不过默认是居中样式。
+        // QStyleOptionToolBox
         style()->drawControl(QStyle::CE_ToolBoxTabLabel, &tabopt, &painter, parent);
     }
 }

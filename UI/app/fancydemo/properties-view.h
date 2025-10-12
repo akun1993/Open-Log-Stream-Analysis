@@ -67,7 +67,7 @@ public:
         }
     }
 
-public slots:
+public Q_SLOTS:
 
     void ControlChanged();
 
@@ -143,12 +143,12 @@ private:
     void GetScrollPos(int& h, int& v);
     void SetScrollPos(int h, int v);
 
-public slots:
+public Q_SLOTS:
     void ReloadProperties();
     void RefreshProperties();
     void SignalChanged();
 
-signals:
+Q_SIGNALS:
     void PropertiesResized();
     void Changed();
     void PropertiesRefreshed();

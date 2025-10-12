@@ -240,9 +240,8 @@ exists($$IDE_LIBRARY_PATH): LIBS *= -L$$IDE_LIBRARY_PATH  # library path from ou
 
 DEFINES += \
     QT_CANPOOL \
+    QT_NO_KEYWORDS \
     QT_NO_JAVA_STYLE_ITERATORS \
-    QT_NO_CAST_TO_ASCII \
-    QT_RESTRICTED_CAST_FROM_ASCII \
     QT_DISABLE_DEPRECATED_BEFORE=0x050900 \
     QT_USE_QSTRINGBUILDER
 
@@ -263,6 +262,7 @@ msvc {
     QMAKE_CXXFLAGS_WARN_ON *= -w44996
     # Speed up startup time when debugging with cdb
     QMAKE_LFLAGS_DEBUG += /INCREMENTAL:NO
+    QMAKE_CXXFLAGS -= -Zc:strictStrings
 }
 
 qt {

@@ -33,12 +33,12 @@ public:
     void setItemColor(const QColor &color);
    // void setFont(const QFont &font);
 
-public slots:
+public Q_SLOTS:
     void setMode(Mode mode);
     void setItemType(FlowNode::FlowNodeType type);
     //void editorLostFocus(DiagramTextItem *item);
 
-signals:
+Q_SIGNALS:
     void itemInserted(FlowNode *item);
     void itemSelected(QGraphicsItem *item);
 

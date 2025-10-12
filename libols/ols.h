@@ -61,6 +61,7 @@ enum ols_icon_type {
   OLS_ICON_TYPE_TEXT,
   OLS_ICON_TYPE_CUSTOM,
 };
+
 enum ols_obj_type {
   OLS_OBJ_TYPE_INVALID,
   OLS_OBJ_TYPE_SOURCE,

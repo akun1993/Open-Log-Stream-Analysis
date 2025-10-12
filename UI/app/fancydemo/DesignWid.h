@@ -37,7 +37,7 @@ class DesignWid : public QWidget
 public:
    DesignWid();
 
-private slots:
+private Q_SLOTS:
     void backgroundButtonGroupClicked(QAbstractButton *button);
     void buttonGroupClicked(QAbstractButton *button);
     void deleteItem();

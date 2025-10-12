@@ -26,7 +26,7 @@ void DoubleSlider::setDoubleConstraints(double newMin, double newMax,
 
 void DoubleSlider::intValChanged(int val)
 {
-    emit doubleValChanged((minVal / minStep + val) * minStep);
+    Q_EMIT doubleValChanged((minVal / minStep + val) * minStep);
 }
 
 void DoubleSlider::setDoubleVal(double val)

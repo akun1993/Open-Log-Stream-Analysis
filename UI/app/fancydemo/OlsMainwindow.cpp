@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "OlsMainwindow.h"
 
 #include <QLabel>
 #include <QIcon>
@@ -24,11 +24,11 @@
 #include "qcanpool/tinynavbar.h"
 #include "DesignWid.h"
 
-MainWindow::MainWindow(QWidget *parent)
+OlsMainWindow::OlsMainWindow(QWidget *parent)
     : FancyWindow(parent)
     , m_themeStyle(QString(":/qss/classic"))
 {
-    setWindowIcon(QIcon(":/main/logo"));
+    setWindowIcon(QIcon(":res/main/logo"));
     setWindowTitle(tr("Open Log Stream Analysis Designer"));
     setMinimumSize(QSize(600, 400));
     setMouseTracking(true);
@@ -40,11 +40,11 @@ MainWindow::MainWindow(QWidget *parent)
     readSettings();
 }
 
-MainWindow::~MainWindow()
+OlsMainWindow::~OlsMainWindow()
 {
 }
 
-void MainWindow::createWindow()
+void OlsMainWindow::createWindow()
 {
     createQuickAccessBar();
     createMenuBar();
@@ -53,19 +53,19 @@ void MainWindow::createWindow()
     createStatusBar();
 }
 
-void MainWindow::createCentralWidget()
+void OlsMainWindow::createCentralWidget()
 {
     FancyTabBar *tabBar = m_pTabWidget->tabBar();
     connect(tabBar, &FancyTabBar::orientationChanged, this, [tabBar](Qt::Orientation o){
         QList<FancyToolButton*> buttons = tabBar->findChildren<FancyToolButton*>();
-        foreach (FancyToolButton *button, buttons) {
+         Q_FOREACH(FancyToolButton *button, buttons) {
             button->setMenuArrowType(o == Qt::Horizontal ? Qt::DownArrow : Qt::RightArrow);
         }
     });
 
     connect(m_pTabWidget, &FancyTabWidget::tabPositionChanged, this, [&](FancyTabWidget::TabPosition p){
         QList<FancyToolButton*> buttons = m_pTabWidget->findChildren<FancyToolButton*>();
-        foreach (FancyToolButton *button, buttons) {
+        Q_FOREACH (FancyToolButton *button, buttons) {
             button->setForceDefaultShowMenu(p == FancyTabWidget::East);
         }
     });
@@ -74,10 +74,10 @@ void MainWindow::createCentralWidget()
     // ignore the label's control to continue processEvent
     label->setTextInteractionFlags(Qt::NoTextInteraction);
     label->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-    m_pTabWidget->addTab(label, QIcon(":/main/setting.png"), tr("Setting"));
+    m_pTabWidget->addTab(label, QIcon(":res/main/setting.png"), tr("Setting"));
 
     QTextEdit *text = new QTextEdit(this);
-    m_pTabWidget->addTab(text, QIcon(":/main/project"), tr("Project"));
+    m_pTabWidget->addTab(text, QIcon(":res/main/project"), tr("Project"));
 
     m_pTabWidget->setCurrentWidget(text);
 
@@ -87,7 +87,7 @@ void MainWindow::createCentralWidget()
 
     DesignWid *dWid = new DesignWid;
 
-    m_pTabWidget->addTab(dWid,QIcon(":/main/design.png"), tr("Design"));
+    m_pTabWidget->addTab(dWid,QIcon(":res/main/design.png"), tr("Design"));
 
 //    FancyToolButton *button = new FancyToolButton();
 //    button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
@@ -130,7 +130,7 @@ void MainWindow::createCentralWidget()
     setCentralWidget(m_pTabWidget);
 }
 
-void MainWindow::createQuickAccessBar()
+void OlsMainWindow::createQuickAccessBar()
 {
     if (QuickAccessBar *quickAccessBar = fancyBar()->quickAccessBar())
     {
@@ -174,7 +174,7 @@ void MainWindow::createQuickAccessBar()
     }
 }
 
-void MainWindow::createMenuBar()
+void OlsMainWindow::createMenuBar()
 {
     if (QMenuBar *menuBar = fancyBar()->menuBar())
     {
@@ -209,7 +209,7 @@ void MainWindow::createMenuBar()
     toolBar->addAction(QIcon(":/tools/save"), tr("save"));
 }
 
-void MainWindow::createSystemMenu()
+void OlsMainWindow::createSystemMenu()
 {
     QAction *mainAction = new QAction(QIcon(":/tools/menu"), tr("menu"));
     QMenu *mainMenu = new QMenu(mainAction->text());
@@ -221,14 +221,14 @@ void MainWindow::createSystemMenu()
     QActionGroup *group = new QActionGroup(this);
    // addThemeStyleItem(group, menu->addAction(tr("flatdark")), QString(":/qss/flatdark"));
     addThemeStyleItem(group, menu->addAction(tr("classic")), QString(":/qss/classic"));
-    emit group->actions().at(0)->trigger();
+    Q_EMIT group->actions().at(0)->trigger();
 
     menu = new QMenu(tr("window style"));
     mainMenu->addMenu(menu);
     group = new QActionGroup(this);
     addWindowStyleItem(group, menu->addAction(tr("WindowStyle")), FancyBar::WindowStyle);
     addWindowStyleItem(group, menu->addAction(tr("MergedStyle")), FancyBar::MergedStyle);
-    emit group->actions().at(0)->trigger();
+    Q_EMIT group->actions().at(0)->trigger();
 
     menu = new QMenu(tr("tab position"));
     mainMenu->addMenu(menu);
@@ -237,10 +237,10 @@ void MainWindow::createSystemMenu()
     addTabPositionItem(group, menu->addAction(tr("South")), FancyTabWidget::South);
     addTabPositionItem(group, menu->addAction(tr("West")), FancyTabWidget::West);
     addTabPositionItem(group, menu->addAction(tr("East")), FancyTabWidget::East);
-    emit group->actions().at(2)->trigger();
+    Q_EMIT group->actions().at(2)->trigger();
 }
 
-void MainWindow::createStatusBar()
+void OlsMainWindow::createStatusBar()
 {
     QStatusBar *sb = statusBar();
 
@@ -257,7 +257,7 @@ void MainWindow::createStatusBar()
     sb->addWidget(nb);
 }
 
-void MainWindow::addThemeStyleItem(QActionGroup *group, QAction *action, const QString &qss)
+void OlsMainWindow::addThemeStyleItem(QActionGroup *group, QAction *action, const QString &qss)
 {
     group->addAction(action);
     action->setCheckable(true);
@@ -265,7 +265,7 @@ void MainWindow::addThemeStyleItem(QActionGroup *group, QAction *action, const Q
     QObject::connect(action, SIGNAL(triggered()), this, SLOT(slotChangeThemeStyle()));
 }
 
-void MainWindow::addWindowStyleItem(QActionGroup *group, QAction *action, int style)
+void OlsMainWindow::addWindowStyleItem(QActionGroup *group, QAction *action, int style)
 {
     group->addAction(action);
     action->setCheckable(true);
@@ -273,7 +273,7 @@ void MainWindow::addWindowStyleItem(QActionGroup *group, QAction *action, int st
     QObject::connect(action, SIGNAL(triggered()), this, SLOT(slotChangeWindowStyle()));
 }
 
-void MainWindow::addTabPositionItem(QActionGroup *group, QAction *action, int position)
+void OlsMainWindow::addTabPositionItem(QActionGroup *group, QAction *action, int position)
 {
     group->addAction(action);
     action->setCheckable(true);
@@ -281,7 +281,7 @@ void MainWindow::addTabPositionItem(QActionGroup *group, QAction *action, int po
     QObject::connect(action, SIGNAL(triggered()), this, SLOT(slotSetTabPosition()));
 }
 
-void MainWindow::readSettings()
+void OlsMainWindow::readSettings()
 {
     QSettings settings(this);
 
@@ -295,7 +295,7 @@ void MainWindow::readSettings()
     }
 }
 
-void MainWindow::writeSettings()
+void OlsMainWindow::writeSettings()
 {
     QSettings settings(this);
 
@@ -308,7 +308,7 @@ void MainWindow::writeSettings()
     }
 }
 
-void MainWindow::setThemeStyle(const QString &style)
+void OlsMainWindow::setThemeStyle(const QString &style)
 {
     QFile file(style);
     if (file.open(QFile::ReadOnly)) {
@@ -320,7 +320,7 @@ void MainWindow::setThemeStyle(const QString &style)
     }
 }
 
-void MainWindow::slotNew()
+void OlsMainWindow::slotNew()
 {
     FancyDialog dialog;
     dialog.setWindowIcon(QIcon(":/main/logo"));
@@ -332,7 +332,7 @@ void MainWindow::slotNew()
     dialog.exec();
 }
 
-void MainWindow::slotChangeThemeStyle()
+void OlsMainWindow::slotChangeThemeStyle()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
@@ -341,7 +341,7 @@ void MainWindow::slotChangeThemeStyle()
     }
 }
 
-void MainWindow::slotChangeWindowStyle()
+void OlsMainWindow::slotChangeWindowStyle()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
@@ -349,7 +349,7 @@ void MainWindow::slotChangeWindowStyle()
     }
 }
 
-void MainWindow::slotSetTabPosition()
+void OlsMainWindow::slotSetTabPosition()
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if (action) {
@@ -358,7 +358,7 @@ void MainWindow::slotSetTabPosition()
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void OlsMainWindow::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event);
     writeSettings();

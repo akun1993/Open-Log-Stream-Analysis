@@ -24,10 +24,10 @@ protected:
 
 private:
     //FlowChartScene *m_scene;
-    double m_minScale; // 最小缩放比例
-    double m_maxScale; // 最大缩放比例
+    double m_minScale;
+    double m_maxScale;
     bool m_isUserZoomed = false;
-    // 获取当前缩放比例
+
     double currentScale() const;
 };
 

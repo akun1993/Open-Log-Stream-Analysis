@@ -71,8 +71,8 @@ protected:
 
 
 private:
-    QString m_id;                    // 节点唯一标识
-    QString m_label;                 // 节点显示文本
+    QString m_id;
+    QString m_label;
 
     FlowNodeType myFlowNodeType;
     QMenu *myContextMenu;
@@ -80,20 +80,20 @@ private:
 
     QVector<FlowEdge *> arrows;
 
-    //NodeState m_state = DisabledState; // 节点当前状态
+    //NodeState m_state = DisabledState;
 
-    QList<FlowEdge *> m_inEdges;    // in edage 列表
-    QList<FlowEdge *> m_outEdges;    // 出边列表
+    QList<FlowEdge *> m_inEdges;
+    QList<FlowEdge *> m_outEdges;
 
 
     int m_state = 0;
 
 
-    bool m_hasActivated = false;     // 节点是否已激活
-    bool m_isSkip = false;           // 节点是否被跳过
+    bool m_hasActivated = false;
+    bool m_isSkip = false;
     int m_level = 0;
 
-    // 节点不同状态下的样式
+
     QBrush m_normalBrush;
     QBrush m_activeBrush;
 
@@ -109,10 +109,10 @@ private:
     QPen m_errorPen;
     QPen m_activatedPen;
 
-    QFont m_font; // 节点文本字体
+    QFont m_font;
 
-    static constexpr double NODE_WIDTH = 200; // 节点默认宽度
-    static constexpr double NODE_HEIGHT = 150; // 节点默认高度
+    static constexpr double NODE_WIDTH = 200;
+    static constexpr double NODE_HEIGHT = 150;
 };
 
 #endif // FLOWNODE_H

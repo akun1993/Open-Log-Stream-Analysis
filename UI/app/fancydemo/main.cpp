@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "olsapp.h"
 
 #include <QApplication>
 
@@ -14,10 +14,10 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-    QApplication a(argc, argv);
+
+    OlsApp a(argc, argv);
     a.setApplicationName("OLS Designer");
     a.setOrganizationName("qtcanpool");
-    MainWindow w;
-    w.show();
+
     return a.exec();
 }
