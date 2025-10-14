@@ -1,8 +1,8 @@
-add_qtc_executable(fancydemo
+add_qtc_executable(OlsDesigner
   DEPENDS qcanpool Qt5::Core Qt5::Widgets
   SOURCES
-    fancydemo.qrc
-    fancydemo.rc
+    OlsDesigner.qrc
+    OlsDesigner.rc
     AdvancedToolBox.h
     AdvancedToolBox.cpp
     DesignWid.cpp

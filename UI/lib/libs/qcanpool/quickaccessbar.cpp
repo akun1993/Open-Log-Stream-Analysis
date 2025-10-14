@@ -169,7 +169,7 @@ void QuickAccessBarPrivate::aboutToShowCustomizeMenu()
 #else
     m_menu->addSeparator()->setText(tr("Customize Quick Access Toolbar"));
 #endif
-    foreach (QAction *action, m_actionList) {
+    Q_FOREACH (QAction *action, m_actionList) {
         m_menu->addAction(action);
     }
     Q_EMIT q->showCustomizeMenu(m_menu);
@@ -230,7 +230,7 @@ int QuickAccessBar::visibleCount() const
 QByteArray QuickAccessBar::state() const
 {
     QByteArray s;
-    foreach (QAction *act, d->m_actionList) {
+    Q_FOREACH (QAction *act, d->m_actionList) {
         s.append(act->isChecked() ? '1' : '0');
     }
     return s;

@@ -8,7 +8,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++11
 
 TEMPLATE = app
-TARGET = fancydemo
+TARGET = OlsDesigner
 DESTDIR = $$IDE_APP_PATH
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -53,13 +53,15 @@ HEADERS += \
     vertical-scroll-area.h
 
 RESOURCES += \
-    fancydemo.qrc
+    OlsDesigner.qrc
 
 LIBS+=
 
 INCLUDEPATH += ../../../libols \
-            ../../../deps/w32-pthreads \
             ../../../deps/uthash-header
 
+win32 {
+  INCLUDEPATH += ../../../deps/w32-pthreads
+}
 
-RC_FILE = fancydemo.rc
+RC_FILE = OlsDesigner.rc

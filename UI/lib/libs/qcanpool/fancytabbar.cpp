@@ -71,7 +71,7 @@ QToolButton *FancyTabBarPrivate::at(int index)
 void FancyTabBarPrivate::setIconSize(QSize size)
 {
     QList<QToolButton *> tabButtons = q->findChildren<QToolButton *>();
-    foreach (QToolButton *tab, tabButtons) {
+    Q_FOREACH (QToolButton *tab, tabButtons) {
         tab->setIconSize(size);
     }
     m_iconSize = size;
@@ -286,7 +286,7 @@ void FancyTabBar::setTabIconsOnly(bool iconOnly)
 {
     Qt::ToolButtonStyle style = iconOnly ? Qt::ToolButtonIconOnly :
                                            Qt::ToolButtonTextUnderIcon;
-    foreach (QToolButton *tab, d->m_tabs) {
+    Q_FOREACH (QToolButton *tab, d->m_tabs) {
         tab->setToolButtonStyle(style);
     }
 }

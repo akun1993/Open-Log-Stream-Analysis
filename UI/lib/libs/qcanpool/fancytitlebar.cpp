@@ -719,7 +719,7 @@ FancyScreen::FancyScreen()
     }
 #else
     QList<QScreen *> screenList = QGuiApplication::screens();
-    foreach (QScreen *screen, screenList) {
+    Q_FOREACH (QScreen *screen, screenList) {
 #if defined(Q_OS_WIN)
         m_screenRects.append(screen->availableGeometry());
 #else
@@ -909,7 +909,7 @@ void FancyTitleBarPrivate::updateWindowButtons()
 
 bool FancyTitleBarPrivate::isCaptionClassName(const char *name)
 {
-    foreach (const QString &cn, m_captionClassNameList) {
+    Q_FOREACH (const QString &cn, m_captionClassNameList) {
         if (cn.compare(QLatin1String(name)) == 0) {
             return true;
         }

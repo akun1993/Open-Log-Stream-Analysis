@@ -68,7 +68,7 @@ int RibbonPagePrivate::groupIndex(RibbonGroup *group)
 int RibbonPagePrivate::calculateGroupsWidth()
 {
     int w = 0;
-    foreach (RibbonGroup *group, m_listGroups) {
+    Q_FOREACH (RibbonGroup *group, m_listGroups) {
         if (group->isHidden()) {
             continue;
         }
@@ -88,7 +88,7 @@ void RibbonPagePrivate::updateLayout()
     }
     int x = m_groupXBase;
 
-    foreach (RibbonGroup *group, m_listGroups) {
+    Q_FOREACH (RibbonGroup *group, m_listGroups) {
         if (group->isHidden()) {
             continue;
         }

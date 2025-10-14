@@ -62,15 +62,15 @@ void TinyTabBarPrivate::layoutActions()
     Q_Q(TinyTabBar);
     if (q->orientation() == Qt::Vertical) {
         int w = 0;
-        foreach (QAction *act, m_tabs) {
+        Q_FOREACH (QAction *act, m_tabs) {
             int aw = q->widgetForAction(act)->sizeHint().width();
             if (w < aw) w = aw;
         }
-        foreach (QAction *act, m_tabs) {
+        Q_FOREACH (QAction *act, m_tabs) {
             q->widgetForAction(act)->setFixedWidth(w);
         }
     } else {
-        foreach (QAction *act, m_tabs) {
+        Q_FOREACH (QAction *act, m_tabs) {
             QWidget *widget = q->widgetForAction(act);
             widget->setFixedWidth(widget->sizeHint().width());
         }

@@ -62,7 +62,7 @@ void TinyNavBarPrivate::aboutToShowCustomizeMenu()
 {
     Q_Q(TinyNavBar);
     m_menu->clear();
-    foreach (QAction *action, m_actionList) {
+    Q_FOREACH (QAction *action, m_actionList) {
         m_menu->addAction(action);
     }
     Q_EMIT q->showCustomizeMenu(m_menu);
@@ -98,7 +98,7 @@ int TinyNavBar::visibleCount() const
 {
     Q_D(const TinyNavBar);
     int vcnt = 0;
-    foreach (QAction *act, d->m_actionList) {
+    Q_FOREACH (QAction *act, d->m_actionList) {
         if (act->isChecked()) {
             ++vcnt;
         }

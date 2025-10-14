@@ -1,4 +1,4 @@
-#include "olsapp.h"
+#include "OlsApp.h"
 
 #include <QApplication>
 

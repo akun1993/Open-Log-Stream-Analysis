@@ -1,5 +1,5 @@
-#ifndef A·_H
-#define A·_H
+#ifndef OLS_MAINWINDOW_H
+#define OLS_MAINWINDOW_H
 
 #include "qcanpool/fancywindow.h"
 
