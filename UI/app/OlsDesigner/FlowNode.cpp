@@ -17,7 +17,6 @@ FlowNode::FlowNode(const QString &id, const QString &label, QMenu *contextMenu,Q
     setRect(0, 0, NODE_WIDTH, NODE_HEIGHT);
 
 
-
     m_normalBrush = QBrush(QColor(120, 120, 120));
     m_activatedBrush = QBrush(QColor(65, 105, 225));
     m_activeBrush = QBrush(QColor(50, 200, 50));

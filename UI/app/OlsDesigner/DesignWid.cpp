@@ -18,12 +18,11 @@ DesignWid::DesignWid()
     createToolBox();
 
     scene = new FlowChartScene(itemMenu, this);
-    scene->setSceneRect(QRectF(0, 0, 5000, 5000));
+    scene->setSceneRect(QRectF(0, 0, 3200, 1800));
 
     connect(scene, &FlowChartScene::itemInserted,
             this, &DesignWid::itemInserted);
-//    connect(scene, &DiagramScene::textInserted,
-//            this, &DesignWid::textInserted);
+
     connect(scene, &FlowChartScene::itemSelected,
             this, &DesignWid::itemSelected);
 
@@ -61,8 +60,9 @@ void DesignWid::backgroundButtonGroupClicked(QAbstractButton *button)
         if (myButton != button)
             button->setChecked(false);
     }
-   // QString text = button->text();
-//    if (text == tr("Blue Grid"))
+
+//   QString text = button->text();
+//   if (text == tr("Blue Grid"))
 //        scene->setBackgroundBrush(QPixmap(":/images/background1.png"));
 //    else if (text == tr("White Grid"))
 //        scene->setBackgroundBrush(QPixmap(":/images/background2.png"));
@@ -330,7 +330,6 @@ void DesignWid::createToolBox()
     backgroundWidget->setLayout(backgroundLayout);
 
 
-
     toolBoxScroll = new QScrollArea(this);
     toolBoxScroll->setWidgetResizable(true);
 
@@ -340,22 +339,16 @@ void DesignWid::createToolBox()
     toolBoxScroll->setMinimumWidth(itemWidget->sizeHint().width());
 
 
-
     QIcon iconfolder(":/images/folder.svg");
     iconfolder.addFile(":/images/reopen-folder.svg", QSize(), QIcon::Normal, QIcon::On);
     toolBox->addWidget(backgroundWidget, "Input",iconfolder);
-
-
     toolBox->addWidget(itemWidget, "Process", QIcon(":/images/smile.png"));
 
     QWidget * btn = new QPushButton("Output", toolBox);
     btn->setStyleSheet("QFrame{background:#78B294;}");
-    toolBox->addWidget(btn, "CCC", QIcon(":/images/user.png"));
-
-
+    toolBox->addWidget(btn, "Output", QIcon(":/images/user.png"));
 
     toolBoxScroll->setWidget(toolBox);
-
 
 }
 

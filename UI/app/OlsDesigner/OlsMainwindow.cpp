@@ -9,7 +9,6 @@
 #include <QTextEdit>
 #include <QStatusBar>
 #include <QLayout>
-
 #include <QApplication>
 #include <QFile>
 #include <QSettings>

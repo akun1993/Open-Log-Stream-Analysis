@@ -107,7 +107,7 @@ void FlowEdge::drawOrthogonalPath()
     //     break;
     // }
 
-    currentPen = m_activatedPen;
+    currentPen = m_activePen;
     setPen(currentPen);
 
     // 获取场景中所有节点（用于避障）

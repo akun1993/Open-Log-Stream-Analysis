@@ -55,7 +55,7 @@ HEADERS += \
 RESOURCES += \
     OlsDesigner.qrc
 
-LIBS+=
+LIBS+= ../../../build/libols/libols.so
 
 INCLUDEPATH += ../../../libols \
             ../../../deps/uthash-header

@@ -111,8 +111,8 @@ private:
 
     QFont m_font;
 
-    static constexpr double NODE_WIDTH = 200;
-    static constexpr double NODE_HEIGHT = 150;
+    static constexpr double NODE_WIDTH = 160;
+    static constexpr double NODE_HEIGHT = 100;
 };
 
 #endif // FLOWNODE_H

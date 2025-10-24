@@ -66,8 +66,6 @@ FlowChartScene::FlowChartScene(QMenu *itemMenu, QObject *parent)
     myItemColor = Qt::white;
    // myTextColor = Qt::black;
     myLineColor = Qt::black;
-
-
 }
 
 

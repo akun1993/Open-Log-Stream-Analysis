@@ -14,10 +14,9 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-
     OlsApp a(argc, argv);
     a.setApplicationName("OLS Designer");
-    a.setOrganizationName("qtcanpool");
+    a.setOrganizationName("Open Log Analysis");
 
     return a.exec();
 }
