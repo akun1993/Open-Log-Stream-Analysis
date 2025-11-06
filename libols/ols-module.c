@@ -16,7 +16,6 @@
 ******************************************************************************/
 
 #include "ols-module.h"
-
 #include "ols-defs.h"
 #include "ols-internal.h"
 #include "util/dstr.h"

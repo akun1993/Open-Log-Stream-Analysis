@@ -10,8 +10,8 @@
 #include "FlowEdge.h"
 #include <QDebug>
 
-FlowNode::FlowNode(const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
-    : QGraphicsRectItem(parent), m_id(id), m_label(label),myContextMenu(contextMenu)
+FlowNode::FlowNode(FlowNodeType nodeType, const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
+    : QGraphicsRectItem(parent), myFlowNodeType(nodeType), m_label(label),myContextMenu(contextMenu)
 {
 
     setRect(0, 0, NODE_WIDTH, NODE_HEIGHT);
@@ -66,20 +66,20 @@ void FlowNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     QBrush brush;
     QPen pen;
 
-    switch (m_state)
+    switch (myFlowNodeType)
     {
-//    case ActiveState:
-//        brush = m_activeBrush;
-//        pen = m_activePen;
-//        break;
-//    case DisabledState:
-//        brush = m_disabledBrush;
-//        pen = m_disabledPen;
-//        break;
-//    case ErrorState:
-//        brush = m_errorBrush;
-//        pen = m_errorPen;
-//        break;
+    case INPUT:
+        brush = m_activeBrush;
+        pen = m_activePen;
+        break;
+    case PROCESS:
+        brush = m_disabledBrush;
+        pen = m_disabledPen;
+        break;
+    case OUTPUT:
+        brush = m_errorBrush;
+        pen = m_errorPen;
+        break;
     default:
         if (m_hasActivated)
         {
@@ -173,14 +173,11 @@ QVariant FlowNode::itemChange(GraphicsItemChange change, const QVariant &value)
 }
 
 
-//! [1]
 void FlowNode::removeArrow(FlowEdge *arrow)
 {
     arrows.removeAll(arrow);
 }
-//! [1]
 
-//! [2]
 void FlowNode::removeArrows()
 {
     // need a copy here since removeArrow() will
@@ -193,16 +190,12 @@ void FlowNode::removeArrows()
         delete arrow;
     }
 }
-//! [2]
 
-//! [3]
 void FlowNode::addArrow(FlowEdge *arrow)
 {
     arrows.append(arrow);
 }
-//! [3]
 
-//! [4]
 QPixmap FlowNode::image() const
 {
     QPixmap pixmap(250, 250);
@@ -214,39 +207,14 @@ QPixmap FlowNode::image() const
 
     return pixmap;
 }
-//! [4]
 
-//! [5]
+
+
 void FlowNode::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
     scene()->clearSelection();
     setSelected(true);
     myContextMenu->exec(event->screenPos());
 }
-//! [5]
-
-//! [6]
-//QVariant FlowNode::itemChange(GraphicsItemChange change, const QVariant &value)
-//{
-//    if (change == QGraphicsItem::ItemPositionChange) {
-//        for (FlowEdge *arrow : qAsConst(arrows))
-//            arrow->updatePath();
-//    }
-
-//    return value;
-//}
-//! [6]
 
 
-//! [12]
-// void FlowNode::mousePressEvent(QGraphicsSceneMouseEvent *event)
-// {
-//     update();
-//     QGraphicsItem::mousePressEvent(event);
-// }
-
-// void FlowNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-// {
-//     update();
-//     QGraphicsItem::mouseReleaseEvent(event);
-// }

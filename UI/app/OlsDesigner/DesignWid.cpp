@@ -4,6 +4,7 @@
 #include "FlowChartScene.h"
 #include "FlowChartView.h"
 #include "AdvancedToolBox.h"
+#include "PluginButton.h"
 #include <QScrollArea>
 #include "DesignWid.h"
 #include <QtWidgets/QVBoxLayout>
@@ -55,7 +56,7 @@ DesignWid::DesignWid()
 //! [1]
 void DesignWid::backgroundButtonGroupClicked(QAbstractButton *button)
 {
-    const QList<QAbstractButton *> buttons = backgroundButtonGroup->buttons();
+    const QList<QAbstractButton *> buttons = processGroup->buttons();
     for (QAbstractButton *myButton : buttons) {
         if (myButton != button)
             button->setChecked(false);
@@ -77,20 +78,61 @@ void DesignWid::backgroundButtonGroupClicked(QAbstractButton *button)
 //! [1]
 
 //! [2]
-void DesignWid::buttonGroupClicked(QAbstractButton *button)
+void DesignWid::inputGroupClicked(QAbstractButton *button)
 {
-    const QList<QAbstractButton *> buttons = buttonGroup->buttons();
+    const QList<QAbstractButton *> buttons = inputGroup->buttons();
     for (QAbstractButton *myButton : buttons) {
         if (myButton != button)
             button->setChecked(false);
     }
-    const int id = buttonGroup->id(button);
+    PluginButton *pluginBtn =qobject_cast<PluginButton *>(button);
+    const int id = inputGroup->id(button);
 
-     {
-        scene->setItemType(FlowNode::FlowNodeType(id));
+    {
+        scene->setItemInfo(FlowNode::FlowNodeType(id),pluginBtn->name());
         scene->setMode(FlowChartScene::InsertItem);
     }
 }
+
+
+void DesignWid::processGroupClicked(QAbstractButton *button)
+{
+    const QList<QAbstractButton *> buttons = processGroup->buttons();
+    for (QAbstractButton *myButton : buttons) {
+        if (myButton != button)
+            button->setChecked(false);
+    }
+
+    const int id = processGroup->id(button);
+
+
+    PluginButton *pluginBtn =qobject_cast<PluginButton *>(button);
+
+    {
+        scene->setItemInfo(FlowNode::FlowNodeType(id),pluginBtn->name());
+        scene->setMode(FlowChartScene::InsertItem);
+    }
+}
+
+
+void DesignWid::outputGroupClicked(QAbstractButton *button)
+{
+    const QList<QAbstractButton *> buttons = outputGroup->buttons();
+    for (QAbstractButton *myButton : buttons) {
+        if (myButton != button)
+            button->setChecked(false);
+    }
+
+    PluginButton *pluginBtn =qobject_cast<PluginButton *>(button);
+
+    const int id = outputGroup->id(button);
+
+    {
+        scene->setItemInfo(FlowNode::FlowNodeType(id),pluginBtn->name());
+        scene->setMode(FlowChartScene::InsertItem);
+    }
+}
+
 //! [2]
 
 //! [3]
@@ -165,15 +207,11 @@ void DesignWid::itemInserted(FlowNode *item)
 {
     pointerTypeGroup->button(int(FlowChartScene::MoveItem))->setChecked(true);
     scene->setMode(FlowChartScene::Mode(pointerTypeGroup->checkedId()));
-    buttonGroup->button(int(item->flowNodeType()))->setChecked(false);
-}
 
 
-void DesignWid::textInserted(QGraphicsTextItem *)
-{
-    buttonGroup->button(InsertTextButton)->setChecked(false);
-    scene->setMode(FlowChartScene::Mode(pointerTypeGroup->checkedId()));
+    inputGroup->button(int(item->flowNodeType()))->setChecked(false);
 }
+
 
 
 void DesignWid::currentFontChanged(const QFont &)
@@ -280,55 +318,65 @@ void DesignWid::about()
 
 void DesignWid::createToolBox()
 {
-    buttonGroup = new QButtonGroup(this);
-    buttonGroup->setExclusive(false);
-    connect(buttonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
-            this, &DesignWid::buttonGroupClicked);
+    inputGroup = new QButtonGroup(this);
+    inputGroup->setExclusive(false);
+    connect(inputGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
+            this, &DesignWid::inputGroupClicked);
 
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(createCellWidget(tr("Conditional"), FlowNode::Conditional), 0, 0);
-    layout->addWidget(createCellWidget(tr("Process"), FlowNode::Step),0, 1);
-    layout->addWidget(createCellWidget(tr("Input/Output"), FlowNode::Io), 1, 0);
-//! [21]
+    QGridLayout *inputLayout = new QGridLayout;
 
-    QToolButton *textButton = new QToolButton;
-    textButton->setCheckable(true);
-    buttonGroup->addButton(textButton, InsertTextButton);
-    textButton->setIcon(QIcon(QPixmap(":/images/textpointer.png")));
-    textButton->setIconSize(QSize(50, 50));
+    QIcon icon;
 
-    QGridLayout *textLayout = new QGridLayout;
-    textLayout->addWidget(textButton, 0, 0, Qt::AlignHCenter);
-    textLayout->addWidget(new QLabel(tr("Text")), 1, 0, Qt::AlignCenter);
+    inputLayout->addWidget(createCellWidget(tr("File+"), inputGroup,FlowNode::INPUT,icon), 0, 0);
+    inputLayout->addWidget(createCellWidget(tr("Serial"), inputGroup,FlowNode::INPUT,icon),0, 1);
+    inputLayout->addWidget(createCellWidget(tr("Net"), inputGroup,FlowNode::INPUT,icon), 1, 0);
 
-    QWidget *textWidget = new QWidget;
-    textWidget->setLayout(textLayout);
-    layout->addWidget(textWidget, 1, 1);
 
-    layout->setRowStretch(3, 10);
-    layout->setColumnStretch(2, 10);
+    inputLayout->setRowStretch(3, 10);
+    inputLayout->setColumnStretch(2, 10);
 
-    QWidget *itemWidget = new QWidget;
-    itemWidget->setLayout(layout);
 
-    backgroundButtonGroup = new QButtonGroup(this);
-    connect(backgroundButtonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
-            this, &DesignWid::backgroundButtonGroupClicked);
+    QWidget *inputWidget = new QWidget;
+    inputWidget->setLayout(inputLayout);
 
-    QGridLayout *backgroundLayout = new QGridLayout;
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("Blue Grid"),
-                                                           ":/images/background1.png"), 0, 0);
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("White Grid"),
-                                                           ":/images/background2.png"), 0, 1);
-    backgroundLayout->addWidget(createBackgroundCellWidget(tr("Gray Grid"),
-                                                           ":/images/background3.png"), 1, 0);
+    //start process group
+    processGroup = new QButtonGroup(this);
+    connect(processGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
+            this, &DesignWid::processGroupClicked);
 
-    backgroundLayout->setRowStretch(2, 10);
-    backgroundLayout->setColumnStretch(2, 10);
+    QGridLayout *processLayout = new QGridLayout;
 
-    QWidget *backgroundWidget = new QWidget;
-    backgroundWidget->setLayout(backgroundLayout);
+    processLayout->addWidget(createCellWidget(tr("Blue Grid"), processGroup,FlowNode::PROCESS,icon), 0, 0);
 
+    processLayout->addWidget(createCellWidget(tr("White Grid"),processGroup,FlowNode::PROCESS,icon), 0, 1);
+
+    processLayout->addWidget(createCellWidget(tr("Gray Grid"), processGroup,FlowNode::PROCESS,icon), 1, 0);
+
+    processLayout->setRowStretch(2, 10);
+    processLayout->setColumnStretch(2, 10);
+
+    QWidget *processWidget = new QWidget;
+    processWidget->setLayout(processLayout);
+
+
+    //start output button group
+    outputGroup = new QButtonGroup(this);
+    connect(outputGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked),
+            this, &DesignWid::outputGroupClicked);
+
+    QGridLayout *outputLayout = new QGridLayout;
+
+    outputLayout->addWidget(createCellWidget(tr("Html ouput"), outputGroup,FlowNode::OUTPUT,icon), 0, 0);
+
+    outputLayout->addWidget(createCellWidget(tr("Json output"), outputGroup,FlowNode::OUTPUT,icon), 0, 1);
+
+    outputLayout->addWidget(createCellWidget(tr("Xml output"), outputGroup,FlowNode::OUTPUT,icon), 1, 0);
+
+    outputLayout->setRowStretch(2, 10);
+    outputLayout->setColumnStretch(2, 10);
+
+    QWidget *outputWidget = new QWidget;
+    outputWidget->setLayout(outputLayout);
 
     toolBoxScroll = new QScrollArea(this);
     toolBoxScroll->setWidgetResizable(true);
@@ -336,17 +384,17 @@ void DesignWid::createToolBox()
     toolBox = new AdvancedToolBox(this);
 
     toolBoxScroll->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Ignored));
-    toolBoxScroll->setMinimumWidth(itemWidget->sizeHint().width());
+    toolBoxScroll->setMinimumWidth(inputWidget->sizeHint().width());
 
 
     QIcon iconfolder(":/images/folder.svg");
     iconfolder.addFile(":/images/reopen-folder.svg", QSize(), QIcon::Normal, QIcon::On);
-    toolBox->addWidget(backgroundWidget, "Input",iconfolder);
-    toolBox->addWidget(itemWidget, "Process", QIcon(":/images/smile.png"));
 
-    QWidget * btn = new QPushButton("Output", toolBox);
-    btn->setStyleSheet("QFrame{background:#78B294;}");
-    toolBox->addWidget(btn, "Output", QIcon(":/images/user.png"));
+    toolBox->addWidget(inputWidget , "Input",iconfolder);
+
+    toolBox->addWidget(processWidget, "Process", QIcon(":/images/smile.png"));
+
+    toolBox->addWidget(outputWidget, "Output", QIcon(":/images/user.png"));
 
     toolBoxScroll->setWidget(toolBox);
 
@@ -395,7 +443,6 @@ void DesignWid::createActions()
     connect(underlineAction, &QAction::triggered, this, &DesignWid::handleFontChange);
 
 }
-
 
 
 
@@ -525,7 +572,7 @@ QWidget *DesignWid::createBackgroundCellWidget(const QString &text, const QStrin
     button->setIcon(QIcon(image));
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
-    backgroundButtonGroup->addButton(button);
+    processGroup->addButton(button);
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
@@ -539,17 +586,16 @@ QWidget *DesignWid::createBackgroundCellWidget(const QString &text, const QStrin
 
 
 
-QWidget *DesignWid::createCellWidget(const QString &text, FlowNode::FlowNodeType type)
+QWidget *DesignWid::createCellWidget(const QString &text,  QButtonGroup * group,FlowNode::FlowNodeType type,const QIcon &icon,const QString &name)
 {
 
-    FlowNode item("id","fsf", itemMenu);
-    QIcon icon(item.image());
-
-    QToolButton *button = new QToolButton;
+    PluginButton *button = new PluginButton;
     button->setIcon(icon);
     button->setIconSize(QSize(50, 50));
     button->setCheckable(true);
-    buttonGroup->addButton(button, int(type));
+    button->setName(name);
+
+    group->addButton(button, int(type));
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(button, 0, 0, Qt::AlignHCenter);
@@ -574,7 +620,9 @@ QMenu *DesignWid::createColorMenu(const char *slot, QColor defaultColor)
     for (int i = 0; i < colors.count(); ++i) {
         QAction *action = new QAction(names.at(i), this);
         action->setData(colors.at(i));
+
         action->setIcon(createColorIcon(colors.at(i)));
+
         connect(action, SIGNAL(triggered()), this, slot);
         colorMenu->addAction(action);
         if (colors.at(i) == defaultColor)

@@ -39,7 +39,11 @@ public:
 
 private Q_SLOTS:
     void backgroundButtonGroupClicked(QAbstractButton *button);
-    void buttonGroupClicked(QAbstractButton *button);
+
+    void inputGroupClicked(QAbstractButton *button);
+    void processGroupClicked(QAbstractButton *button);
+    void outputGroupClicked(QAbstractButton *button);
+
     void deleteItem();
     void pointerGroupClicked();
     void bringToFront();
@@ -63,10 +67,12 @@ private:
     void createToolBox();
     void createActions();
     void createToolbars();
+
     QWidget *createBackgroundCellWidget(const QString &text,
                                         const QString &image);
-    QWidget *createCellWidget(const QString &text,
-                              FlowNode::FlowNodeType type);
+
+    QWidget *createCellWidget(const QString &text,  QButtonGroup * group,FlowNode::FlowNodeType type,const QIcon &icon,const QString &name = "");
+
     QMenu *createColorMenu(const char *slot, QColor defaultColor);
     QIcon createColorToolButtonIcon(const QString &image, QColor color);
     QIcon createColorIcon(QColor color);
@@ -100,9 +106,14 @@ private:
 
     AdvancedToolBox *toolBox;
     QScrollArea *toolBoxScroll;
-    QButtonGroup *buttonGroup;
+
+    //Three plugic type
+    QButtonGroup *inputGroup;
+    QButtonGroup *outputGroup;
+    QButtonGroup *processGroup;
+
     QButtonGroup *pointerTypeGroup;
-    QButtonGroup *backgroundButtonGroup;
+
     QToolButton *fontColorToolButton;
     QToolButton *fillColorToolButton;
     QToolButton *lineColorToolButton;

@@ -361,7 +361,6 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
   if (dir) {
   
     struct os_dirent *ent;
-  
     /* Compile the pattern. */
     int error_number;
     PCRE2_SIZE error_offset;
@@ -421,7 +420,6 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
     os_closedir(dir);
   } 
 }
-
 
 void TextSource::decompressFile(const std::string &file, std::string &ext_hint,const  std::string &dest_dir){
 
@@ -718,39 +716,24 @@ OLS_MODULE_USE_DEFAULT_LOCALE("ols-text", "en-US")
 MODULE_EXPORT const char *ols_module_description(void) { return "text source"; }
 
 static ols_properties_t *get_properties(void *data) {
-  TextSource *s = reinterpret_cast<TextSource *>(data);
-  string path;
+
+  UNUSED_PARAMETER(data);
 
   ols_properties_t *props = ols_properties_create();
-  //ols_property_t *p;
 
-  if (s && !s->curr_filename_.empty()) {
-    const char *slash;
+	ols_properties_add_color_alpha(props, "color", ols_module_text("ColorSource.Color"));
 
-    path = s->curr_filename_;
-    replace(path.begin(), path.end(), '\\', '/');
-    slash = strrchr(path.c_str(), '/');
-    if (slash)
-      path.resize(slash - path.c_str() + 1);
-  }
+	ols_properties_add_int(props, "base_file", ols_module_text("ColorSource.Width"), 0, 4096, 1);
+
+	ols_properties_add_int(props, "base_file_type_hint", ols_module_text("ColorSource.Height"), 0, 4096, 1);
+
+  ols_properties_add_int(props, "inner_dir", ols_module_text("ColorSource.Height"), 0, 4096, 1);
+
+  ols_properties_add_int(props, "file_name_wildcard", ols_module_text("ColorSource.Height"), 0, 4096, 1);
 
   return props;
 }
 
-
-// static void missing_file_callback(void *src, const char *new_path, void
-// *data)
-// {
-// 	TextSource *s = reinterpret_cast<TextSource *>(src);
-
-// 	ols_source_t *source = s->source;
-// 	ols_data_t *settings = ols_source_get_settings(source);
-// 	ols_data_set_string(settings, S_FILE, new_path);
-// 	ols_source_update(source, settings);
-// 	ols_data_release(settings);
-
-// 	UNUSED_PARAMETER(data);
-// }
 
 bool ols_module_load(void) {
   ols_source_info si = {};
@@ -787,6 +770,8 @@ bool ols_module_load(void) {
   si.get_data = [](void *data, ols_buffer_t *buf) {
     return reinterpret_cast<TextSource *>(data)->fileSrcGetData(buf);
   };
+
+
   si.version = 0;
 
   // si.missing_files = [](void *data) {

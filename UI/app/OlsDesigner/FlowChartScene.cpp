@@ -98,9 +98,10 @@ void FlowChartScene::setMode(Mode mode)
     myMode = mode;
 }
 
-void FlowChartScene::setItemType(FlowNode::FlowNodeType type)
+void FlowChartScene::setItemInfo(FlowNode::FlowNodeType type,const QString &name)
 {
-    //myItemType = type;
+    myItemType = type;
+    myItemName = name;
 }
 
 
@@ -114,7 +115,7 @@ void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
     FlowNode *item;
     switch (myMode) {
         case InsertItem:
-            item = new FlowNode("sf","fd", myItemMenu);
+            item = new FlowNode(myItemType,myItemName, myItemMenu);
             item->setBrush(myItemColor);
             addItem(item);
             item->setPos(mouseEvent->scenePos());

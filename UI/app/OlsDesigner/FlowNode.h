@@ -15,11 +15,11 @@ public:
 
     enum { Type = UserType + 15 };
 
-    enum FlowNodeType { Step, Conditional, StartEnd, Io };
+    enum FlowNodeType { INPUT, PROCESS, OUTPUT};
 
-    explicit FlowNode(const QString &id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
+    explicit FlowNode(FlowNodeType nodeType, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
 
-    QString id() const { return m_id; }
+   // QString id() const { return m_id; }
     QString label() const { return m_label; }
 
    // void setState(NodeState state);

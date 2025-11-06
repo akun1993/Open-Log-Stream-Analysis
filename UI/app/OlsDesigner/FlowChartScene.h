@@ -35,7 +35,9 @@ public:
 
 public Q_SLOTS:
     void setMode(Mode mode);
-    void setItemType(FlowNode::FlowNodeType type);
+
+    void setItemInfo(FlowNode::FlowNodeType type,const QString &name);
+
     //void editorLostFocus(DiagramTextItem *item);
 
 Q_SIGNALS:
@@ -50,13 +52,15 @@ protected:
 private:
     bool isItemChange(int type) const;
 
+    FlowNode::FlowNodeType myItemType;
+    QString myItemName;
+
     QMenu *myItemMenu;
     Mode myMode;
     bool leftButtonDown;
     QPointF startPoint;
     QGraphicsLineItem *line;
     QFont myFont;
-    //DiagramTextItem *textItem;
     QColor myItemColor;
     QColor myLineColor;
 };

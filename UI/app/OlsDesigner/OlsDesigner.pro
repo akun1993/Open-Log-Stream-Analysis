@@ -26,6 +26,7 @@ SOURCES += \
     FlowNode.cpp \
     OlsApp.cpp \
     OlsMainwindow.cpp \
+    PluginButton.cpp \
     double-slider.cpp \
     main.cpp \
     plain-text-edit.cpp \
@@ -44,6 +45,7 @@ HEADERS += \
     FlowChartView.h \
     FlowEdge.h \
     FlowNode.h \
+    PluginButton.h \
     double-slider.h \
     plain-text-edit.h \
     properties-view.h \
