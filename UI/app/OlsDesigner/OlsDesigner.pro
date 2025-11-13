@@ -34,7 +34,8 @@ SOURCES += \
     qt-wrappers.cpp \
     slider-ignorewheel.cpp \
     spinbox-ignorewheel.cpp \
-    vertical-scroll-area.cpp
+    vertical-scroll-area.cpp \
+    window-basic-properties.cpp
 
 HEADERS += \
     AdvancedToolBox.h \
@@ -46,13 +47,15 @@ HEADERS += \
     FlowEdge.h \
     FlowNode.h \
     PluginButton.h \
+    PluginInfo.h \
     double-slider.h \
     plain-text-edit.h \
     properties-view.h \
     qt-wrappers.h \
     slider-ignorewheel.h \
     spinbox-ignorewheel.h \
-    vertical-scroll-area.h
+    vertical-scroll-area.h \
+    window-basic-properties.h
 
 RESOURCES += \
     OlsDesigner.qrc

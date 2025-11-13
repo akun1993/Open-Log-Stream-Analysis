@@ -1,6 +1,6 @@
 #include "PluginButton.h"
 
-PluginButton::PluginButton(QWidget *parent /*= nullptr*/) : QToolButton(parent)
+PluginButton::PluginButton(PluginType type, QWidget *parent /*= nullptr*/) : QToolButton(parent),m_type(type)
 {
 
 }

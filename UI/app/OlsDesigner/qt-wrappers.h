@@ -38,7 +38,7 @@ class QLayout;
 class QString;
 class QLabel;
 
-class OBSMessageBox {
+class OLSMessageBox {
 public:
     static QMessageBox::StandardButton
     question(QWidget* parent, const QString& title, const QString& text,
@@ -52,7 +52,7 @@ public:
         const QString& text);
 };
 
-void OBSErrorBox(QWidget* parent, const char* msg, ...);
+void OLSErrorBox(QWidget* parent, const char* msg, ...);
 
 QThread* CreateQThread(std::function<void()> func);
 

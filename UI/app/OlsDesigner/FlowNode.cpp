@@ -8,46 +8,52 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QMenu>
 #include "FlowEdge.h"
+#include "properties-view.h"
 #include <QDebug>
+#include <string>
+#include <QAction>
 
-FlowNode::FlowNode(FlowNodeType nodeType, const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
-    : QGraphicsRectItem(parent), myFlowNodeType(nodeType), m_label(label),myContextMenu(contextMenu)
+FlowNode::FlowNode(PluginType nodeType, int id,const QString &label, QMenu *contextMenu,QGraphicsItem *parent)
+    : QGraphicsRectItem(parent), m_pluginType(nodeType), m_id(id), m_label(label),myContextMenu(contextMenu)
 {
 
     setRect(0, 0, NODE_WIDTH, NODE_HEIGHT);
 
 
-    m_normalBrush = QBrush(QColor(120, 120, 120));
-    m_activatedBrush = QBrush(QColor(65, 105, 225));
+    m_inactiveBrush = QBrush(QColor(120, 120, 120));
+
     m_activeBrush = QBrush(QColor(50, 200, 50));
-    m_disabledBrush = QBrush(QColor(100, 100, 100));
-    m_errorBrush = QBrush(QColor(220, 20, 60));
+
+    m_inputBrush = QBrush(QColor(152,251,152));
+    m_processBrush = QBrush(QColor(255,165,0));
+    m_outputBrush = QBrush(QColor(135,206,235));
 
 
-    m_activatedPen = QPen(QColor(200, 230, 255), 2);
+    m_inputPen = QPen(QColor(255, 99, 71 ), 2);
+    m_processPen = QPen(QColor(255, 235, 100), 2);
+    m_outputPen = QPen(QColor(200, 230, 255), 3);
+
     m_activePen = QPen(QColor(144, 238, 144), 3);
-    m_waitingPen = QPen(QColor(255, 235, 100), 2);
-    m_disabledPen = QPen(QColor(105, 105, 105), 1, Qt::DashLine);
-    m_errorPen = QPen(QColor(255, 99, 71), 3);
+    m_inactivePen = QPen(QColor(105, 105, 105), 1, Qt::DashLine);
 
-
-    m_font = QFont("Microsoft YaHei", 18, QFont::Medium);
+    m_font = QFont("Microsoft YaHei", 28, QFont::Bold);
     setFlags(ItemIsSelectable | ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
+
+
+    // qDebug("FlowNode %p\n",this);
 
     setAcceptHoverEvents(true);
 }
 
-//void FlowNode::setState(NodeState state)
-//{
-//    if (state != DisabledState && state != NormalState)
-//    {
-//        m_hasActivated = true;
-//    }
 
-//    m_state = state;
-//    update();
-//}
+void FlowNode::openPropertyView(){
+
+   // OLSPropertiesView *view  = new OLSPropertiesView();
+
+    qDebug("Open property view\n");
+}
+
 
 void FlowNode::setPosition(const QPointF &pos)
 {
@@ -66,35 +72,33 @@ void FlowNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     QBrush brush;
     QPen pen;
 
-    switch (myFlowNodeType)
+    switch (m_pluginType)
     {
-    case INPUT:
-        brush = m_activeBrush;
-        pen = m_activePen;
+    case PLUGIN_INPUT:
+        brush = m_inputBrush;
+        pen = m_inputPen;
         break;
-    case PROCESS:
-        brush = m_disabledBrush;
-        pen = m_disabledPen;
+    case PLUGIN_PROCESS:
+        brush = m_processBrush;
+        pen = m_processPen;
         break;
-    case OUTPUT:
-        brush = m_errorBrush;
-        pen = m_errorPen;
+    case PLUGIN_OUTPUT:
+        brush = m_outputBrush;
+        pen = m_outputPen;
         break;
     default:
         if (m_hasActivated)
         {
-            brush = m_activatedBrush;
-            pen = m_activatedPen;
+            brush = m_activeBrush;
+            pen = m_activePen;
         }
         else
         {
-            brush = m_disabledBrush;
-            pen = m_disabledPen;
+            brush = m_inactiveBrush;
+            pen = m_inactivePen;
         }
         break;
     }
-
-
 
     QRectF rect = boundingRect();
     QPainterPath path;
@@ -116,9 +120,8 @@ void FlowNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     QRectF textRect = rect.adjusted(5, 5, -5, -5);
 
 
-    QColor textColor = (baseColor.lightness() > 150) ? Qt::black : Qt::white;
+    QColor textColor =  Qt::black ;
     painter->setPen(textColor);
-
 
     QString elidedText = painter->fontMetrics().elidedText(
         m_label, Qt::ElideRight, textRect.width());
@@ -127,7 +130,7 @@ void FlowNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
 
     if (isSelected())
     {
-        painter->setPen(QPen(Qt::yellow, 2, Qt::DashLine));
+        painter->setPen(QPen(Qt::yellow, 4, Qt::DashLine));
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(rect.adjusted(2, 2, -2, -2), 13, 13);
     }
@@ -212,6 +215,7 @@ QPixmap FlowNode::image() const
 
 void FlowNode::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
+    qDebug("Open contextMenuEvent \n");
     scene()->clearSelection();
     setSelected(true);
     myContextMenu->exec(event->screenPos());

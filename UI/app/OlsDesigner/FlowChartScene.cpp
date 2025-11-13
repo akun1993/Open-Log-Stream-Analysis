@@ -81,7 +81,6 @@ void FlowChartScene::setLineColor(const QColor &color)
 }
 
 
-
 void FlowChartScene::setItemColor(const QColor &color)
 {
     myItemColor = color;
@@ -98,9 +97,10 @@ void FlowChartScene::setMode(Mode mode)
     myMode = mode;
 }
 
-void FlowChartScene::setItemInfo(FlowNode::FlowNodeType type,const QString &name)
+void FlowChartScene::setItemInfo(PluginType type,int id,const QString &name)
 {
-    myItemType = type;
+    myType = type;
+    myId = id;
     myItemName = name;
 }
 
@@ -109,29 +109,41 @@ void FlowChartScene::setItemInfo(FlowNode::FlowNodeType type,const QString &name
 //! [6]
 void FlowChartScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    if (mouseEvent->button() != Qt::LeftButton)
-        return;
 
-    FlowNode *item;
-    switch (myMode) {
-        case InsertItem:
-            item = new FlowNode(myItemType,myItemName, myItemMenu);
-            item->setBrush(myItemColor);
-            addItem(item);
-            item->setPos(mouseEvent->scenePos());
-            Q_EMIT itemInserted(item);
-            break;
-//! [6] //! [7]
-        case InsertLine:
-            line = new QGraphicsLineItem(QLineF(mouseEvent->scenePos(),
-                                        mouseEvent->scenePos()));
-            line->setPen(QPen(myLineColor, 2));
-            addItem(line);
-            break;
-    default:
-        ;
+    if (mouseEvent->button() == Qt::RightButton){
+
+        QGraphicsScene::mousePressEvent(mouseEvent);
+         if (!mouseEvent->isAccepted()) {
+
+
+             }
+
     }
-    QGraphicsScene::mousePressEvent(mouseEvent);
+
+
+    if (mouseEvent->button() == Qt::LeftButton){
+        FlowNode *item;
+        switch (myMode) {
+            case InsertItem:
+                item = new FlowNode(myType,myId,myItemName, myItemMenu);
+                item->setBrush(myItemColor);
+                addItem(item);
+                item->setPos(mouseEvent->scenePos());
+
+                Q_EMIT itemInserted(item);
+                break;
+
+            case InsertLine:
+                line = new QGraphicsLineItem(QLineF(mouseEvent->scenePos(),
+                                            mouseEvent->scenePos()));
+                line->setPen(QPen(myLineColor, 2));
+                addItem(line);
+                break;
+        default:
+            ;
+        }
+        QGraphicsScene::mousePressEvent(mouseEvent);
+    }
 }
 
 

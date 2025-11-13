@@ -129,6 +129,8 @@ void OlsMainWindow::createCentralWidget()
     setCentralWidget(m_pTabWidget);
 }
 
+
+
 void OlsMainWindow::createQuickAccessBar()
 {
     if (QuickAccessBar *quickAccessBar = fancyBar()->quickAccessBar())
@@ -245,14 +247,11 @@ void OlsMainWindow::createStatusBar()
 
     TinyNavBar *nb = new TinyNavBar(this);
     nb->layout()->setSpacing(2);
-    nb->addTab(tr("nav1"));
-    nb->addTab(tr("nav2222"));
-    nb->addTab(tr("nav3"));
-    nb->addTab(tr("nav4"));
-    nb->addTab(tr("nav5"));
-    nb->removeTab(3);
-    nb->insertTab(2, tr("navN"));
-    nb->setTabVisible(3, false);
+    nb->addTab(tr("Log"));
+    nb->addTab(tr("Output"));
+//    nb->removeTab(3);
+//    nb->insertTab(2, tr("navN"));
+//    nb->setTabVisible(3, false);
     sb->addWidget(nb);
 }
 

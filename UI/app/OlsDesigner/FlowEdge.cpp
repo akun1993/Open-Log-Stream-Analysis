@@ -209,7 +209,7 @@ void FlowEdge::drawOrthogonalPath()
     double length = arrowDir.manhattanLength();
     if (length > 0)
     {
-        arrowDir = arrowDir / length * 10;
+        arrowDir = arrowDir / length * 20;
         QPointF perpendicular(-arrowDir.y(), arrowDir.x());
 
         QPainterPath arrow;

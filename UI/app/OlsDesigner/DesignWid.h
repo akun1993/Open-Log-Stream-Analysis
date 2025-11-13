@@ -49,7 +49,6 @@ private Q_SLOTS:
     void bringToFront();
     void sendToBack();
     void itemInserted(FlowNode *item);
-    void textInserted(QGraphicsTextItem *item);
     void currentFontChanged(const QFont &font);
     void fontSizeChanged(const QString &size);
     void sceneScaleChanged(const QString &scale);
@@ -61,17 +60,19 @@ private Q_SLOTS:
     void lineButtonTriggered();
     void handleFontChange();
     void itemSelected(QGraphicsItem *item);
+
+    void setItemProperty();
+
     void about();
 
 private:
     void createToolBox();
     void createActions();
     void createToolbars();
+    void createMenus();
 
-    QWidget *createBackgroundCellWidget(const QString &text,
-                                        const QString &image);
 
-    QWidget *createCellWidget(const QString &text,  QButtonGroup * group,FlowNode::FlowNodeType type,const QIcon &icon,const QString &name = "");
+    QWidget *createCellWidget(const QString &text,  QButtonGroup * group,PluginType type,const QIcon &icon,const QString &name = "");
 
     QMenu *createColorMenu(const char *slot, QColor defaultColor);
     QIcon createColorToolButtonIcon(const QString &image, QColor color);
@@ -86,7 +87,9 @@ private:
 
     QAction *toFrontAction;
     QAction *sendBackAction;
-    QAction *aboutAction;
+
+
+    QAction *propertyAction;
 
     QMenu *fileMenu;
     QMenu *itemMenu;

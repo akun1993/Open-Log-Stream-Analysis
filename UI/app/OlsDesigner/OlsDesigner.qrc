@@ -61,5 +61,14 @@
         <file>res/main/running.png</file>
         <file>res/main/setting.png</file>
         <file>res/main/stop.png</file>
+        <file>images/input.png</file>
+        <file>images/output.png</file>
+        <file>images/process.png</file>
+        <file>images/distribution_pro.png</file>
+        <file>images/File_in.png</file>
+        <file>images/html_out.png</file>
+        <file>images/script_pro.png</file>
+        <file>images/statistics_pro.png</file>
+        <file>images/option.png</file>
     </qresource>
 </RCC>

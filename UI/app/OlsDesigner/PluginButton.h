@@ -3,12 +3,13 @@
 
 #include <QToolButton>
 #include <QString>
+#include "PluginInfo.h"
 
 class PluginButton : public QToolButton
 {
     Q_OBJECT
 public:
-    PluginButton(QWidget *parent = nullptr);
+    PluginButton(PluginType type, QWidget *parent = nullptr);
 
     void setName(QString name){
         m_name = name;
@@ -18,8 +19,17 @@ public:
         return m_name;
     }
 
-private:
+    void setId(int id){
+        m_id = id;
+    }
 
+    int id(){
+        return m_id;
+    }
+
+private:
+    PluginType m_type{PLUGIN_INVALID};
+    int m_id{-1};
     QString m_name;
 };
 

@@ -5,7 +5,7 @@
 #include <QBrush>
 #include <QPen>
 #include <QFont>
-//#include "FlowChartScene.h"
+#include "PluginInfo.h"
 
 class FlowEdge;
 
@@ -15,11 +15,10 @@ public:
 
     enum { Type = UserType + 15 };
 
-    enum FlowNodeType { INPUT, PROCESS, OUTPUT};
 
-    explicit FlowNode(FlowNodeType nodeType, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
+    explicit FlowNode(PluginType type, int id, const QString &label, QMenu *contextMenu,QGraphicsItem *parent = nullptr);
 
-   // QString id() const { return m_id; }
+    int id() const { return m_id; }
     QString label() const { return m_label; }
 
    // void setState(NodeState state);
@@ -48,13 +47,15 @@ public:
 
     void removeArrow(FlowEdge *arrow);
     void removeArrows();
-    FlowNodeType flowNodeType() const { return myFlowNodeType; }
+    PluginType pluginType() const { return m_pluginType; }
 
     void addArrow(FlowEdge *arrow);
 
     int type() const override { return Type; }
 
     QPixmap image() const;
+
+    void openPropertyView();
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -71,10 +72,10 @@ protected:
 
 
 private:
-    QString m_id;
+    int m_id;
     QString m_label;
 
-    FlowNodeType myFlowNodeType;
+    PluginType m_pluginType;
     QMenu *myContextMenu;
 
 
@@ -94,25 +95,29 @@ private:
     int m_level = 0;
 
 
-    QBrush m_normalBrush;
+    QBrush m_inactiveBrush;
     QBrush m_activeBrush;
 
-    QBrush m_disabledBrush;
-    QBrush m_errorBrush;
-    QBrush m_activatedBrush;
-    QBrush m_skipBrush;
+    QBrush m_inputBrush;
 
-    QPen m_skipPen;
+    QBrush m_processBrush;
+
+    QBrush m_outputBrush;
+
+    QPen m_inputPen;
+    QPen m_processPen;
+    QPen m_outputPen;
+
+
+    QPen m_inactivePen;
+
     QPen m_activePen;
-    QPen m_waitingPen;
-    QPen m_disabledPen;
-    QPen m_errorPen;
-    QPen m_activatedPen;
 
     QFont m_font;
 
-    static constexpr double NODE_WIDTH = 160;
-    static constexpr double NODE_HEIGHT = 100;
+
+    static constexpr double NODE_WIDTH = 190;
+    static constexpr double NODE_HEIGHT = 130;
 };
 
 #endif // FLOWNODE_H

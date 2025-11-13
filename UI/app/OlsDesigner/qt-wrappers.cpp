@@ -16,7 +16,6 @@
 ******************************************************************************/
 
 #include "qt-wrappers.h"
-
 #include <QComboBox>
 #include <QDataStream>
 #include <QFileDialog>
@@ -34,7 +33,7 @@
 //#include <obs-nix-platform.h>
 //#endif
 
-static inline void OBSErrorBoxva(QWidget* parent, const char* msg, va_list args)
+static inline void OLSErrorBoxva(QWidget* parent, const char* msg, va_list args)
 {
     char full_message[4096];
     vsnprintf(full_message, 4095, msg, args);
@@ -44,7 +43,7 @@ static inline void OBSErrorBoxva(QWidget* parent, const char* msg, va_list args)
     QMessageBox::critical(parent, "Error", message);
 }
 
-void OBSErrorBox(QWidget* parent, const char* msg, ...)
+void OLSErrorBox(QWidget* parent, const char* msg, ...)
 {
     va_list args;
     va_start(args, msg);
@@ -53,7 +52,7 @@ void OBSErrorBox(QWidget* parent, const char* msg, ...)
 }
 
 QMessageBox::StandardButton
-OBSMessageBox::question(QWidget* parent, const QString& title,
+OLSMessageBox::question(QWidget* parent, const QString& title,
     const QString& text,
     QMessageBox::StandardButtons buttons,
     QMessageBox::StandardButton defaultButton)
@@ -87,7 +86,7 @@ OBSMessageBox::question(QWidget* parent, const QString& title,
     return (QMessageBox::StandardButton)mb.exec();
 }
 
-void OBSMessageBox::information(QWidget* parent, const QString& title,
+void OLSMessageBox::information(QWidget* parent, const QString& title,
     const QString& text)
 {
     QMessageBox mb(QMessageBox::Information, title, text,
@@ -96,7 +95,7 @@ void OBSMessageBox::information(QWidget* parent, const QString& title,
     mb.exec();
 }
 
-void OBSMessageBox::warning(QWidget* parent, const QString& title,
+void OLSMessageBox::warning(QWidget* parent, const QString& title,
     const QString& text, bool enableRichText)
 {
     QMessageBox mb(QMessageBox::Warning, title, text, QMessageBox::NoButton,
@@ -107,7 +106,7 @@ void OBSMessageBox::warning(QWidget* parent, const QString& title,
     mb.exec();
 }
 
-void OBSMessageBox::critical(QWidget* parent, const QString& title,
+void OLSMessageBox::critical(QWidget* parent, const QString& title,
     const QString& text)
 {
     QMessageBox mb(QMessageBox::Critical, title, text,

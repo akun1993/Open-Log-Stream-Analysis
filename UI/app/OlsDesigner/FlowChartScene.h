@@ -36,9 +36,7 @@ public:
 public Q_SLOTS:
     void setMode(Mode mode);
 
-    void setItemInfo(FlowNode::FlowNodeType type,const QString &name);
-
-    //void editorLostFocus(DiagramTextItem *item);
+    void setItemInfo(PluginType type, int id,const QString &name);
 
 Q_SIGNALS:
     void itemInserted(FlowNode *item);
@@ -52,7 +50,8 @@ protected:
 private:
     bool isItemChange(int type) const;
 
-    FlowNode::FlowNodeType myItemType;
+    PluginType myType;
+    int      myId;
     QString myItemName;
 
     QMenu *myItemMenu;

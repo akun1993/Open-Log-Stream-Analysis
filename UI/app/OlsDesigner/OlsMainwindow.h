@@ -46,6 +46,7 @@ protected:
     virtual void closeEvent(QCloseEvent *event);
 
 private:
+
     FancyTabWidget *m_pTabWidget;
     QString m_themeStyle;
 };
