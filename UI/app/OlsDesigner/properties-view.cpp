@@ -1293,7 +1293,7 @@ void WidgetInfo::ButtonClicked()
             msg += QString(tr("Basic.PropertiesView.UrlButton.Text.Url"))
                        .arg(savedUrl);
 
-            QMessageBox::StandardButton button = OBSMessageBox::question(
+            QMessageBox::StandardButton button = OLSMessageBox::question(
                 view->window(),
                 tr("Basic.PropertiesView.UrlButton.OpenUrl"),
                 msg, QMessageBox::Yes | QMessageBox::No,

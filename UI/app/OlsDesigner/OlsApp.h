@@ -19,4 +19,18 @@ inline OlsApp* App()
     return static_cast<OlsApp*>(qApp);
 }
 
+
+inline config_t *GetGlobalConfig()
+{
+	return App()->GlobalConfig();
+}
+
+std::vector<std::pair<std::string, std::string>> GetLocaleNames();
+inline const char *Str(const char *lookup)
+{
+	return App()->GetString(lookup);
+}
+
+#define QTStr(lookupVal) QString::fromUtf8(Str(lookupVal))
+
 #endif // OLSAPP_H

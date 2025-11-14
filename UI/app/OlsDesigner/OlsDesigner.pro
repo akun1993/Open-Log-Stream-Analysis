@@ -70,3 +70,6 @@ win32 {
 }
 
 RC_FILE = OlsDesigner.rc
+
+FORMS += \
+    forms/OLSBasicProperties.ui

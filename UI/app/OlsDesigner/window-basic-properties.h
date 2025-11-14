@@ -5,6 +5,11 @@
 #include <QDialogButtonBox>
 #include <QSplitter>
 #include <memory>
+#include "ols.hpp"
+
+#include "ui_OLSBasicProperties.h"
+
+class OLSPropertiesView;
 
 class BasicProperties : public QDialog
 {
@@ -16,12 +21,12 @@ public:
     std::unique_ptr<Ui::OLSBasicProperties> ui;
     bool acceptClicked;
 
-    OBSSource source;
-    OBSSignal removedSignal;
-    OBSSignal renamedSignal;
+    OLSSource source;
+    OLSSignal removedSignal;
+    OLSSignal renamedSignal;
 
-    OBSSignal updatePropertiesSignal;
-    OBSData oldSettings;
+    OLSSignal updatePropertiesSignal;
+    OLSData oldSettings;
 
     OLSPropertiesView *view;
 
@@ -29,16 +34,17 @@ public:
 
     QSplitter *windowSplitter;
 
-    OBSSourceAutoRelease sourceA;
-    OBSSourceAutoRelease sourceB;
-    OBSSourceAutoRelease sourceClone;
+    OLSSourceAutoRelease sourceA;
+    OLSSourceAutoRelease sourceB;
+    OLSSourceAutoRelease sourceClone;
+
     bool direction = true;
 
     static void SourceRemoved(void *data, calldata_t *params);
     static void SourceRenamed(void *data, calldata_t *params);
     static void UpdateProperties(void *data, calldata_t *params);
 
-    void UpdateCallback(void *obj, obs_data_t *settings);
+    void UpdateCallback(void *obj, ols_data_t *settings);
     bool ConfirmQuit();
     int CheckSettings();
     void Cleanup();
@@ -47,7 +53,7 @@ private Q_SLOTS:
     void on_buttonBox_clicked(QAbstractButton *button);
 
 public:
-    BasicProperties(QWidget *parent, OBSSource source_);
+    BasicProperties(QWidget *parent, OLSSource source_);
     ~BasicProperties();
 
     void Init();

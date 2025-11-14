@@ -47,7 +47,7 @@ void OLSErrorBox(QWidget* parent, const char* msg, ...)
 {
     va_list args;
     va_start(args, msg);
-    OBSErrorBoxva(parent, msg, args);
+    OLSErrorBoxva(parent, msg, args);
     va_end(args);
 }
 
