@@ -20,6 +20,40 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
+
+#ifdef _WIN32
+    #include <windows.h>
+    #define PATH_SEPARATOR "\\"
+    #define SEVENZIP_CMD "7z"
+#else
+    #include <unistd.h>
+    #define PATH_SEPARATOR "/"
+    #define SEVENZIP_CMD "7z"
+#endif
+
+#define MAX_PATH_LENGTH 1024
+#define MAX_CMD_LENGTH 2048
+
+
+/**
+ * 压缩格式类型
+ */
+typedef enum {
+    FORMAT_UNKNOWN = 0,
+    FORMAT_TAR_GZ,
+    FORMAT_TAR_XZ,
+    FORMAT_TAR_BZ2,
+    FORMAT_TAR_ZST,
+    FORMAT_TAR,
+    FORMAT_GZ,
+    FORMAT_XZ,
+    FORMAT_BZ2,
+    FORMAT_ZIP,
+    FORMAT_7Z,
+    FORMAT_RAR
+} ArchiveFormat;
+
+
 #ifndef S_ISREG
 #define S_ISREG(mode) ((mode)&_S_IFREG)
 #endif
@@ -51,6 +85,148 @@ using namespace std;
 
 
 #define UNKNOW_FILE_EXT "unknow"
+
+
+/**
+ * 获取文件名（不含路径）
+ */
+const char* get_filename(const char *path) {
+    const char *filename = strrchr(path, '/');
+    #ifdef _WIN32
+    const char *filename_win = strrchr(path, '\\');
+    if (filename_win > filename) filename = filename_win;
+    #endif
+    return filename ? filename + 1 : path;
+}
+
+
+/**
+ * 读取文件头，自动识别文件格式（完全不看扩展名）
+ */
+ArchiveFormat check_real_filetype(const char* filePath) {
+    FILE* fp = fopen(filePath, "rb");
+    if (!fp) return FORMAT_UNKNOWN;
+
+    unsigned char buf[300] = {0};
+    fread(buf, 1, sizeof(buf), fp);
+    fclose(fp);
+
+    // ZIP: 50 4B 03 04
+    if (buf[0] == 0x50 && buf[1] == 0x4B && buf[2] == 0x03 && buf[3] == 0x04) return FORMAT_ZIP;
+    // RAR: 52 61 72 21
+    if (buf[0] == 0x52 && buf[1] == 0x61 && buf[2] == 0x72 && buf[3] == 0x21) return FORMAT_RAR;
+
+    // 7Z: 37 7A BC AF 27 1C
+    if (buf[0] == 0x37 && buf[1] == 0x7A && buf[2] == 0xBC && buf[3] == 0xAF) return FORMAT_7Z;
+    // GZIP: 1F 8B
+    if (buf[0] == 0x1F && buf[1] == 0x8B) return FORMAT_GZ;
+    // BZIP2: 42 5A 68
+    if (buf[0] == 0x42 && buf[1] == 0x5A && buf[2] == 0x68) return FORMAT_BZ2;
+    // XZ: FD 37 7A 58 5A
+    if (buf[0] == 0xFD && buf[1] == 0x37 && buf[2] == 0x7A && buf[3] == 0x58) return FORMAT_XZ;
+    // TAR: ustar
+    if (buf[257] == 'u' && buf[258] == 's' && buf[259] == 't' && buf[260] == 'a' && buf[261] == 'r') return FORMAT_TAR;
+
+
+    return FORMAT_UNKNOWN;
+}
+
+
+/**
+ * 检测压缩格式（增强版）
+ */
+ArchiveFormat detect_format(const char *filename) {
+    const char *lower = filename;
+    char lower_buf[MAX_PATH_LENGTH];
+    
+    // 转换为小写
+    strncpy(lower_buf, filename, sizeof(lower_buf) - 1);
+    lower_buf[sizeof(lower_buf) - 1] = '\0';
+    for (char *p = lower_buf; *p; p++) {
+        *p = tolower((unsigned char)*p);
+    }
+    lower = lower_buf;
+    
+    // 检测复合格式（优先级高）
+    if (strstr(lower, ".tar.gz") != NULL || 
+        strstr(lower, ".tgz") != NULL) {
+        return FORMAT_TAR_GZ;
+    }
+    if (strstr(lower, ".tar.xz") != NULL || 
+        strstr(lower, ".txz") != NULL) {
+        return FORMAT_TAR_XZ;
+    }
+    if (strstr(lower, ".tar.bz2") != NULL || 
+        strstr(lower, ".tbz2") != NULL ||
+        strstr(lower, ".tar.bz") != NULL) {
+        return FORMAT_TAR_BZ2;
+    }
+    if (strstr(lower, ".tar.zst") != NULL || 
+        strstr(lower, ".tzst") != NULL) {
+        return FORMAT_TAR_ZST;
+    }
+    
+    // 检测单一格式
+    const char *ext = strrchr(lower, '.');
+    if (ext) {
+        if (strcmp(ext, ".tar") == 0) return FORMAT_TAR;
+        if (strcmp(ext, ".gz") == 0) return FORMAT_GZ;
+        if (strcmp(ext, ".xz") == 0) return FORMAT_XZ;
+        if (strcmp(ext, ".bz2") == 0) return FORMAT_BZ2;
+        if (strcmp(ext, ".zip") == 0) return FORMAT_ZIP;
+        if (strcmp(ext, ".7z") == 0) return FORMAT_7Z;
+        if (strcmp(ext, ".rar") == 0) return FORMAT_RAR;
+    }
+    
+    return FORMAT_UNKNOWN;
+}
+
+/**
+ * 获取格式名称
+ */
+const char* format_name(ArchiveFormat format) {
+    switch (format) {
+        case FORMAT_TAR_GZ:  return "tar.gz";
+        case FORMAT_TAR_XZ:  return "tar.xz";
+        case FORMAT_TAR_BZ2: return "tar.bz2";
+        case FORMAT_TAR_ZST: return "tar.zst";
+        case FORMAT_TAR:     return "tar";
+        case FORMAT_GZ:      return "gz";
+        case FORMAT_XZ:      return "xz";
+        case FORMAT_BZ2:     return "bz2";
+        case FORMAT_ZIP:     return "zip";
+        case FORMAT_7Z:      return "7z";
+        case FORMAT_RAR:     return "rar";
+        default:             return "unknown";
+    }
+}
+
+
+/**
+ * 获取输出目录名称（基于压缩包名）
+ */
+void get_default_output_dir(const char *archive, char *output_dir, size_t size) {
+    const char *filename = get_filename(archive);
+    char base_name[MAX_PATH_LENGTH];
+    
+    strncpy(base_name, filename, sizeof(base_name) - 1);
+    base_name[sizeof(base_name) - 1] = '\0';
+     
+    // 移除复合扩展名
+    char *ext;
+    if ((ext = strstr(base_name, ".tar.gz")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".tar.xz")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".tar.bz2")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".tar.zst")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".tgz")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".txz")) != NULL) *ext = '\0';
+    else if ((ext = strstr(base_name, ".tbz2")) != NULL) *ext = '\0';
+    else if ((ext = strrchr(base_name, '.')) != NULL) *ext = '\0';
+    
+    snprintf(output_dir, size, "%s", base_name);
+}
+
+
 
 /* ------------------------------------------------------------------------- */
 
@@ -97,6 +273,141 @@ std::string get_file_dir(const std::string &file,std::string default_dir){
   }
 
   return dest_dir;
+}
+
+
+
+// PCRE2 正则匹配（通用）
+int regexMatch(const char *pattern, const char *str) {
+    int errorCode;
+    PCRE2_SIZE errorOffset;
+
+    pcre2_code *re = pcre2_compile(
+        (PCRE2_SPTR)pattern,
+        PCRE2_ZERO_TERMINATED,
+        0,
+        &errorCode,
+        &errorOffset,
+        NULL
+    );
+
+    if (!re) return 0;
+
+    pcre2_match_data *match = pcre2_match_data_create_from_pattern(re, NULL);
+    int ret = pcre2_match(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, 0, match, NULL);
+
+    pcre2_match_data_free(match);
+    pcre2_code_free(re);
+    return ret >= 1;
+}
+
+// 递归搜索文件夹，返回所有匹配正则的文件路径
+std::vector<std::string> searchFiles(const char *folder, const char *regex) {
+
+    std::vector<std::string> matches;
+
+    os_dir_t *dir = os_opendir(folder);
+    if (!dir) return;
+
+    struct os_dirent *ent;
+    struct stat st;
+    char full[1024];
+
+    while ((ent = os_readdir(dir)) != NULL) {
+        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
+
+        snprintf(full, sizeof(full), "%s/%s", folder, ent->d_name);
+        stat(full, &st);
+
+        if (ent->directory) {
+            searchFiles(full, regex);
+        } else {
+            if (regexMatch(regex, ent->d_name))
+              matches.push_back(std::string(full));
+        }
+    }
+    os_closedir(dir);
+    return matches;
+}
+
+/**
+ * 执行 7z 解压命令
+ */
+int extract_with_7z(const char* file, const char* outDir) {
+
+    struct dstr command = {0};
+    dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
+  
+    blog(LOG_INFO,"do decompress command %s",command.array);
+
+    os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
+
+    if(pipe){
+      uint8_t  buff[1024] = {'\0'};
+      while(os_process_pipe_read(pipe,buff,1024)){
+        blog(LOG_INFO,"%s \n",buff);
+      }
+      os_process_pipe_destroy(pipe);
+    }
+    dstr_free(&command);
+
+    return 0 ;
+}
+
+/**
+ * 两步解压：压缩包 → tar → 最终文件（gz/bz2/xz）
+ */
+int extract_compressed_tar(const char* file, const char* outDir) {
+
+   
+    char  tar_path[1024] = {'\0'};
+
+    auto system_command = [](const char* file, const char* outDir){
+
+      struct dstr command = {0};
+
+      dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
+
+      blog(LOG_INFO,"do decompress command %s",command.array);
+
+      os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
+
+      if(pipe){
+        uint8_t  buff[1024] = {'\0'};
+        while(os_process_pipe_read(pipe,buff,1024)){
+          blog(LOG_INFO,"%s \n",buff);
+        }
+        os_process_pipe_destroy(pipe);
+      }
+      dstr_free(&command);
+    };
+    
+    // 第一步：解压出 tar
+  
+    system_command(file,outDir);
+
+    // 生成 tar 路径（去掉 .gz 后缀，如果没有就用原文件名）
+    const char* dot = strrchr(file, '.');
+
+    if (dot && (strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 || strcmp(dot, ".xz") == 0)) {
+      char *prefix = (char *)malloc(dot - file + 1);
+      strncpy(prefix, file, dot - file);
+      prefix[dot - file] = '\0';
+      snprintf(tar_path, sizeof(tar_path), "%s\\%s", outDir, prefix);
+      free(prefix);
+    } else {
+      snprintf(tar_path, sizeof(tar_path), "%s\\%s", outDir, file);
+    }
+
+    // 生成中间 tar 路径  
+    //snprintf(tar_path, sizeof(tar_path), "%s\\%s", outDir, file);
+
+    // 第二步：解压 tar
+    system_command(tar_path,outDir);
+
+    // 删除中间文件
+    os_unlink(tar_path);
+    return 0;
 }
 
 
@@ -425,54 +736,15 @@ void TextSource::decompressFile(const std::string &file, std::string &ext_hint,c
 
 # ifdef _WIN32
 
-  struct dstr command = {0};
-
-  if(ext_hint == "zip"){
-    dstr_printf(&command,"unzip -o %s -d %s ",file.c_str(),dest_dir.c_str());
-  } else  if(ext_hint == "tar.gz"){
-    dstr_printf(&command,"tar -zxf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
-  } else if(ext_hint == "tar.xz"){
-    dstr_printf(&command,"tar -zJf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
-  } else if(ext_hint == "tar.bz2"){
-    dstr_printf(&command,"tar -zjf %s -C %s --overwrite",file.c_str(),dest_dir.c_str());
-  } else if(ext_hint == "gz") {
-
-    if(!dest_dir.empty()){
-      os_mkdir(dest_dir.c_str());
-
-      size_t pos = file.find_last_of('/');
-
-      std::string dest_file = dest_dir;
-      if(pos != std::string::npos){
-        dest_file += file.substr(pos);
-      } else {
-        dest_file += file;
-      }
-      
-      if(str_endwith(dest_file.c_str(),".gz")){
-        dest_file.erase(dest_file.size() - (sizeof(".gz") - 1));
-      }
-
-      dstr_printf(&command,"gunzip -c %s > %s",file.c_str(),dest_file.c_str());
-
+    int res;
+    if (ext_hint == "tar.gz" || ext_hint == "tar.xz" || ext_hint == "tar.bz2" ) {
+        res = extract_compressed_tar(file.c_str(), dest_dir.c_str());
     } else {
-      dstr_printf(&command,"gzip -d %s ",file.c_str());
+        res = extract_with_7z(file.c_str(), dest_dir.c_str());
     }
-  }
 
-  blog(LOG_INFO,"do decompress command %s",command.array);
+    blog(LOG_INFO,"do decompress result  %d",res);
 
-  os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
-
-  if(pipe){
-    uint8_t  buff[1024] = {'\0'};
-    while(os_process_pipe_read(pipe,buff,1024)){
-      blog(LOG_INFO,"%s \n",buff);
-    }
-    os_process_pipe_destroy(pipe);
-  }
-
-  dstr_free(&command);
 
 # else
 
