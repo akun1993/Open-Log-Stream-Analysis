@@ -27,6 +27,7 @@ find_path(ZLIB_INCLUDE_DIR
 
 find_library(ZLIB_LIB
 	NAMES ${_ZLIB_LIBRARIES} z zlib zdll zlib1 zlibd zlibd1 libzlib libz
+  HINTS ENV ZLIB_PATH ${ZLIB_PATH} ${CMAKE_SOURCE_DIR}/${ZLIB_PATH}
 	PATHS
 		/usr/lib /usr/local/lib /opt/local/lib /sw/lib
 	PATH_SUFFIXES

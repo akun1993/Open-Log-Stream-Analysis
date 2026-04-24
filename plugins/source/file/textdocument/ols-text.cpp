@@ -1,4 +1,4 @@
-#include "ols-meta-txt.h"
+﻿#include "ols-meta-txt.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -28,7 +28,6 @@
 #else
     #include <unistd.h>
     #define PATH_SEPARATOR "/"
-    #define SEVENZIP_CMD "7z"
 #endif
 
 #define MAX_PATH_LENGTH 1024
@@ -36,7 +35,7 @@
 
 
 /**
- * 压缩格式类型
+ * Archive format types
  */
 typedef enum {
     FORMAT_UNKNOWN = 0,
@@ -88,7 +87,7 @@ using namespace std;
 
 
 /**
- * 获取文件名（不含路径）
+ * Get filename (without path)
  */
 const char* get_filename(const char *path) {
     const char *filename = strrchr(path, '/');
@@ -101,7 +100,7 @@ const char* get_filename(const char *path) {
 
 
 /**
- * 读取文件头，自动识别文件格式（完全不看扩展名）
+ * Read file header, automatically identify file format (ignoring extension)
  */
 ArchiveFormat check_real_filetype(const char* filePath) {
     FILE* fp = fopen(filePath, "rb");
@@ -133,13 +132,13 @@ ArchiveFormat check_real_filetype(const char* filePath) {
 
 
 /**
- * 检测压缩格式（增强版）
+ * Detect compression format (enhanced version)
  */
 ArchiveFormat detect_format(const char *filename) {
     const char *lower = filename;
     char lower_buf[MAX_PATH_LENGTH];
     
-    // 转换为小写
+    // Convert to lowercase
     strncpy(lower_buf, filename, sizeof(lower_buf) - 1);
     lower_buf[sizeof(lower_buf) - 1] = '\0';
     for (char *p = lower_buf; *p; p++) {
@@ -147,7 +146,7 @@ ArchiveFormat detect_format(const char *filename) {
     }
     lower = lower_buf;
     
-    // 检测复合格式（优先级高）
+    // Detect composite formats (high priority)
     if (strstr(lower, ".tar.gz") != NULL || 
         strstr(lower, ".tgz") != NULL) {
         return FORMAT_TAR_GZ;
@@ -166,7 +165,7 @@ ArchiveFormat detect_format(const char *filename) {
         return FORMAT_TAR_ZST;
     }
     
-    // 检测单一格式
+    // Detect single format
     const char *ext = strrchr(lower, '.');
     if (ext) {
         if (strcmp(ext, ".tar") == 0) return FORMAT_TAR;
@@ -182,7 +181,7 @@ ArchiveFormat detect_format(const char *filename) {
 }
 
 /**
- * 获取格式名称
+ * Get format name
  */
 const char* format_name(ArchiveFormat format) {
     switch (format) {
@@ -203,7 +202,7 @@ const char* format_name(ArchiveFormat format) {
 
 
 /**
- * 获取输出目录名称（基于压缩包名）
+ * Get output directory name (based on archive name)
  */
 void get_default_output_dir(const char *archive, char *output_dir, size_t size) {
     const char *filename = get_filename(archive);
@@ -212,7 +211,7 @@ void get_default_output_dir(const char *archive, char *output_dir, size_t size) 
     strncpy(base_name, filename, sizeof(base_name) - 1);
     base_name[sizeof(base_name) - 1] = '\0';
      
-    // 移除复合扩展名
+    // Remove composite extension
     char *ext;
     if ((ext = strstr(base_name, ".tar.gz")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".tar.xz")) != NULL) *ext = '\0';
@@ -277,7 +276,7 @@ std::string get_file_dir(const std::string &file,std::string default_dir){
 
 
 
-// PCRE2 正则匹配（通用）
+// PCRE2 regex match (generic)
 int regexMatch(const char *pattern, const char *str) {
     int errorCode;
     PCRE2_SIZE errorOffset;
@@ -301,23 +300,22 @@ int regexMatch(const char *pattern, const char *str) {
     return ret >= 1;
 }
 
-// 递归搜索文件夹，返回所有匹配正则的文件路径
+// Recursively search folder, return all file paths matching regex
 std::vector<std::string> searchFiles(const char *folder, const char *regex) {
 
     std::vector<std::string> matches;
 
     os_dir_t *dir = os_opendir(folder);
-    if (!dir) return;
+    if (!dir) return matches;
 
     struct os_dirent *ent;
-    struct stat st;
+
     char full[1024];
 
     while ((ent = os_readdir(dir)) != NULL) {
         if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
 
         snprintf(full, sizeof(full), "%s/%s", folder, ent->d_name);
-        stat(full, &st);
 
         if (ent->directory) {
             searchFiles(full, regex);
@@ -331,7 +329,7 @@ std::vector<std::string> searchFiles(const char *folder, const char *regex) {
 }
 
 /**
- * 执行 7z 解压命令
+ * Execute 7z decompression command
  */
 int extract_with_7z(const char* file, const char* outDir) {
 
@@ -355,7 +353,7 @@ int extract_with_7z(const char* file, const char* outDir) {
 }
 
 /**
- * 两步解压：压缩包 → tar → 最终文件（gz/bz2/xz）
+ * Two-step decompression: archive → tar → final file (gz/bz2/xz)
  */
 int extract_compressed_tar(const char* file, const char* outDir) {
 
@@ -382,11 +380,11 @@ int extract_compressed_tar(const char* file, const char* outDir) {
       dstr_free(&command);
     };
     
-    // 第一步：解压出 tar
+    // Step 1: Extract tar
   
     system_command(file,outDir);
 
-    // 生成 tar 路径（去掉 .gz 后缀，如果没有就用原文件名）
+    // Generate tar path (remove .gz suffix, use original filename if not found)
     const char* dot = strrchr(file, '.');
 
     if (dot && (strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 || strcmp(dot, ".xz") == 0)) {
@@ -411,7 +409,7 @@ int extract_compressed_tar(const char* file, const char* outDir) {
 }
 
 
-//template
+// template
 typedef std::function<void (uint8_t *, size_t )> ReadCallback; 
 
 bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback callback){
@@ -588,7 +586,7 @@ void TextSource::loadFileText() {
 }
 
 void TextSource::update(ols_data_t *settings) { 
-
+ 
 	if (ols_data_get_string(settings, "base_file") != NULL ) {
     
     base_file_ = ols_data_get_string(settings, "base_file");
@@ -600,24 +598,24 @@ void TextSource::update(ols_data_t *settings) {
 
       base_type_hint_ = ols_data_get_string(settings, "base_file_type_hint");
 
-      blog(LOG_INFO, "base_type_hint %s",ols_data_get_string(settings, "base_file_type_hint"));
+    blog(LOG_INFO, "base_type_hint %s",ols_data_get_string(settings, "base_file_type_hint"));
     } 
-
+ 
     
     if (ols_data_get_string(settings, "inner_dir") != NULL ) {
 
       inner_dir_ = ols_data_get_string(settings, "inner_dir");
 
-      blog(LOG_INFO, "inner_dir %s",ols_data_get_string(settings, "inner_dir"));
+    blog(LOG_INFO, "inner_dir %s",ols_data_get_string(settings, "inner_dir"));
     } 
-
+ 
     if (ols_data_get_string(settings, "file_name_wildcard") != NULL ) {
 
       file_wildcard_ = ols_data_get_string(settings, "file_name_wildcard");
 
       blog(LOG_INFO, "file_wildcard  %s",ols_data_get_string(settings, "file_name_wildcard"));
     } 
-
+     
 	}
 }
 

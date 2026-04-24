@@ -58,7 +58,7 @@ void OLSQTDisplay::SetDisplayBackgroundColor(const QColor &color)
 
 void OLSQTDisplay::UpdateDisplayBackgroundColor()
 {
-	//obs_display_set_background_color(display, backgroundColor);
+	//ols_display_set_background_color(display, backgroundColor);
 }
 
 

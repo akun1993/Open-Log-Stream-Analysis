@@ -41,11 +41,11 @@ def main() -> int:
 
             module_list = manifest_data.get("modules", [])
 
-            obs_object = module_list[-1]
+            ols_object = module_list[-1]
 
-            if type(obs_object) != dict:
+            if type(ols_object) != dict:
                 logger.error(
-                    f"❌ Last element in modules list is not the obs-studio object"
+                    f"❌ Last element in modules list is not the ols-studio object"
                 )
                 return 2
 
@@ -62,7 +62,7 @@ def main() -> int:
                     new_module_list.append(module)
 
             new_module_list.sort()
-            new_module_list.append(obs_object)
+            new_module_list.append(ols_object)
             manifest_data["modules"] = new_module_list
 
             new_manifest_string = (

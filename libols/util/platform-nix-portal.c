@@ -41,7 +41,7 @@ static void new_request(struct portal_inhibit_info *info, char **out_token,
 	id = rand();
 
 	dstr_init(&token);
-	dstr_printf(&token, "obs_inhibit_portal%u", id);
+	dstr_printf(&token, "ols_inhibit_portal%u", id);
 	*out_token = token.array;
 
 	dstr_init(&path);
