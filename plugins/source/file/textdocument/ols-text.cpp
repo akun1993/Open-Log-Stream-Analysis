@@ -226,6 +226,43 @@ void get_default_output_dir(const char *archive, char *output_dir, size_t size) 
 }
 
 
+// 递归遍历目录，查找以 prefix 开头的文件，返回它们所在的目录（去重）
+void find_dirs_by_file_prefix( const std::string& rootDir,const std::string& filePrefix,std::set<std::string>& resultDirs) {
+
+    os_dir_t* dir = os_opendir(rootDir.c_str());
+    if (!dir) return;
+
+    struct os_dirent* entry;
+
+    while ((entry = os_readdir(dir)) != nullptr) {
+        // 跳过 . 和 ..
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+
+        // 拼接完整路径
+        std::string fullPath = rootDir + PATH_SEPARATOR + entry->d_name;
+
+        // 如果是目录，递归
+        if (entry->directory) {
+            find_dirs_by_file_prefix(fullPath, filePrefix, resultDirs);
+        } else  {
+            std::string fileName = entry->d_name;
+            if (fileName.compare(0, filePrefix.length(), filePrefix) == 0) {
+                resultDirs.insert(rootDir); // 只存目录，自动去重
+            }
+        }
+    }
+
+    os_closedir(dir);
+}
+
+// 对外接口：返回 vector<string>
+std::vector<std::string> getDirsWithPrefixFile( const std::string& rootDir, const std::string& filePrefix) {
+    std::set<std::string> dirSet;
+    find_dirs_by_file_prefix(rootDir, filePrefix, dirSet);
+    return std::vector<std::string>(dirSet.begin(), dirSet.end());
+}
+
+
 
 /* ------------------------------------------------------------------------- */
 
