@@ -103,12 +103,12 @@ const char* get_filename(const char *path) {
  * Read file header, automatically identify file format (ignoring extension)
  */
 ArchiveFormat check_real_filetype(const char* filePath) {
-    FILE* fp = fopen(filePath, "rb");
+    FILE* fp = os_fopen(filePath, "rb");
     if (!fp) return FORMAT_UNKNOWN;
 
     unsigned char buf[300] = {0};
-    fread(buf, 1, sizeof(buf), fp);
-    fclose(fp);
+    os_fread(buf, 1, sizeof(buf), fp);
+    os_fclose(fp);
 
     // ZIP: 50 4B 03 04
     if (buf[0] == 0x50 && buf[1] == 0x4B && buf[2] == 0x03 && buf[3] == 0x04) return FORMAT_ZIP;
@@ -293,6 +293,7 @@ const char * get_matched_extension(const char *file_name){
       return supported_ext[i] + 1;
     }
   }
+  
   return UNKNOW_FILE_EXT;
 }
 
@@ -469,11 +470,11 @@ bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback
 
 void  decompress_log_file(const std::string &file){
 
-# ifdef _WIN32
-
   struct dstr command = {0};
 
   std::string extension = get_matched_extension(file.c_str());
+
+# ifdef _WIN32
 
   std::string dest_dir = get_file_dir(file,".");
   if(extension == "tar.gz" || extension == "gz"){
@@ -517,13 +518,7 @@ void  decompress_log_file(const std::string &file){
     }  
   }
 
-  dstr_free(&command);
-
 # else
-
-  struct dstr command = {0};
-
-  std::string extension = get_matched_extension(file.c_str());
 
   if(extension == "tar.gz"){
 
@@ -560,8 +555,8 @@ void  decompress_log_file(const std::string &file){
       });
     }
   }
-  dstr_free(&command);
 #endif
+  dstr_free(&command);
 }
 
 struct TextSource {
