@@ -57,7 +57,7 @@ typedef enum {
  * Check if an event can travel upstream.
  */
 #define OLS_EVENT_IS_UPSTREAM(ev)                                              \
-  !!(OLS_EVENT_TYPE(ev) & OLS_EVENT_TYPE_UPSTREAM)
+  !!((OlsEventTypeFlags)OLS_EVENT_TYPE(ev) & OLS_EVENT_TYPE_UPSTREAM)
 /**
  * OLS_EVENT_IS_DOWNSTREAM:
  * @ev: the event to query
@@ -65,7 +65,7 @@ typedef enum {
  * Check if an event can travel downstream.
  */
 #define OLS_EVENT_IS_DOWNSTREAM(ev)                                            \
-  !!(OLS_EVENT_TYPE(ev) & OLS_EVENT_TYPE_DOWNSTREAM)
+  !!((OlsEventTypeFlags)OLS_EVENT_TYPE(ev) & OLS_EVENT_TYPE_DOWNSTREAM)
 
 /**
  * OLS_EVENT_TYPE_BOTH: (value 3) (type OlsEventTypeFlags)

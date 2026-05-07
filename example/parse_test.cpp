@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
   const char *file_path ;
 
 #if defined(_WIN32)
-  file_path = "E:\\Bug Analyse\\ndlb\\log.tar.gz";
+  file_path = "G:\\Test7z\\log.tar.gz";
 #elif defined(__APPLE__)
   int ret = GetConfigPath(base_module_dir, sizeof(base_module_dir),
                           "ols-studio/plugins/%module%.plugin");
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 #endif
 
   ols_data_set_string(src_file_data,"base_file",file_path);
-  ols_data_set_string(src_file_data,"base_file_type_hint","zip");
+  //ols_data_set_string(src_file_data,"base_file_type_hint","zip");
 
 #if defined(_WIN32)
   ols_data_set_string(src_file_data,"inner_dir","TBoxLog\\log");

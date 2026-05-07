@@ -373,7 +373,7 @@ int extract_with_7z(const char* file, const char* outDir) {
     struct dstr command = {0};
     dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
   
-    blog(LOG_INFO,"do decompress command %s",command.array);
+    blog(LOG_INFO,"[%s]do decompress command %s", __FUNCTION__, command.array);
 
     os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
 
@@ -403,7 +403,7 @@ int extract_compressed_tar(const char* file, const char* outDir) {
 
       dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
 
-      blog(LOG_INFO,"do decompress command %s",command.array);
+      blog(LOG_INFO,"[%s]do decompress command %s", __FUNCTION__, command.array);
 
       os_process_pipe_t * pipe = os_process_pipe_create(command.array,"r");
 
@@ -422,12 +422,13 @@ int extract_compressed_tar(const char* file, const char* outDir) {
     system_command(file,outDir);
 
     // Generate tar path (remove .gz suffix, use original filename if not found)
-    const char* dot = strrchr(file, '.');
+    const char *filename = get_filename(file);
+    const char* dot = strrchr(filename, '.');
 
     if (dot && (strcmp(dot, ".gz") == 0 || strcmp(dot, ".bz2") == 0 || strcmp(dot, ".xz") == 0)) {
-      char *prefix = (char *)malloc(dot - file + 1);
-      strncpy(prefix, file, dot - file);
-      prefix[dot - file] = '\0';
+      char *prefix = (char *)malloc(dot - filename + 1);
+      strncpy(prefix, filename, dot - filename);
+      prefix[dot - filename] = '\0';
       snprintf(tar_path, sizeof(tar_path), "%s\\%s", outDir, prefix);
       free(prefix);
     } else {
