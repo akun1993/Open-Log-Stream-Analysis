@@ -132,6 +132,46 @@ ArchiveFormat check_real_filetype(const char* filePath) {
 
 
 /**
+ * @brief Remove compression suffix while keeping the full directory path
+ * @param full_path Original full path with filename and extension
+ * @return New string: full path WITHOUT compression suffix
+ * @note Supports .tar.gz, .tar.bz2, .tar.xz, .zip, .rar, .7z
+ */
+std::string remove_compress_suffix(const std::string& full_path)
+{
+    size_t len = full_path.size();
+
+    // Match and remove double suffix: .tar.gz
+    if (len >= 7 && full_path.substr(len - 7) == ".tar.gz") {
+        return full_path.substr(0, len - 7);
+    }
+
+    // Match and remove double suffix: .tar.bz2
+    if (len >= 8 && full_path.substr(len - 8) == ".tar.bz2") {
+        return full_path.substr(0, len - 8);
+    }
+
+    // Match and remove double suffix: .tar.xz
+    if (len >= 7 && full_path.substr(len - 7) == ".tar.xz") {
+        return full_path.substr(0, len - 7);
+    }
+
+    // Remove normal single suffix (.zip, .rar, .7z, etc.)
+    size_t last_dot = full_path.find_last_of('.');
+    size_t last_sep = full_path.find_last_of("/\\");
+
+    // Ensure dot is in filename, not in directory path
+    if (last_dot != std::string::npos && (last_sep == std::string::npos || last_dot > last_sep)) {
+        return full_path.substr(0, last_dot);
+    }
+
+    // No valid extension found, return original path
+    return full_path;
+}
+
+
+
+/**
  * Detect compression format (enhanced version)
  */
 ArchiveFormat detect_format(const char *filename) {
@@ -160,11 +200,7 @@ ArchiveFormat detect_format(const char *filename) {
         strstr(lower, ".tar.bz") != NULL) {
         return FORMAT_TAR_BZ2;
     }
-    if (strstr(lower, ".tar.zst") != NULL || 
-        strstr(lower, ".tzst") != NULL) {
-        return FORMAT_TAR_ZST;
-    }
-    
+
     // Detect single format
     const char *ext = strrchr(lower, '.');
     if (ext) {
@@ -189,7 +225,6 @@ const char* format_name(ArchiveFormat format) {
         case FORMAT_TAR_GZ:  return "tar.gz";
         case FORMAT_TAR_XZ:  return "tar.xz";
         case FORMAT_TAR_BZ2: return "tar.bz2";
-        case FORMAT_TAR_ZST: return "tar.zst";
         case FORMAT_TAR:     return "tar";
         case FORMAT_GZ:      return "gz";
         case FORMAT_XZ:      return "xz";
@@ -217,7 +252,6 @@ void get_default_output_dir(const char *archive, char *output_dir, size_t size) 
     if ((ext = strstr(base_name, ".tar.gz")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".tar.xz")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".tar.bz2")) != NULL) *ext = '\0';
-    else if ((ext = strstr(base_name, ".tar.zst")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".tgz")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".txz")) != NULL) *ext = '\0';
     else if ((ext = strstr(base_name, ".tbz2")) != NULL) *ext = '\0';
@@ -445,6 +479,8 @@ typedef std::function<void (uint8_t *, size_t )> ReadCallback;
 bool do_command(const char *command ,uint8_t *buff, size_t buff_len,ReadCallback callback){
 
   os_process_pipe_t * pipe = os_process_pipe_create(command,"r");
+  blog(LOG_INFO,"[%s]do  command %s", __FUNCTION__, command);
+
 
   if(pipe){
     size_t len = 0; 
@@ -477,7 +513,7 @@ void  decompress_log_file(const std::string &file){
   bool format_errno = false ;
   uint8_t buffer[1024];
   do_command(command.array,buffer,1024,[extension,&format_errno](uint8_t *buff, size_t buff_len){
-      //blog(LOG_INFO,"ext is %s read %s",extension.c_str(),buff);
+      blog(LOG_INFO,"ext is %s read %s",format_name(extension),buff);
       if(extension == ArchiveFormat::FORMAT_TAR_GZ){
         if(strstr((const char *)buff,"Cannot open the file as [gzip]") != nullptr){
           format_errno = true;
@@ -486,15 +522,13 @@ void  decompress_log_file(const std::string &file){
   });
 
   if(extension == ArchiveFormat::FORMAT_TAR_GZ){
-    size_t pos  = file.find_last_of(FILE_SEPARATOR);
 
-    if(pos != std::string::npos){
-      
-      pos = file.find_last_of(FILE_SEPARATOR,pos);
-      if(pos != std::string::npos){
 
-        std::string file_prefix = file.substr(0,pos);
+    size_t len = file.size();
 
+    // Match and remove double suffix: .tar.gz
+    if (len >= 7 && file.substr(len - 7) == ".tar.gz") {
+        std::string file_prefix =  file.substr(0, len - 7);
         std::string new_file =  file_prefix + ".tar";
 
         if(!os_file_exists(new_file.c_str())) {
@@ -505,8 +539,9 @@ void  decompress_log_file(const std::string &file){
         do_command(command.array,buffer,1024,[](uint8_t *buff, size_t buff_len){
           
         });
-      }
-    }  
+    }
+
+ 
   }
 
 # else
@@ -740,7 +775,7 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 mat
         blog(LOG_ERROR, "Matching error\n");
       } else {
         PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-        blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
+        //blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
 
         std::string file_path = dest_dir;
         file_path.append(1,FILE_SEPARATOR).append(ent->d_name);
@@ -891,7 +926,6 @@ bool TextSource::fileSrcStart() {
   ArchiveFormat file_format;
   std::string dest_dir;
   std::set<std::string> files;
-  size_t pos;
 
   if(base_file_.empty()){
     goto no_filename;
@@ -910,14 +944,9 @@ bool TextSource::fileSrcStart() {
       //std::string file_path = base_file_;
       files_.push(base_file_);
     } else {
-      dest_dir = base_file_;
-      pos = dest_dir.find(format_name(file_format));
+      dest_dir = remove_compress_suffix(base_file_); ;
 
-      if(pos != std::string::npos){
-        dest_dir =  dest_dir.substr(0,pos).append("ols");
-      } else {
-        dest_dir.append(".ols");
-      }      
+      dest_dir.append(".ols");
 
       decompressFile(base_file_,file_format,dest_dir);
 
