@@ -221,7 +221,7 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 				ols_pad_push_event(pad, event_start);
 			}				
 		}
-		ols_buffer_unref(buffer);
+
 	} else {
 		const char *p = (const char *)ols_txt->buff;
 		
@@ -377,7 +377,8 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 	return;
 
 LOG_FORMAT_ERR:
-	ols_buffer_unref(buffer);
+	blog(LOG_ERROR,"format error \n");
+	return;
 }
 
 void DataDispatch::update(ols_data_t *settings)

@@ -78,6 +78,7 @@ target_sources(
           util/bmem.c
           util/bmem.h
           util/c99defs.h
+          util/mempool.c
           util/cf-lexer.c
           util/cf-lexer.h
           util/cf-parser.c
@@ -203,6 +204,7 @@ set(public_headers
     util/bitstream.h
     util/bmem.h
     util/c99defs.h
+    util/mempool.h
     util/cf-lexer.h
     util/cf-parser.h
     util/circlebuf.h

@@ -450,7 +450,7 @@ static void ols_base_src_loop(ols_pad_t *pad) {
   ols_buffer_t *buf = (ols_buffer_t *)ols_buffer_new ( );
   int ret = ols_src_get_stream_data(src, buf);
   if ((ret != OLS_FLOW_OK)) {
-    ols_buffer_unref(buf);
+
     goto pause;
   }
 
@@ -466,9 +466,13 @@ static void ols_base_src_loop(ols_pad_t *pad) {
   }
 
 done:
+  ols_buffer_unref(buf);
   return;
 
 pause: {
+
+  ols_buffer_unref(buf);
+
   ols_event_t *event;
   // src->running = false;
   ols_pad_pause_task(pad);
@@ -476,6 +480,7 @@ pause: {
 
     event = ols_event_new_eos();
     ols_pad_push_event(pad, event);
+    ols_event_unref(event);
   }
   goto done;
 }

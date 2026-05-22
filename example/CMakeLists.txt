@@ -8,9 +8,9 @@ target_include_directories(parse_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" ../l
 
 
 if(OS_WINDOWS)
-    target_link_libraries(parse_test uuid OLS::libols OLS::scripting)
+    target_link_libraries(parse_test uuid OLS::libols OLS::scripting Jansson::Jansson)
 else()
-    target_link_libraries(parse_test uuid OLS::libols OLS::scripting dl)
+    target_link_libraries(parse_test uuid OLS::libols OLS::scripting dl Jansson::Jansson)
 endif()
 
 set_target_properties(parse_test PROPERTIES FOLDER "example")

@@ -200,7 +200,6 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 
 	if(!meta_result->tag.array){
 		blog(LOG_ERROR,"no tag in meta result");
-		ols_buffer_unref(buffer);
 		return;
 	}
 
@@ -249,7 +248,6 @@ void XmlOutput::onDataBuff(ols_buffer_t *buffer){
 	}
 	
 	data_flag_ = true;
-	ols_buffer_unref(buffer);
 
 }
 
@@ -271,7 +269,6 @@ void XmlOutput::onEvent(ols_event_t *event){
 
 	} else if( OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_FLUSH  ){
 		flushOutfile();
-
 	}
 
 }

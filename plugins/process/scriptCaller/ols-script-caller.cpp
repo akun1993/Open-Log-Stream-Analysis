@@ -148,7 +148,7 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
 	if(str_strncmp((const char *)ols_txt->buff,"****",4) == 0){
 		//printf("data is %s \n",(const char *)ols_txt->buff);
-		goto release_ref;
+		goto error;
 	} else {
 		const char *p = (const char *)ols_txt->buff;
 		
@@ -175,22 +175,22 @@ void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 					
 					for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
 						ols_pad_t *pad = process_->context.srcpads.array[i];
-						ols_pad_push(pad, ols_buffer_ref(buffer) );
+						ols_pad_push(pad, buffer );
 					}
 				}
 
 			} else {
-				goto release_ref;
+				goto error;
 			}
 		} else {
-			goto release_ref;
+			goto error;
 		}
 	}
 
 	return;
 
-release_ref:
-	ols_buffer_unref(buffer);
+error:
+
 	return;
 }
 
