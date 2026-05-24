@@ -164,6 +164,24 @@ function(add_target_resource target resource destination)
     EXCLUDE_FROM_ALL)
 endfunction()
 
+# Helper function to install script resource directories into the executable rundir
+function(setup_script_resources source_dir dest_subdir file_pattern)
+  if(NOT IS_ABSOLUTE "${source_dir}")
+    set(source_dir "${CMAKE_CURRENT_SOURCE_DIR}/${source_dir}")
+  endif()
+
+  install(
+    DIRECTORY "${source_dir}/"
+    DESTINATION "${OLS_EXECUTABLE_DESTINATION}/${dest_subdir}"
+    COMPONENT ols_rundir
+    USE_SOURCE_PERMISSIONS
+    FILES_MATCHING
+    PATTERN "${file_pattern}"
+    PATTERN ".gitignore" EXCLUDE
+    PATTERN "CMakeLists.txt" EXCLUDE
+    PATTERN "*.cmake" EXCLUDE)
+endfunction()
+
 # Helper function to set up OLS app target
 function(setup_ols_app target)
   setup_binary_target(${target})

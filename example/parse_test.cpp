@@ -8,10 +8,14 @@
 #include <vector>
 #include <unordered_map>
 #include <util/platform.h>
+#include <util/bmem.h>
 #include "ols-context.h"
 #include "ols-source.h"
 #include "ols-process.h"
 #include "ols-output.h"
+#include "ols-archive.h"
+#include <set>
+#include <unordered_map>
 
 int GetProgramDataPath(char *path, size_t size, const char *name)
 {
@@ -199,6 +203,71 @@ static std::string make_default_pipeline_json(const std::string &base_file,
   return json;
 }
 
+
+// ===== 文件作用域工具函数定义 =====
+static bool dir_has_wildcard(const std::string& dir, const std::string& wildcard) {
+  os_dir_t* d = os_opendir(dir.c_str());
+  if (!d) return false;
+  struct os_dirent* ent;
+  bool found = false;
+  while ((ent = os_readdir(d)) != nullptr) {
+    if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
+      // Simple wildcard match: only supports '*'
+    const char* name = ent->d_name;
+    const char* wc = wildcard.c_str();
+    // 只支持前缀*后缀
+      if (wildcard == name) { found = true; break; }
+    const char* star = strchr(wc, '*');
+    if (star) {
+      std::string prefix(wc, star-wc);
+      std::string suffix(star+1);
+      size_t nlen = strlen(name);
+      if (nlen >= prefix.size() + suffix.size() &&
+          strncmp(name, prefix.c_str(), prefix.size()) == 0 &&
+          strcmp(name + nlen - suffix.size(), suffix.c_str()) == 0) {
+        found = true; break;
+      }
+    }
+  }
+  os_closedir(d);
+  return found;
+}
+
+static bool extract_until_match(const std::string& dir, const std::string& wildcard, int depth, std::unordered_map<std::string, std::string>& archive_to_dir) {
+  if (depth > 3) return false;
+  if (dir_has_wildcard(dir, wildcard)) return true;
+  os_dir_t* d = os_opendir(dir.c_str());
+  if (!d) return false;
+  struct os_dirent* ent;
+  std::vector<std::string> subdirs;
+  while ((ent = os_readdir(d)) != nullptr) {
+    if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
+    std::string full = dir + FILE_SEPARATOR + ent->d_name;
+    if (ent->directory) {
+      subdirs.push_back(full);
+    } else {
+      ArchiveFormat fmt = detect_format(full.c_str());
+      if (fmt != FORMAT_UNKNOWN) {
+        std::string dest_dir = remove_compress_suffix(full);
+        if (archive_to_dir.find(full) == archive_to_dir.end()) {
+          decompress_file(full, fmt, dest_dir);
+          archive_to_dir[full] = dest_dir;
+          if (extract_until_match(dest_dir, wildcard, depth+1, archive_to_dir)) {
+            os_closedir(d);
+            return true;
+          }
+        }
+      }
+    }
+  }
+  os_closedir(d);
+    // Recursively search subdirectories
+    for (const auto& sub : subdirs) {
+    if (extract_until_match(sub, wildcard, depth+1, archive_to_dir)) return true;
+  }
+  return false;
+}
+
 static void create_pipeline_from_json(const char *pipeline_json)
 {
   printf("Creating test pipeline from JSON...\n");
@@ -223,8 +292,45 @@ static void create_pipeline_from_json(const char *pipeline_json)
   std::vector<PipelineNode> nodes;
   nodes.reserve(json_array_size(nodes_json));
 
+  // 1. Pre-extract all source and compressed files in their directories, up to 3 levels, prioritizing file_name_wildcard
+  std::unordered_map<std::string, std::string> archive_to_dir;
+
+
+  // Collect all base_file first
   size_t index;
   json_t *item;
+  json_array_foreach(nodes_json, index, item) {
+    if (!json_is_object(item))
+      continue;
+    const char *type = json_string_value(json_object_get(item, "type"));
+    const char *id = json_string_value(json_object_get(item, "id"));
+    if (!type || strcmp(type, "source") != 0 || !id || strcmp(id, "text_file") != 0) continue;
+    json_t *settings_json = json_object_get(item, "settings");
+    if (!settings_json) continue;
+    json_t *base_file_json = json_object_get(settings_json, "base_file");
+    json_t *wildcard_json = json_object_get(settings_json, "file_name_wildcard");
+    if (!base_file_json || !json_is_string(base_file_json) || !wildcard_json || !json_is_string(wildcard_json)) continue;
+    std::string base_file = json_string_value(base_file_json);
+    std::string wildcard = json_string_value(wildcard_json);
+    ArchiveFormat fmt = detect_format(base_file.c_str());
+    if (fmt != FORMAT_UNKNOWN) {
+      std::string dest_dir = remove_compress_suffix(base_file) + ".ols";
+      // Idempotent extraction
+      if (archive_to_dir.find(base_file) == archive_to_dir.end()) {
+        decompress_file(base_file, fmt, dest_dir);
+        archive_to_dir[base_file] = dest_dir;
+      }
+      // Replace base_file field with extracted directory
+      json_object_set_new(settings_json, "base_file", json_string(dest_dir.c_str()));
+      // Recursively extract, up to 3 levels, stop if wildcard is found
+      extract_until_match(dest_dir, wildcard, 1, archive_to_dir);
+    } else {
+      // For non-archive files, directly search recursively
+      extract_until_match(base_file, wildcard, 1, archive_to_dir);
+    }
+  }
+
+  // 2. 创建节点，settings 已被替换为解压目录
   json_array_foreach(nodes_json, index, item) {
     if (!json_is_object(item))
       continue;
@@ -321,13 +427,13 @@ void create_pipeline(const char *pipeline_json) {
 #if defined(_WIN32)
   file_path = "G:\\Test7z\\log.tar.gz";
   inner_dir = "app\\log";
-  script_path = "E:\\Project\\ols-studio\\Open-Log-Stream-Analysis\\script_python\\exampleGbParse.py";
+  script_path = "script_python\\exampleGbParse.py";
   script_path_2 = script_path;
 #else
   file_path = "/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip";
   inner_dir = "TBoxLog/log";
-  script_path = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/exampleGbParse.py";
-  script_path_2 = "/home/V01/uidq8743/OpenSource/Open-Log-Stream-Analysis/script_python/script_others.py";
+  script_path = "script_python/exampleGbParse.py";
+  script_path_2 = "script_python/script_others.py";
 #endif
 
   std::string default_json = make_default_pipeline_json(file_path, inner_dir,
@@ -338,6 +444,14 @@ void create_pipeline(const char *pipeline_json) {
 }
 
 int main(int argc, char **argv) {
+
+  /* Change working directory to the executable's directory */
+  char *exe_dir = os_get_executable_path_ptr("");
+  if (exe_dir) {
+    if (os_chdir(exe_dir) == 0)
+      printf("Changed working directory to %s\n", exe_dir);
+    bfree(exe_dir);
+  }
 
   if (!ols_startup("en-US", NULL, NULL))
     printf("Couldn't create OLS");

@@ -13,7 +13,13 @@ else()
     target_link_libraries(parse_test uuid OLS::libols OLS::scripting dl Jansson::Jansson)
 endif()
 
+if(MSVC)
+    target_compile_options(parse_test PRIVATE /utf-8)
+endif()
+
 set_target_properties(parse_test PROPERTIES FOLDER "example")
 
 #setup_binary_target(parse_test)
 setup_ols_app(parse_test)
+
+# scripting directories are installed from the top-level CMakeLists

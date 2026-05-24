@@ -14,7 +14,8 @@ if(OS_WINDOWS)
     target_sources(ols-text  PRIVATE ols-text.rc)
 endif()
 
-target_sources(ols-text PRIVATE textdocument/ols-text.cpp)
-
+target_sources(ols-text PRIVATE
+    textdocument/ols-text.cpp
+)
 
 setup_plugin_target(ols-text)

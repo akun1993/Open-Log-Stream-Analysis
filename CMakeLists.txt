@@ -74,6 +74,8 @@ message("lib ols ${OLS_VERSION_CANONICAL}")
 message("lib ols ${OLS_COMMIT}")
 # OLS main app
 add_subdirectory(example)
+add_subdirectory(script_python)
+add_subdirectory(script_lua)
 
 # Tests
 if(ENABLE_UNIT_TESTS)
