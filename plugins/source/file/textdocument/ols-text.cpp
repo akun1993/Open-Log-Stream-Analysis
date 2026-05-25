@@ -1,5 +1,4 @@
 ﻿#include "ols-meta-txt.h"
-#include "example/ols-archive.h"
 #include <algorithm>
 #include <locale>
 #include <memory>
@@ -17,59 +16,43 @@
 #include <util/pipe.h>
 #include <util/str-util.h>
 #include <string.h>
+#include "ols-archive.h"
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-
-
 #define MAX_PATH_LENGTH 1024
 #define MAX_CMD_LENGTH 2048
 
-
-
-#ifndef S_ISREG
-#define S_ISREG(mode) ((mode)&_S_IFREG)
-#endif
 #ifndef S_ISDIR
-#define S_ISDIR(mode) ((mode)&_S_IFDIR)
-#endif
-#ifndef S_ISSOCK
-#define S_ISSOCK(x) (0)
+#define S_ISDIR(mode) ((mode) & _S_IFDIR)
 #endif
 
 using namespace std;
 
-#define warning(format, ...)                                                   \
-  blog(LOG_WARNING, "[%s] " format, ols_source_get_name(source), ##__VA_ARGS__)
+#define warning(format, ...) blog(LOG_WARNING, "[%s] " format, ols_source_get_name(source), ##__VA_ARGS__)
 
-#define warn_stat(call)                                                        \
-  do {                                                                         \
-    if (stat != Ok)                                                            \
-      warning("%s: %s failed (%d)", __FUNCTION__, call, (int)stat);            \
-  } while (false)
+#define warn_stat(call)                                                               \
+    do {                                                                              \
+        if (stat != Ok) warning("%s: %s failed (%d)", __FUNCTION__, call, (int)stat); \
+    } while (false)
 
 #ifndef clamp
-#define clamp(val, min_val, max_val)                                           \
-  if (val < min_val)                                                           \
-    val = min_val;                                                             \
-  else if (val > max_val)                                                      \
-    val = max_val;
+#define clamp(val, min_val, max_val) \
+    if (val < min_val)               \
+        val = min_val;               \
+    else if (val > max_val)          \
+        val = max_val;
 #endif
-
 
 #define UNKNOW_FILE_EXT "unknow"
 
-
-
-
 // 递归遍历目录，查找以 prefix 开头的文件，返回它们所在的目录（去重）
-void find_dirs_by_file_prefix( const std::string& rootDir,const std::string& filePrefix,std::set<std::string>& resultDirs) {
-
-    os_dir_t* dir = os_opendir(rootDir.c_str());
+void find_dirs_by_file_prefix(const std::string &rootDir, const std::string &filePrefix, std::set<std::string> &resultDirs) {
+    os_dir_t *dir = os_opendir(rootDir.c_str());
     if (!dir) return;
 
-    struct os_dirent* entry;
+    struct os_dirent *entry;
 
     while ((entry = os_readdir(dir)) != nullptr) {
         // 跳过 . 和 ..
@@ -81,10 +64,10 @@ void find_dirs_by_file_prefix( const std::string& rootDir,const std::string& fil
         // 如果是目录，递归
         if (entry->directory) {
             find_dirs_by_file_prefix(fullPath, filePrefix, resultDirs);
-        } else  {
+        } else {
             std::string fileName = entry->d_name;
             if (fileName.compare(0, filePrefix.length(), filePrefix) == 0) {
-                resultDirs.insert(rootDir); // 只存目录，自动去重
+                resultDirs.insert(rootDir);  // 只存目录，自动去重
             }
         }
     }
@@ -93,13 +76,11 @@ void find_dirs_by_file_prefix( const std::string& rootDir,const std::string& fil
 }
 
 // 对外接口：返回 vector<string>
-std::vector<std::string> getDirsWithPrefixFile( const std::string& rootDir, const std::string& filePrefix) {
+std::vector<std::string> getDirsWithPrefixFile(const std::string &rootDir, const std::string &filePrefix) {
     std::set<std::string> dirSet;
     find_dirs_by_file_prefix(rootDir, filePrefix, dirSet);
     return std::vector<std::string>(dirSet.begin(), dirSet.end());
 }
-
-
 
 /* ------------------------------------------------------------------------- */
 
@@ -110,33 +91,23 @@ std::vector<std::string> getDirsWithPrefixFile( const std::string& rootDir, cons
 /* ------------------------------------------------------------------------- */
 
 static inline wstring to_wide(const char *utf8) {
-  wstring text;
+    wstring text;
 
-  size_t len = os_utf8_to_wcs(utf8, 0, nullptr, 0);
-  text.resize(len);
-  if (len)
-    os_utf8_to_wcs(utf8, 0, &text[0], len + 1);
+    size_t len = os_utf8_to_wcs(utf8, 0, nullptr, 0);
+    text.resize(len);
+    if (len) os_utf8_to_wcs(utf8, 0, &text[0], len + 1);
 
-  return text;
+    return text;
 }
 
-static const char *supported_ext[] = {".zip",".tar.gz",".tar.xz", ".tar.bz2",".tar",".gz"};
-
-
+static const char *supported_ext[] = {".zip", ".tar.gz", ".tar.xz", ".tar.bz2", ".tar", ".gz"};
 
 // PCRE2 regex match (generic)
 int regexMatch(const char *pattern, const char *str) {
     int errorCode;
     PCRE2_SIZE errorOffset;
 
-    pcre2_code *re = pcre2_compile(
-        (PCRE2_SPTR)pattern,
-        PCRE2_ZERO_TERMINATED,
-        0,
-        &errorCode,
-        &errorOffset,
-        NULL
-    );
+    pcre2_code *re = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, 0, &errorCode, &errorOffset, NULL);
 
     if (!re) return 0;
 
@@ -150,7 +121,6 @@ int regexMatch(const char *pattern, const char *str) {
 
 // Recursively search folder, return all file paths matching regex
 std::vector<std::string> searchFiles(const char *folder, const char *regex) {
-
     std::vector<std::string> matches;
 
     os_dir_t *dir = os_opendir(folder);
@@ -168,491 +138,437 @@ std::vector<std::string> searchFiles(const char *folder, const char *regex) {
         if (ent->directory) {
             searchFiles(full, regex);
         } else {
-            if (regexMatch(regex, ent->d_name))
-              matches.push_back(std::string(full));
+            if (regexMatch(regex, ent->d_name)) matches.push_back(std::string(full));
         }
     }
     os_closedir(dir);
     return matches;
 }
 
-
-
 struct TextSource {
-  ols_source_t *source_ = nullptr;
+    ols_source_t *source_ = nullptr;
 
-  bool read_from_file_ = false;
-  
-  string base_file_;
-  string base_type_hint_;
-  string inner_dir_;
-  std::string file_wildcard_;
-  std::queue<std::string> files_;
-  string  curr_filename_;
-  FILE   *curr_file_ = nullptr;
-  uint64_t line_cnt = 0;
+    bool read_from_file_ = false;
 
+    string base_file_;
+    string base_type_hint_;
+    string inner_dir_;
+    std::string file_wildcard_;
+    std::queue<std::string> files_;
+    string curr_filename_;
+    FILE *curr_file_ = nullptr;
+    uint64_t line_cnt = 0;
 
-  /* --------------------------- */
+    /* --------------------------- */
 
-  inline TextSource(ols_source_t *source, ols_data_t *settings)
-      : source_(source) {
+    inline TextSource(ols_source_t *source, ols_data_t *settings) : source_(source) {
         update(settings);
-  }
+    }
 
-  inline ~TextSource() {}
+    inline ~TextSource() {
+    }
 
-  int fileSrcGetData(ols_buffer_t *buf);
+    int fileSrcGetData(ols_buffer_t *buf);
 
-  void loadFileText();
-  bool fileSrcStart();
-  /* unmap and close the file */
-  bool fileSrcStop();
+    void loadFileText();
+    bool fileSrcStart();
+    /* unmap and close the file */
+    bool fileSrcStop();
 
-  bool isSupportedCompressedFile(const char * file);
+    bool isSupportedCompressedFile(const char *file);
 
-  void decompressFile(const std::string &file, ArchiveFormat format,const  std::string &dest_dir);
+    void decompressFile(const std::string &file, ArchiveFormat format, const std::string &dest_dir);
 
-  void loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
+    void loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
 
-  bool openNextValidFile();
+    bool openNextValidFile();
 
-  inline void update(ols_data_t *settings);
+    inline void update(ols_data_t *settings);
 };
 
 static time_t get_modified_timestamp(const char *filename) {
-  struct stat stats;
-  if (os_stat(filename, &stats) != 0)
-    return -1;
-  return stats.st_mtime;
+    struct stat stats;
+    if (os_stat(filename, &stats) != 0) return -1;
+    return stats.st_mtime;
 }
-
-
 
 void TextSource::loadFileText() {
-  //BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
-  // text = to_wide(GetMainString(file_text));
+    // BPtr<char> file_text = os_quick_read_utf8_file(curr_filename_.c_str());
+    //  text = to_wide(GetMainString(file_text));
 
-  // if (!text.empty() && text.back() != '\n')
-  //   text.push_back('\n');
+    // if (!text.empty() && text.back() != '\n')
+    //   text.push_back('\n');
 }
 
-void TextSource::update(ols_data_t *settings) { 
- 
-	if (ols_data_get_string(settings, "base_file") != NULL ) {
-    
-    base_file_ = ols_data_get_string(settings, "base_file");
-    
-    blog(LOG_INFO, "base_file %s",ols_data_get_string(settings, "base_file"));
-    // = 
+void TextSource::update(ols_data_t *settings) {
+    if (ols_data_get_string(settings, "base_file") != NULL) {
+        base_file_ = ols_data_get_string(settings, "base_file");
 
-    if (ols_data_get_string(settings, "base_file_type_hint") != NULL ) {
+        blog(LOG_INFO, "base_file %s", ols_data_get_string(settings, "base_file"));
+        // =
 
-      base_type_hint_ = ols_data_get_string(settings, "base_file_type_hint");
+        if (ols_data_get_string(settings, "base_file_type_hint") != NULL) {
+            base_type_hint_ = ols_data_get_string(settings, "base_file_type_hint");
 
-    blog(LOG_INFO, "base_type_hint %s",ols_data_get_string(settings, "base_file_type_hint"));
-    } 
- 
-    
-    if (ols_data_get_string(settings, "inner_dir") != NULL ) {
+            blog(LOG_INFO, "base_type_hint %s", ols_data_get_string(settings, "base_file_type_hint"));
+        }
 
-      inner_dir_ = ols_data_get_string(settings, "inner_dir");
+        if (ols_data_get_string(settings, "inner_dir") != NULL) {
+            inner_dir_ = ols_data_get_string(settings, "inner_dir");
 
-    blog(LOG_INFO, "inner_dir %s",ols_data_get_string(settings, "inner_dir"));
-    } 
- 
-    if (ols_data_get_string(settings, "file_name_wildcard") != NULL ) {
+            blog(LOG_INFO, "inner_dir %s", ols_data_get_string(settings, "inner_dir"));
+        }
 
-      file_wildcard_ = ols_data_get_string(settings, "file_name_wildcard");
+        if (ols_data_get_string(settings, "file_name_wildcard") != NULL) {
+            file_wildcard_ = ols_data_get_string(settings, "file_name_wildcard");
 
-      blog(LOG_INFO, "file_wildcard  %s",ols_data_get_string(settings, "file_name_wildcard"));
-    } 
-     
-	}
+            blog(LOG_INFO, "file_wildcard  %s", ols_data_get_string(settings, "file_name_wildcard"));
+        }
+    }
 }
 
 int TextSource::fileSrcGetData(ols_buffer_t *buf) {
+    // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
+    errno = 0;
+    ols_meta_txt_t *ols_txt;
+    ssize_t size;
 
-  // blog(LOG_DEBUG, "TextSource::FileSrcGetData");
-  errno = 0;
-  ols_meta_txt_t *ols_txt;
-  ssize_t size ;
+    ols_txt = ols_meta_txt_new_with_buffer(1024);
 
-  ols_txt = ols_meta_txt_new_with_buffer(1024);
-
-  if(!curr_file_){
-    goto eos;
-  }
-
-  while(true){
-    size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt),OLS_META_TXT_BUFF_CAPACITY(ols_txt));
-    if (UNLIKELY(size == -1)) {
-      if(openNextValidFile() ){
-        continue;
-      }  else {
-        curr_file_ = NULL;
+    if (!curr_file_) {
         goto eos;
-      }
-    } else {
-      break;
     }
-  }
 
-  ols_txt->line = (int32_t)line_cnt;
-  ols_txt->len = size;
+    while (true) {
+        size = os_fgetline(curr_file_, (char *)OLS_META_TXT_BUFF(ols_txt), OLS_META_TXT_BUFF_CAPACITY(ols_txt));
+        if (UNLIKELY(size == -1)) {
+            if (openNextValidFile()) {
+                continue;
+            } else {
+                curr_file_ = NULL;
+                goto eos;
+            }
+        } else {
+            break;
+        }
+    }
 
-  ols_buffer_set_meta(buf, OLS_META_CAST(ols_txt));
+    ols_txt->line = (int32_t)line_cnt;
+    ols_txt->len = size;
 
-  ++line_cnt;
+    ols_buffer_set_meta(buf, OLS_META_CAST(ols_txt));
 
-  return OLS_FLOW_OK;
+    ++line_cnt;
+
+    return OLS_FLOW_OK;
 
 eos: {
-  ols_meta_txt_unref(ols_txt);
-  blog(LOG_DEBUG, "EOS");
-  // ols_buffer_resize(buf, 0, 0);
-  return OLS_FLOW_EOS;
+    ols_meta_txt_unref(ols_txt);
+    blog(LOG_DEBUG, "EOS");
+    // ols_buffer_resize(buf, 0, 0);
+    return OLS_FLOW_EOS;
+}
 }
 
-}
+void TextSource::loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files) {
+    os_dir_t *dir = os_opendir(dest_dir.c_str());
 
-void TextSource::loadMatchFilesInDir(const std::string &dest_dir,PCRE2_SPTR8 match_pattern,std::set<std::string> &files){
-  os_dir_t *dir = os_opendir(dest_dir.c_str());
+    if (dir) {
+        struct os_dirent *ent;
+        /* Compile the pattern. */
+        int error_number;
+        PCRE2_SIZE error_offset;
+        pcre2_code *re = pcre2_compile(match_pattern,         /* the pattern */
+                                       PCRE2_ZERO_TERMINATED, /* indicates pattern is zero-terminated */
+                                       0,                     /* default options */
+                                       &error_number,         /* for error number */
+                                       &error_offset,         /* for error offset */
+                                       NULL);                 /* use default compile context */
+        if (re == NULL) {
+            blog(LOG_ERROR, "Invalid pattern: %s\n", match_pattern);
+            os_closedir(dir);
+            return;
+        }
 
-  if (dir) {
-  
-    struct os_dirent *ent;
-    /* Compile the pattern. */
-    int error_number;
-    PCRE2_SIZE error_offset;
-    pcre2_code *re = pcre2_compile(
-        match_pattern,               /* the pattern */
-        PCRE2_ZERO_TERMINATED, /* indicates pattern is zero-terminated */
-        0,                     /* default options */
-        &error_number,         /* for error number */
-        &error_offset,         /* for error offset */
-        NULL);                 /* use default compile context */
-    if (re == NULL) {
-      blog(LOG_ERROR, "Invalid pattern: %s\n", match_pattern);
-      os_closedir(dir);
-      return ;
+        /* Match the pattern against the subject text. */
+        pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
+
+        for (;;) {
+            // const char *ext;
+
+            ent = os_readdir(dir);
+            if (!ent) break;
+            if (ent->directory) continue;
+
+            int rc = pcre2_match(re,                       /* the compiled pattern */
+                                 (PCRE2_SPTR8)ent->d_name, /* the subject text */
+                                 strlen(ent->d_name),      /* the length of the subject */
+                                 0,                        /* start at offset 0 in the subject */
+                                 0,                        /* default options */
+                                 match_data,               /* block for storing the result */
+                                 NULL);                    /* use default match context */
+
+            /* Print the match result. */
+            if (rc == PCRE2_ERROR_NOMATCH) {
+                blog(LOG_DEBUG, "No match : %s\n", ent->d_name);
+            } else if (rc < 0) {
+                blog(LOG_ERROR, "Matching error\n");
+            } else {
+                PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+                // blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
+
+                std::string file_path = dest_dir;
+                file_path.append(1, FILE_SEPARATOR).append(ent->d_name);
+                files.insert(file_path);
+            }
+        }
+        pcre2_match_data_free(match_data); /* Free resources */
+        pcre2_code_free(re);
+
+        os_closedir(dir);
     }
-  
-    /* Match the pattern against the subject text. */
-    pcre2_match_data *match_data =
-        pcre2_match_data_create_from_pattern(re, NULL);
-    
-
-    for (;;) {
-      //const char *ext;
-  
-      ent = os_readdir(dir);
-      if (!ent)
-        break;
-      if (ent->directory)
-        continue;
-  
-      int rc = pcre2_match(
-          re,                   /* the compiled pattern */
-          ( PCRE2_SPTR8)ent->d_name,              /* the subject text */
-          strlen(ent->d_name),      /* the length of the subject */
-          0,                    /* start at offset 0 in the subject */
-          0,                    /* default options */
-          match_data,           /* block for storing the result */
-          NULL);                /* use default match context */
-  
-      /* Print the match result. */
-      if (rc == PCRE2_ERROR_NOMATCH) {
-        blog(LOG_DEBUG,"No match : %s\n",ent->d_name);
-      } else if (rc < 0) {
-        blog(LOG_ERROR, "Matching error\n");
-      } else {
-        PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-        //blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
-
-        std::string file_path = dest_dir;
-        file_path.append(1,FILE_SEPARATOR).append(ent->d_name);
-        files.insert(file_path);
-      }
-    }
-    pcre2_match_data_free(match_data);   /* Free resources */
-    pcre2_code_free(re);        
-  
-    os_closedir(dir);
-  } 
 }
 
 void TextSource::decompressFile(const std::string &file, ArchiveFormat format, const std::string &dest_dir) {
     decompress_file(file, format, dest_dir);
 }
 
+bool TextSource::openNextValidFile() {
+    struct stat stat_results;
 
-bool TextSource::openNextValidFile(){
-
-  struct stat stat_results;
-
-  if(curr_file_){
-    fclose(curr_file_);
-    curr_file_ = NULL;
-  }
-
-  if(files_.empty()){
-    goto no_filename;
-  }
-
-  while(!files_.empty()) {
-
-    curr_filename_ = files_.front();
-    files_.pop();
-  
-    if (curr_filename_.empty()){
-      blog(LOG_INFO, "file name is empty");
-      continue;
+    if (curr_file_) {
+        fclose(curr_file_);
+        curr_file_ = NULL;
     }
-  
-    if (os_stat(curr_filename_.c_str(), &stat_results) < 0){
-      blog(LOG_ERROR, ("Could not get info on \"%s\"."), curr_filename_.c_str());
-      continue;
-    }
-  
-    if (S_ISDIR(stat_results.st_mode)){
-      blog(LOG_ERROR, "\"%s\" is a directory.", curr_filename_.c_str());
-      continue;
-    }
-    /* open the file */
-    curr_file_ = os_fopen(curr_filename_.c_str(), "rb");
-    if (curr_file_ == NULL){
-      switch (errno) {
-        case ENOENT:
-          blog(LOG_ERROR, "No such file \"%s\"", curr_filename_.c_str());
-          break;
-        default:
-          blog(LOG_ERROR, ("Could not open file \"%s\" for reading."),
-          curr_filename_.c_str());
-          break;
-      }      
-      continue;
-    }
-    blog(LOG_INFO, "Open file \"%s\" for reading.",curr_filename_.c_str());
-    return true;
-  } 
 
-  return false;
+    if (files_.empty()) {
+        goto no_filename;
+    }
 
-    /* ERROR */
-  no_filename: 
-    blog(LOG_ERROR, ("No file name specified for reading."));
+    while (!files_.empty()) {
+        curr_filename_ = files_.front();
+        files_.pop();
+
+        if (curr_filename_.empty()) {
+            blog(LOG_INFO, "file name is empty");
+            continue;
+        }
+
+        if (os_stat(curr_filename_.c_str(), &stat_results) < 0) {
+            blog(LOG_ERROR, ("Could not get info on \"%s\"."), curr_filename_.c_str());
+            continue;
+        }
+
+        if (S_ISDIR(stat_results.st_mode)) {
+            blog(LOG_ERROR, "\"%s\" is a directory.", curr_filename_.c_str());
+            continue;
+        }
+        /* open the file */
+        curr_file_ = os_fopen(curr_filename_.c_str(), "rb");
+        if (curr_file_ == NULL) {
+            switch (errno) {
+                case ENOENT:
+                    blog(LOG_ERROR, "No such file \"%s\"", curr_filename_.c_str());
+                    break;
+                default:
+                    blog(LOG_ERROR, ("Could not open file \"%s\" for reading."), curr_filename_.c_str());
+                    break;
+            }
+            continue;
+        }
+        blog(LOG_INFO, "Open file \"%s\" for reading.", curr_filename_.c_str());
+        return true;
+    }
+
     return false;
 
+    /* ERROR */
+no_filename:
+    blog(LOG_ERROR, ("No file name specified for reading."));
+    return false;
 }
 
 /* open the file, necessary to go to READY state */
 bool TextSource::fileSrcStart() {
+    struct stat stat_results;
+    ArchiveFormat file_format;
+    std::string dest_dir;
+    std::set<std::string> files;
 
-  //blog(LOG_INFO,"%s",__FUNCTION__);
-
-  struct stat stat_results;
-  ArchiveFormat file_format;
-  std::string dest_dir;
-  std::set<std::string> files;
-
-  if(base_file_.empty()){
-    goto no_filename;
-  }
-
-  if (os_stat(base_file_.c_str(), &stat_results) < 0){
-      goto no_stat;
-  }
-
-  if (!S_ISDIR(stat_results.st_mode)){
-
-    file_format = detect_format(base_file_.c_str());
-
-    if(file_format == ArchiveFormat::FORMAT_UNKNOWN ){ //treat as a regular file 
-      blog(LOG_INFO,"Source file extension is NULL");
-      //std::string file_path = base_file_;
-      files_.push(base_file_);
-    } else {
-      dest_dir = remove_compress_suffix(base_file_); ;
-
-      dest_dir.append(".ols");
-
-      decompressFile(base_file_,file_format,dest_dir);
-
-      if(!inner_dir_.empty())
-        dest_dir.append(1,FILE_SEPARATOR).append(inner_dir_);
-
-      blog(LOG_INFO," dest is %s\n",dest_dir.c_str());
-
+    if (base_file_.empty()) {
+        goto no_filename;
     }
-  } else {
-    dest_dir = base_file_;
 
-    if(!inner_dir_.empty())
-        dest_dir.append(1,FILE_SEPARATOR).append(inner_dir_);
+    if (os_stat(base_file_.c_str(), &stat_results) < 0) {
+        goto no_stat;
+    }
 
-  }
+    if (!S_ISDIR(stat_results.st_mode)) {
+        file_format = detect_format(base_file_.c_str());
 
-  loadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
+        if (file_format == ArchiveFormat::FORMAT_UNKNOWN) {  // treat as a regular file
+            blog(LOG_INFO, "Source file extension is NULL");
+            files_.push(base_file_);
+        } else {
+            blog(LOG_INFO, "%s archive file must be decompress before read\n", base_file_.c_str());
+        }
+    } else {
+        dest_dir = base_file_;
 
-  //decompress
-  for(auto &file : files){
-    decompress_log_file(file);
-  }
+        if (!inner_dir_.empty()) dest_dir.append(1, FILE_SEPARATOR).append(inner_dir_);
+    }
 
-  //reload after decompress
-  files.clear();
-  loadMatchFilesInDir(dest_dir,(PCRE2_SPTR8)file_wildcard_.c_str(),files);
+    loadMatchFilesInDir(dest_dir, (PCRE2_SPTR8)file_wildcard_.c_str(), files);
 
-  for(auto &file : files){
-    ArchiveFormat ext = detect_format(file.c_str());
-    if(ext == ArchiveFormat::FORMAT_UNKNOWN){
-      files_.push(file);
-      blog(LOG_INFO, "get file %s", file.c_str());
-    } 
-  }
+    // decompress
+    for (auto &file : files) {
+        decompress_log_file(file);
+    }
+    // reload after decompress
+    files.clear();
+    loadMatchFilesInDir(dest_dir, (PCRE2_SPTR8)file_wildcard_.c_str(), files);
 
-  if(files_.empty()){
-    return  false;
-  }
+    for (auto &file : files) {
+        ArchiveFormat ext = detect_format(file.c_str());
+        if (ext == ArchiveFormat::FORMAT_UNKNOWN) {
+            files_.push(file);
+            blog(LOG_INFO, "get file %s", file.c_str());
+        }
+    }
 
-  return openNextValidFile();
+    if (files_.empty()) {
+        return false;
+    }
 
-  /* ERROR */
-  no_filename: {
-    blog(LOG_ERROR, ("No file name specified for reading."));
-  }
-  return false;  
+    return openNextValidFile();
 
-  no_stat:{
-    blog(LOG_ERROR, ("Could not get info on \"%s\"."), base_file_.c_str());
-  }
-  return false;  
+/* ERROR */
+no_filename: { blog(LOG_ERROR, ("No file name specified for reading.")); }
+    return false;
+
+no_stat: { blog(LOG_ERROR, ("Could not get info on \"%s\"."), base_file_.c_str()); }
+    return false;
 }
 
 /* unmap and close the file */
 bool TextSource::fileSrcStop() {
-  /* close the file */
-  if(curr_file_)
-    fclose(curr_file_);
-  /* zero out a lot of our state */
-  curr_file_ = NULL;
-  return true;
+    /* close the file */
+    if (curr_file_) fclose(curr_file_);
+    /* zero out a lot of our state */
+    curr_file_ = NULL;
+    return true;
 }
 
-bool TextSource::isSupportedCompressedFile(const char * file){
- 
-  bool flag = false ;
+bool TextSource::isSupportedCompressedFile(const char *file) {
+    bool flag = false;
 
-  for(size_t i = 0; i < sizeof(supported_ext)/sizeof(supported_ext[0]); ++i){
-
-    if(str_endwith(file,supported_ext[i])){
-      flag = true;
-      break;
+    for (size_t i = 0; i < sizeof(supported_ext) / sizeof(supported_ext[0]); ++i) {
+        if (str_endwith(file, supported_ext[i])) {
+            flag = true;
+            break;
+        }
     }
-  }
 
-  return flag;
-} 
-
+    return flag;
+}
 
 #define ols_data_get_uint32 (uint32_t)ols_data_get_int
 
 OLS_DECLARE_MODULE()
 
 OLS_MODULE_USE_DEFAULT_LOCALE("ols-text", "en-US")
-MODULE_EXPORT const char *ols_module_description(void) { return "text source"; }
-
-static ols_properties_t *get_properties(void *data) {
-
-  UNUSED_PARAMETER(data);
-
-  ols_properties_t *props = ols_properties_create();
-
-	ols_properties_add_color_alpha(props, "color", ols_module_text("ColorSource.Color"));
-
-	ols_properties_add_int(props, "base_file", ols_module_text("ColorSource.Width"), 0, 4096, 1);
-
-	ols_properties_add_int(props, "base_file_type_hint", ols_module_text("ColorSource.Height"), 0, 4096, 1);
-
-  ols_properties_add_int(props, "inner_dir", ols_module_text("ColorSource.Height"), 0, 4096, 1);
-
-  ols_properties_add_int(props, "file_name_wildcard", ols_module_text("ColorSource.Height"), 0, 4096, 1);
-
-  return props;
+MODULE_EXPORT const char *ols_module_description(void) {
+    return "text source";
 }
 
+static ols_properties_t *get_properties(void *data) {
+    UNUSED_PARAMETER(data);
+
+    ols_properties_t *props = ols_properties_create();
+
+    ols_properties_add_int(props, "base_file", ols_module_text("ColorSource.Width"), 0, 4096, 1);
+
+    ols_properties_add_int(props, "base_file_type_hint", ols_module_text("ColorSource.Height"), 0, 4096, 1);
+
+    ols_properties_add_int(props, "inner_dir", ols_module_text("ColorSource.Height"), 0, 4096, 1);
+
+    ols_properties_add_int(props, "file_name_wildcard", ols_module_text("ColorSource.Height"), 0, 4096, 1);
+
+    return props;
+}
 
 bool ols_module_load(void) {
-  ols_source_info si = {};
-  si.id = "text_file";
-  si.type = OLS_SOURCE_TYPE_INPUT;
-  // si.output_flags = OLS_SOURCE_ 
-  si.get_properties = get_properties;
-  si.icon_type = OLS_ICON_TYPE_TEXT;
+    ols_source_info si = {};
+    si.id = "text_file";
+    si.type = OLS_SOURCE_TYPE_INPUT;
+    // si.output_flags = OLS_SOURCE_
+    si.get_properties = get_properties;
+    si.icon_type = OLS_ICON_TYPE_TEXT;
 
-  si.get_name = [](void *) { return ols_module_text("TextFile"); };
+    si.get_name = [](void *) {
+        return ols_module_text("TextFile");
+    };
 
-  si.create = [](ols_data_t *settings, ols_source_t *source) {
-    return (void *)new TextSource(source, settings);
-  };
-  
-  si.destroy = [](void *data) { delete reinterpret_cast<TextSource *>(data); };
+    si.create = [](ols_data_t *settings, ols_source_t *source) {
+        return (void *)new TextSource(source, settings);
+    };
 
-  si.request_new_pad = NULL;
+    si.destroy = [](void *data) {
+        delete reinterpret_cast<TextSource *>(data);
+    };
 
-  si.get_defaults = [](ols_data_t *settings) {
-    // defaults(settings, 1);
-    UNUSED_PARAMETER(settings);
-  };
+    si.request_new_pad = NULL;
 
-  si.activate = [](void *data) {
-    reinterpret_cast<TextSource *>(data)->fileSrcStart();
-  };
+    si.get_defaults = [](ols_data_t *settings) {
+        // defaults(settings, 1);
+        UNUSED_PARAMETER(settings);
+    };
 
-  si.update = [](void *data, ols_data_t *settings) {
-    reinterpret_cast<TextSource *>(data)->update(settings);
-  };
+    si.activate = [](void *data) {
+        reinterpret_cast<TextSource *>(data)->fileSrcStart();
+    };
 
-  si.get_data = [](void *data, ols_buffer_t *buf) {
-    return reinterpret_cast<TextSource *>(data)->fileSrcGetData(buf);
-  };
+    si.update = [](void *data, ols_data_t *settings) {
+        reinterpret_cast<TextSource *>(data)->update(settings);
+    };
 
+    si.get_data = [](void *data, ols_buffer_t *buf) {
+        return reinterpret_cast<TextSource *>(data)->fileSrcGetData(buf);
+    };
 
-  si.version = 0;
+    si.version = 0;
 
-  // si.missing_files = [](void *data) {
-  // 	TextSource *s = reinterpret_cast<TextSource *>(data);
-  // 	ols_missing_files_t *files = ols_missing_files_create();
+    // si.missing_files = [](void *data) {
+    // 	TextSource *s = reinterpret_cast<TextSource *>(data);
+    // 	ols_missing_files_t *files = ols_missing_files_create();
 
-  // 	ols_source_t *source = s->source;
-  // 	ols_data_t *settings = ols_source_get_settings(source);
+    // 	ols_source_t *source = s->source;
+    // 	ols_data_t *settings = ols_source_get_settings(source);
 
-  // 	bool read = ols_data_get_bool(settings, S_USE_FILE);
-  // 	const char *path = ols_data_get_string(settings, S_FILE);
+    // 	bool read = ols_data_get_bool(settings, S_USE_FILE);
+    // 	const char *path = ols_data_get_string(settings, S_FILE);
 
-  // 	if (read && strcmp(path, "") != 0) {
-  // 		if (!os_file_exists(path)) {
-  // 			ols_missing_file_t *file =
-  // 				ols_missing_file_create(
-  // 					path, missing_file_callback,
-  // 					OLS_MISSING_FILE_SOURCE,
-  // 					s->source, NULL);
+    // 	if (read && strcmp(path, "") != 0) {
+    // 		if (!os_file_exists(path)) {
+    // 			ols_missing_file_t *file =
+    // 				ols_missing_file_create(
+    // 					path, missing_file_callback,
+    // 					OLS_MISSING_FILE_SOURCE,
+    // 					s->source, NULL);
 
-  // 			ols_missing_files_add_file(files, file);
-  // 		}
-  // 	}
+    // 			ols_missing_files_add_file(files, file);
+    // 		}
+    // 	}
 
-  // 	ols_data_release(settings);
+    // 	ols_data_release(settings);
 
-  // 	return files;
-  // };
+    // 	return files;
+    // };
 
-  ols_register_source(&si);
+    ols_register_source(&si);
 
-  return true;
+    return true;
 }
 
 void ols_module_unload(void) {
-
 }

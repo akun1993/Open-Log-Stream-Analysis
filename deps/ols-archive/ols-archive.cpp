@@ -6,7 +6,6 @@
 #include <util/pipe.h>
 #include <util/platform.h>
 #include <util/str-util.h>
-#include <util/task.h>
 #include <string.h>
 
 #define MAX_PATH_LENGTH 1024
