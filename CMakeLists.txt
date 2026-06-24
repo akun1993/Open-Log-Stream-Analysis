@@ -36,6 +36,8 @@ option(ENABLE_UI "Enable building with UI (requires Qt)" OFF)
 option(ENABLE_SCRIPTING "Enable scripting support" ON)
 option(USE_LIBCXX "Use libc++ instead of libstdc++" ${APPLE})
 option(BUILD_TESTS "Build test directory (includes test sources and possibly a platform test executable)" OFF)
+option(ENABLE_MCP_SERVER "Enable MCP server integration for automated log analysis" ON)
+option(ENABLE_MCP_SERVER "Enable MCP server for log analysis pipeline generation" ON)
 
 if(OS_WINDOWS)
   option(INSTALLER_RUN
@@ -76,6 +78,12 @@ message("lib ols ${OLS_COMMIT}")
 add_subdirectory(example)
 add_subdirectory(script_python)
 add_subdirectory(script_lua)
+
+# MCP Server for log analysis
+if(ENABLE_MCP_SERVER)
+    add_subdirectory(mcp_server)
+    message(STATUS "MCP Server enabled")
+endif()
 
 # Tests
 if(ENABLE_UNIT_TESTS)

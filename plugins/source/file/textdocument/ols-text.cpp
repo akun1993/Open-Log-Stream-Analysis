@@ -21,6 +21,11 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
+// 线程池支持
+#include <util/taskpool.h>
+#include <mutex>
+#include <future>
+
 #define MAX_PATH_LENGTH 1024
 #define MAX_CMD_LENGTH 2048
 
@@ -47,40 +52,40 @@ using namespace std;
 
 #define UNKNOW_FILE_EXT "unknow"
 
-// 递归遍历目录，查找以 prefix 开头的文件，返回它们所在的目录（去重）
-void find_dirs_by_file_prefix(const std::string &rootDir, const std::string &filePrefix, std::set<std::string> &resultDirs) {
-    os_dir_t *dir = os_opendir(rootDir.c_str());
-    if (!dir) return;
+// // Recursively traverse directory, find files starting with prefix, return their directories (deduplicated)
+// void find_dirs_by_file_prefix(const std::string &rootDir, const std::string &filePrefix, std::set<std::string> &resultDirs) {
+//     os_dir_t *dir = os_opendir(rootDir.c_str());
+//     if (!dir) return;
 
-    struct os_dirent *entry;
+//     struct os_dirent *entry;
 
-    while ((entry = os_readdir(dir)) != nullptr) {
-        // 跳过 . 和 ..
-        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+//     while ((entry = os_readdir(dir)) != nullptr) {
+//         // Skip . and ..
+//         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
 
-        // 拼接完整路径
-        std::string fullPath = rootDir + FILE_SEPARATOR + entry->d_name;
+//         // Build full path
+//         std::string fullPath = rootDir + FILE_SEPARATOR + entry->d_name;
 
-        // 如果是目录，递归
-        if (entry->directory) {
-            find_dirs_by_file_prefix(fullPath, filePrefix, resultDirs);
-        } else {
-            std::string fileName = entry->d_name;
-            if (fileName.compare(0, filePrefix.length(), filePrefix) == 0) {
-                resultDirs.insert(rootDir);  // 只存目录，自动去重
-            }
-        }
-    }
+//         // Recursively traverse if it's a directory
+//         if (entry->directory) {
+//             find_dirs_by_file_prefix(fullPath, filePrefix, resultDirs);
+//         } else {
+//             std::string fileName = entry->d_name;
+//             if (fileName.compare(0, filePrefix.length(), filePrefix) == 0) {
+//                 resultDirs.insert(rootDir);  // Only store directory, automatically deduplicated
+//             }
+//         }
+//     }
 
-    os_closedir(dir);
-}
+//     os_closedir(dir);
+// }
 
-// 对外接口：返回 vector<string>
-std::vector<std::string> getDirsWithPrefixFile(const std::string &rootDir, const std::string &filePrefix) {
-    std::set<std::string> dirSet;
-    find_dirs_by_file_prefix(rootDir, filePrefix, dirSet);
-    return std::vector<std::string>(dirSet.begin(), dirSet.end());
-}
+// // Public interface: return vector<string>
+// std::vector<std::string> getDirsWithPrefixFile(const std::string &rootDir, const std::string &filePrefix) {
+//     std::set<std::string> dirSet;
+//     find_dirs_by_file_prefix(rootDir, filePrefix, dirSet);
+//     return std::vector<std::string>(dirSet.begin(), dirSet.end());
+// }
 
 /* ------------------------------------------------------------------------- */
 
@@ -154,6 +159,7 @@ struct TextSource {
     string base_type_hint_;
     string inner_dir_;
     std::string file_wildcard_;
+    std::string filter_string_;  // 用于过滤文件的字符串
     std::queue<std::string> files_;
     string curr_filename_;
     FILE *curr_file_ = nullptr;
@@ -182,6 +188,12 @@ struct TextSource {
     void loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 match_pattern, std::set<std::string> &files);
 
     bool openNextValidFile();
+
+    // 检查文件是否包含指定字符串
+    bool fileContainsString(const std::string &filepath, const std::string &searchStr);
+
+    // 过滤文件队列，只保留包含指定字符串的文件
+    void filterFilesByString(const std::string &searchStr);
 
     inline void update(ols_data_t *settings);
 };
@@ -333,6 +345,148 @@ void TextSource::decompressFile(const std::string &file, ArchiveFormat format, c
     decompress_file(file, format, dest_dir);
 }
 
+/**
+ * 检查文件是否包含指定字符串（优化版本）
+ * 使用更高效的搜索策略：先检查文件开头，再全文件搜索
+ * @param filepath 文件路径
+ * @param searchStr 要搜索的字符串
+ * @return 如果文件包含该字符串返回true，否则返回false
+ */
+bool TextSource::fileContainsString(const std::string &filepath, const std::string &searchStr) {
+    if (searchStr.empty()) {
+        return true;
+    }
+
+    FILE *file = os_fopen(filepath.c_str(), "rb");
+    if (!file) {
+        blog(LOG_WARNING, "Cannot open file for filtering: %s", filepath.c_str());
+        return false;
+    }
+
+    bool found = false;
+
+    // 策略1: 先读取前64KB快速检查
+    constexpr size_t PREVIEW_SIZE = 64 * 1024;
+    char previewBuffer[PREVIEW_SIZE];
+    size_t previewRead = fread(previewBuffer, 1, PREVIEW_SIZE, file);
+
+    if (std::string(previewBuffer, previewRead).find(searchStr) != std::string::npos) {
+        fclose(file);
+        return true;
+    }
+
+    // 策略2: 如果文件较大，继续搜索剩余部分
+    if (previewRead == PREVIEW_SIZE) {
+        // 使用memmem进行高效的二进制搜索
+        std::string overlap(searchStr.length() - 1, '\0');
+        memcpy(&overlap[0], previewBuffer + previewRead - searchStr.length() + 1, searchStr.length() - 1);
+
+        char buffer[64 * 1024];
+        while (!found && fgets(buffer, sizeof(buffer), file) != nullptr) {
+            std::string searchRegion = overlap + buffer;
+            if (searchRegion.find(searchStr) != std::string::npos) {
+                found = true;
+            }
+            // 更新重叠区域
+            size_t bufLen = strlen(buffer);
+            if (bufLen >= searchStr.length() - 1) {
+                overlap.assign(buffer + bufLen - searchStr.length() + 1, searchStr.length() - 1);
+            }
+        }
+    }
+
+    fclose(file);
+    return found;
+}
+
+/**
+ * 过滤文件队列，使用线程池并行搜索
+ * @param searchStr 要搜索的字符串，如果为空则不过滤
+ */
+
+// 用于线程池任务的结构体
+struct FilterTaskData {
+    TextSource *source;
+    std::string filepath;
+    std::string searchStr;
+    std::atomic<bool> *result;
+};
+
+static void filterTaskFunc(void *param) {
+    FilterTaskData *data = static_cast<FilterTaskData *>(param);
+    bool found = data->source->fileContainsString(data->filepath, data->searchStr);
+    data->result->store(found, std::memory_order_relaxed);
+}
+
+void TextSource::filterFilesByString(const std::string &searchStr) {
+    if (searchStr.empty()) {
+        blog(LOG_INFO, "Filter string is empty, skipping file filter");
+        return;
+    }
+
+    blog(LOG_INFO, "Filtering files by string (parallel): '%s'", searchStr.c_str());
+
+    // 将队列转换为vector便于并行处理
+    std::vector<std::string> filesToCheck;
+    while (!files_.empty()) {
+        filesToCheck.push_back(files_.front());
+        files_.pop();
+    }
+
+    int totalFiles = static_cast<int>(filesToCheck.size());
+    if (totalFiles == 0) {
+        return;
+    }
+
+    // 使用默认线程池并行检查每个文件
+    os_taskpool_t *pool = os_taskpool_get_default();
+    if (!pool) {
+        blog(LOG_ERROR, "Failed to get thread pool");
+        return;
+    }
+
+    // 准备任务数据和结果存储
+    std::vector<std::unique_ptr<FilterTaskData>> taskDataList;
+    std::vector<std::unique_ptr<std::atomic<bool>>> results;
+    taskDataList.reserve(filesToCheck.size());
+    results.reserve(filesToCheck.size());
+
+    for (const auto &filepath : filesToCheck) {
+        auto taskData = std::make_unique<FilterTaskData>();
+        auto result = std::make_unique<std::atomic<bool>>(false);
+
+        taskData->source = this;
+        taskData->filepath = filepath;
+        taskData->searchStr = searchStr;
+        taskData->result = result.get();
+
+        os_taskpool_queue_task(pool, filterTaskFunc, taskData.get());
+
+        taskDataList.push_back(std::move(taskData));
+        results.push_back(std::move(result));
+    }
+
+    // 等待所有任务完成
+    os_taskpool_wait(pool);
+
+    // 收集结果
+    std::queue<std::string> filteredQueue;
+    int matchedFiles = 0;
+
+    for (size_t i = 0; i < results.size(); ++i) {
+        if (results[i]->load(std::memory_order_relaxed)) {
+            filteredQueue.push(filesToCheck[i]);
+            matchedFiles++;
+            blog(LOG_INFO, "File matched filter: %s", filesToCheck[i].c_str());
+        } else {
+            blog(LOG_DEBUG, "File filtered out: %s", filesToCheck[i].c_str());
+        }
+    }
+
+    files_ = filteredQueue;
+    blog(LOG_INFO, "Filter complete: %d/%d files matched", matchedFiles, totalFiles);
+}
+
 bool TextSource::openNextValidFile() {
     struct stat stat_results;
 
@@ -420,9 +574,63 @@ bool TextSource::fileSrcStart() {
 
     loadMatchFilesInDir(dest_dir, (PCRE2_SPTR8)file_wildcard_.c_str(), files);
 
-    // decompress
+    // 并行解压 - 使用线程池同时处理多个压缩文件
+    std::set<std::string> decompressed_targets;
+    std::mutex decompress_mutex;  // 保护decompressed_targets的互斥锁
+    std::vector<std::string> files_to_decompress;
+
+    // 第一步：收集需要解压的文件（线程安全的预处理）
     for (auto &file : files) {
-        decompress_log_file(file);
+        std::string target = remove_compress_suffix(file);
+
+        // Check if target file already exists in filesystem
+        if (os_file_exists(target.c_str())) {
+            blog(LOG_INFO, "Target file %s already exists, skip decompressing %s", target.c_str(), file.c_str());
+            std::lock_guard<std::mutex> lock(decompress_mutex);
+            decompressed_targets.insert(target);
+            continue;
+        }
+
+        // Check if already processed in this batch
+        {
+            std::lock_guard<std::mutex> lock(decompress_mutex);
+            if (decompressed_targets.find(target) != decompressed_targets.end()) {
+                blog(LOG_INFO, "Skip decompressing %s, target already processed", file.c_str());
+                continue;
+            }
+            decompressed_targets.insert(target);
+        }
+
+        files_to_decompress.push_back(file);
+    }
+
+    // 第二步：使用线程池并行解压
+    if (!files_to_decompress.empty()) {
+        blog(LOG_INFO, "Starting parallel decompression of %zu files", files_to_decompress.size());
+
+        os_taskpool_t *pool = os_taskpool_get_default();
+        if (pool) {
+            // 提交所有解压任务到线程池
+            for (const auto &file : files_to_decompress) {
+                // 需要复制字符串，因为回调是异步的
+                std::string *fileCopy = new std::string(file);
+                os_taskpool_queue_task(
+                    pool,
+                    [](void *param) {
+                        std::string *filePath = static_cast<std::string *>(param);
+                        blog(LOG_DEBUG, "Decompressing file: %s", filePath->c_str());
+                        decompress_log_file(*filePath);
+                        blog(LOG_DEBUG, "Finished decompressing: %s", filePath->c_str());
+                        delete filePath;
+                    },
+                    fileCopy);
+            }
+
+            // 等待所有解压任务完成
+            os_taskpool_wait(pool);
+        }
+
+        blog(LOG_INFO, "Parallel decompression completed");
     }
     // reload after decompress
     files.clear();
@@ -437,6 +645,14 @@ bool TextSource::fileSrcStart() {
     }
 
     if (files_.empty()) {
+        return false;
+    }
+
+    // 根据filter_string_过滤文件
+    // filterFilesByString(filter_string_);
+
+    if (files_.empty()) {
+        blog(LOG_WARNING, "No files matched the filter string: '%s'", filter_string_.c_str());
         return false;
     }
 

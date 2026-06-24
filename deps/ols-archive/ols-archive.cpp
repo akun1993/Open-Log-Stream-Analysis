@@ -24,8 +24,8 @@ static const char *get_filename(const char *path) {
     return filename ? filename + 1 : path;
 }
 
-static ArchiveFormat check_real_filetype(const char* filePath) {
-    FILE* fp = os_fopen(filePath, "rb");
+static ArchiveFormat check_real_filetype(const char *filePath) {
+    FILE *fp = os_fopen(filePath, "rb");
     if (!fp) return FORMAT_UNKNOWN;
 
     char buf[300] = {0};
@@ -53,7 +53,8 @@ ArchiveFormat detect_format(const char *filename) {
 
     if (strstr(lower_buf, ".tar.gz") != NULL || strstr(lower_buf, ".tgz") != NULL) return FORMAT_TAR_GZ;
     if (strstr(lower_buf, ".tar.xz") != NULL || strstr(lower_buf, ".txz") != NULL) return FORMAT_TAR_XZ;
-    if (strstr(lower_buf, ".tar.bz2") != NULL || strstr(lower_buf, ".tbz2") != NULL || strstr(lower_buf, ".tar.bz") != NULL) return FORMAT_TAR_BZ2;
+    if (strstr(lower_buf, ".tar.bz2") != NULL || strstr(lower_buf, ".tbz2") != NULL || strstr(lower_buf, ".tar.bz") != NULL)
+        return FORMAT_TAR_BZ2;
 
     const char *ext = strrchr(lower_buf, '.');
     if (ext) {
@@ -69,23 +70,34 @@ ArchiveFormat detect_format(const char *filename) {
     return check_real_filetype(filename);
 }
 
-const char* format_name(ArchiveFormat format) {
+const char *format_name(ArchiveFormat format) {
     switch (format) {
-        case FORMAT_TAR_GZ:  return "tar.gz";
-        case FORMAT_TAR_XZ:  return "tar.xz";
-        case FORMAT_TAR_BZ2: return "tar.bz2";
-        case FORMAT_TAR:     return "tar";
-        case FORMAT_GZ:      return "gz";
-        case FORMAT_XZ:      return "xz";
-        case FORMAT_BZ2:     return "bz2";
-        case FORMAT_ZIP:     return "zip";
-        case FORMAT_7Z:      return "7z";
-        case FORMAT_RAR:     return "rar";
-        default:             return "unknown";
+        case FORMAT_TAR_GZ:
+            return "tar.gz";
+        case FORMAT_TAR_XZ:
+            return "tar.xz";
+        case FORMAT_TAR_BZ2:
+            return "tar.bz2";
+        case FORMAT_TAR:
+            return "tar";
+        case FORMAT_GZ:
+            return "gz";
+        case FORMAT_XZ:
+            return "xz";
+        case FORMAT_BZ2:
+            return "bz2";
+        case FORMAT_ZIP:
+            return "zip";
+        case FORMAT_7Z:
+            return "7z";
+        case FORMAT_RAR:
+            return "rar";
+        default:
+            return "unknown";
     }
 }
 
-std::string remove_compress_suffix(const std::string& full_path) {
+std::string remove_compress_suffix(const std::string &full_path) {
     size_t len = full_path.size();
     if (len >= 7 && full_path.substr(len - 7) == ".tar.gz") {
         return full_path.substr(0, len - 7);
@@ -116,7 +128,7 @@ static bool run_command(const char *command, uint8_t *buff, size_t buff_len, std
     return true;
 }
 
-static bool extract_with_7z(const char* file, const char* outDir) {
+static bool extract_with_7z(const char *file, const char *outDir) {
     struct dstr command = {0};
     dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
     blog(LOG_INFO, "[ols-archive] do decompress command %s", command.array);
@@ -134,7 +146,7 @@ static bool extract_with_7z(const char* file, const char* outDir) {
     return true;
 }
 
-static bool extract_compressed_tar(const char* file, const char* outDir) {
+static bool extract_compressed_tar(const char *file, const char *outDir) {
     auto system_command = [outDir, file]() {
         struct dstr command = {0};
         dstr_printf(&command, "\"%s\" x \"%s\" -y -o\"%s\"", SEVENZIP_CMD, file, outDir);
@@ -260,7 +272,8 @@ bool decompress_log_file(const std::string &file) {
                 }
                 struct dstr command2 = {0};
                 dstr_printf(&command2, "7z x %s -aoa -o%s", new_file.c_str(), dest_dir.c_str());
-                run_command(command2.array, buffer, sizeof(buffer), [](uint8_t *, size_t) {});
+                run_command(command2.array, buffer, sizeof(buffer), [](uint8_t *, size_t) {
+                });
                 dstr_free(&command2);
             }
         }
@@ -294,7 +307,8 @@ bool decompress_log_file(const std::string &file) {
             std::string dest_dir = file.substr(0, pos);
             struct dstr fallback = {0};
             dstr_printf(&fallback, "cd %s; tar -xvf %s --overwrite | xargs gunzip", dest_dir.c_str(), file.c_str());
-            run_command(fallback.array, buffer, sizeof(buffer), [](uint8_t *, size_t) {});
+            run_command(fallback.array, buffer, sizeof(buffer), [](uint8_t *, size_t) {
+            });
             dstr_free(&fallback);
         }
     }
