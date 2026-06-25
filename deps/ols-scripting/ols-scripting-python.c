@@ -300,8 +300,28 @@ bool ols_python_script_load(ols_script_t *s) {
   struct ols_python_script *data = (struct ols_python_script *)s;
   if (python_loaded && !data->base.loaded) {
     lock_python();
-    if (!data->module)
+    if (!data->module) {
       add_to_python_path(data->dir.array);
+      /* Add immediate subdirectories to Python path */
+      if (data->dir.array && *data->dir.array) {
+        os_dir_t *dir = os_opendir(data->dir.array);
+        if (dir) {
+          struct os_dirent *ent;
+          while ((ent = os_readdir(dir)) != NULL) {
+            if (!ent->directory)
+              continue;
+            if (strcmp(ent->d_name, ".") == 0 ||
+                strcmp(ent->d_name, "..") == 0)
+              continue;
+            struct dstr subpath = {0};
+            dstr_printf(&subpath, "%s%s/", data->dir.array, ent->d_name);
+            add_to_python_path(subpath.array);
+            dstr_free(&subpath);
+          }
+          os_closedir(dir);
+        }
+      }
+    }
     data->base.loaded = load_python_script(data);
     unlock_python();
 
@@ -348,6 +368,24 @@ ols_script_t *ols_python_script_create(const char *path, ols_data_t *settings) {
 
   lock_python();
   add_to_python_path(data->dir.array);
+  /* Add immediate subdirectories to Python path for module imports */
+  if (data->dir.array && *data->dir.array) {
+    os_dir_t *dir = os_opendir(data->dir.array);
+    if (dir) {
+      struct os_dirent *ent;
+      while ((ent = os_readdir(dir)) != NULL) {
+        if (!ent->directory)
+          continue;
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+          continue;
+        struct dstr subpath = {0};
+        dstr_printf(&subpath, "%s%s/", data->dir.array, ent->d_name);
+        add_to_python_path(subpath.array);
+        dstr_free(&subpath);
+      }
+      os_closedir(dir);
+    }
+  }
   data->base.loaded = load_python_script(data);
   if (data->base.loaded) {
     blog(LOG_INFO, "[ols-scripting]: Loaded python script: %s",
@@ -717,10 +755,24 @@ bool ols_scripting_load_python(const char *python_path) {
   }
   dstr_free(&resource_path);
 #else
-  char *absolute_script_path = os_get_abs_path_ptr(SCRIPT_DIR);
-  printf("script dir %s\n", absolute_script_path);
-  add_to_python_path(absolute_script_path);
-  bfree(absolute_script_path);
+  const char *env_script_path = getenv("OLS_SCRIPT_PATH");
+  if (env_script_path && *env_script_path) {
+    char *absolute_script_path = os_get_abs_path_ptr(env_script_path);
+    if (absolute_script_path) {
+      add_to_python_path(absolute_script_path);
+      bfree(absolute_script_path);
+    }
+  } else {
+    char *absolute_script_path = os_get_abs_path_ptr(SCRIPT_DIR);
+    if (absolute_script_path) {
+      add_to_python_path(absolute_script_path);
+      bfree(absolute_script_path);
+    } else {
+      blog(LOG_WARNING, "Script directory '%s' does not exist, "
+                        "set OLS_SCRIPT_PATH env var to fix",
+           SCRIPT_DIR);
+    }
+  }
 #endif
   // bool success= true;
   py_olspython = PyImport_ImportModule("olspython");

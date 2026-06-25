@@ -13,6 +13,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #define SEVENZIP_CMD "7z"
+#else
+#define SEVENZIP_CMD "7z"
 #endif
 
 static const char *get_filename(const char *path) {
@@ -135,8 +137,9 @@ static bool extract_with_7z(const char *file, const char *outDir) {
 
     os_process_pipe_t *pipe = os_process_pipe_create(command.array, "r");
     if (pipe) {
-        uint8_t buff[1024] = {'\0'};
-        while (os_process_pipe_read(pipe, buff, sizeof(buff))) {
+        char buff[1025];
+        while (os_process_pipe_read(pipe, (uint8_t *)buff, sizeof(buff) - 1) > 0) {
+            buff[sizeof(buff) - 1] = '\0';
             blog(LOG_INFO, "%s", buff);
         }
         os_process_pipe_destroy(pipe);
@@ -154,8 +157,9 @@ static bool extract_compressed_tar(const char *file, const char *outDir) {
 
         os_process_pipe_t *pipe = os_process_pipe_create(command.array, "r");
         if (pipe) {
-            uint8_t buff[1024] = {'\0'};
-            while (os_process_pipe_read(pipe, buff, sizeof(buff))) {
+            char buff[1025];
+            while (os_process_pipe_read(pipe, (uint8_t *)buff, sizeof(buff) - 1) > 0) {
+                buff[sizeof(buff) - 1] = '\0';
                 blog(LOG_INFO, "%s", buff);
             }
             os_process_pipe_destroy(pipe);
@@ -235,8 +239,9 @@ bool decompress_file(const std::string &file, ArchiveFormat format, const std::s
     blog(LOG_INFO, "[ols-archive] do decompress command %s", command.array);
     os_process_pipe_t *pipe = os_process_pipe_create(command.array, "r");
     if (pipe) {
-        uint8_t buff[1024] = {'\0'};
-        while (os_process_pipe_read(pipe, buff, sizeof(buff))) {
+        char buff[1025];
+        while (os_process_pipe_read(pipe, (uint8_t *)buff, sizeof(buff) - 1) > 0) {
+            buff[sizeof(buff) - 1] = '\0';
             blog(LOG_INFO, "%s", buff);
         }
         os_process_pipe_destroy(pipe);

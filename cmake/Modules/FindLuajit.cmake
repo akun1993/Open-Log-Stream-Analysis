@@ -44,6 +44,8 @@ find_library(
   HINTS ENV LUAJIT_PATH ${LUAJIT_PATH} ${CMAKE_SOURCE_DIR}/${LUAJIT_PATH} ${_LUAJIT_LIBRARY_DIRS}
   PATHS /usr/lib
         /usr/local/lib
+        /usr/lib/x86_64-linux-gnu
+        /usr/lib/aarch64-linux-gnu
         /opt/local/lib
         /opt/local
         /sw/lib

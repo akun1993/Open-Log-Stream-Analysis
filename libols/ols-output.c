@@ -376,6 +376,8 @@ void ols_output_signal_stop(ols_output_t *output, int code)
     return;
 
   output->stop_code = code;
+  os_atomic_set_bool(&output->data_active, false);
+  signal_stop(output);
 }
 
 void ols_output_addref(ols_output_t *output)

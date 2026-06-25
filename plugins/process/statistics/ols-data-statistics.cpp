@@ -77,6 +77,7 @@ static OlsFlowReturn statistics_chainlist_func(ols_pad_t *pad,ols_object_t *pare
 static OlsFlowReturn statistics_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,ols_buffer_t *buffer){
 
 	//blog(LOG_DEBUG, "statistics_sink_chain_func %s",ols_txt->data );
+	ols_buffer_unref(buffer);
 	return OLS_FLOW_OK;
 }
 
@@ -88,6 +89,24 @@ static OlsPadLinkReturn statistics_sink_link_func(ols_pad_t *pad,ols_object_t *p
 static OlsPadLinkReturn statistics_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	blog(LOG_DEBUG, "stattistics_src_link_func");
 	return OLS_PAD_LINK_OK;
+}
+
+static bool statistics_sink_event_func(ols_pad_t *pad, ols_object_t *parent, ols_event_t *event){
+	DataStatistics *stats = reinterpret_cast<DataStatistics *>(parent->data);
+	OlsEventType type = OLS_EVENT_TYPE(event);
+
+	blog(LOG_INFO, "statistics_sink_event_func: event type %d", type);
+
+	if (type == OLS_EVENT_EOS || type == OLS_EVENT_STREAM_START ||
+	    type == OLS_EVENT_STREAM_FLUSH) {
+		for (size_t i = 0; i < stats->process_->context.srcpads.num; ++i) {
+			ols_pad_t *srcpad = stats->process_->context.srcpads.array[i];
+			ols_pad_push_event(srcpad, ols_event_ref(event));
+		}
+	}
+
+	ols_event_unref(event);
+	return true;
 }
 
 
@@ -102,6 +121,7 @@ ols_pad_t * DataStatistics::createSinkPad(const char *caps){
 
 	ols_pad_set_link_function(sinkpad,statistics_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,statistics_sink_chain_func);
+	ols_pad_set_event_function(sinkpad,statistics_sink_event_func);
 
 	ols_process_add_pad(process_, sinkpad);
 	return sinkpad;

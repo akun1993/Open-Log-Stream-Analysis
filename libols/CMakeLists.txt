@@ -106,6 +106,8 @@ target_sources(
           util/sse-intrin.h
           util/task.c
           util/task.h
+          util/taskpool.c
+          util/taskpool.h
           util/text-lookup.c
           util/text-lookup.h
           util/threading.h

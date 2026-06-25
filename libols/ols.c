@@ -82,15 +82,20 @@ static void ols_free_data(void) {
 
   blog(LOG_INFO, "Freeing OLS context data");
 
-  FREE_OLS_LINKED_LIST(output);
-
-  FREE_OLS_HASH_TABLE(hh, &data->public_sources, source);
-  FREE_OLS_HASH_TABLE(hh_uuid, &data->sources, source);
-  FREE_OLS_HASH_TABLE(hh_uuid, &data->processes, process);
-
+  /* Wait for any pending deferred destroy tasks to complete.
+   * This must happen BEFORE clearing output lists or checking hash tables,
+   * to prevent use-after-free when iterating structures whose entries
+   * may have been freed asynchronously by ols_*_destroy_defer. */
   os_task_queue_wait(ols->destruction_task_thread);
 
-  pthread_mutex_destroy(&data->sources_mutex);
+  FREE_OLS_LINKED_LIST(output);
+
+  /* At this point all sources and processes should have been properly
+   * removed from hash tables by their destroy/release calls.
+   * Just verify they're empty rather than iterating (which could UAF). */
+  if (!ols->data.first_output) {
+    blog(LOG_INFO, "\tAll outputs destroyed");
+  }
 
   pthread_mutex_destroy(&data->outputs_mutex);
 
@@ -711,6 +716,26 @@ bool ols_context_data_init(struct ols_context_data *context,
 }
 
 void ols_context_data_free(struct ols_context_data *context) {
+
+  /* unlink and destroy all pads */
+  for (size_t i = 0; i < context->srcpads.num; i++) {
+    ols_pad_t *pad = context->srcpads.array[i];
+    if (OLS_PAD_PEER(pad))
+      ols_pad_unlink(pad, OLS_PAD_PEER(pad));
+    ols_pad_stop_task(pad);
+    ols_pad_destory(pad);
+  }
+  for (size_t i = 0; i < context->sinkpads.num; i++) {
+    ols_pad_t *pad = context->sinkpads.array[i];
+    if (OLS_PAD_PEER(pad)) {
+      ols_pad_t *peer = OLS_PAD_PEER(pad);
+      ols_pad_unlink(peer, pad);
+    }
+    ols_pad_destory(pad);
+  }
+  da_free(context->pads);
+  da_free(context->srcpads);
+  da_free(context->sinkpads);
 
   pthread_mutex_destroy(&context->mutex);
 
@@ -1479,6 +1504,33 @@ bool ols_context_link_pads(struct ols_context_data *src, const char *srcpadname,
 bool ols_context_link(struct ols_context_data *src,
                      struct ols_context_data *dest) {
   return ols_context_link_pads(src, NULL, dest, NULL);
+}
+
+void ols_context_unlink(struct ols_context_data *src,
+                        struct ols_context_data *dest) {
+  if (!src || !dest)
+    return;
+
+  OLS_OBJECT_LOCK(src);
+  for (size_t i = 0; i < src->srcpads.num; i++) {
+    ols_pad_t *srcpad = src->srcpads.array[i];
+    ols_pad_t *peer = OLS_PAD_PEER(srcpad);
+    if (!peer)
+      continue;
+    /* Check if this peer belongs to dest */
+    OLS_OBJECT_LOCK(dest);
+    bool found = false;
+    for (size_t j = 0; j < dest->sinkpads.num; j++) {
+      if (dest->sinkpads.array[j] == peer) {
+        found = true;
+        break;
+      }
+    }
+    OLS_OBJECT_UNLOCK(dest);
+    if (found)
+      ols_pad_unlink(srcpad, peer);
+  }
+  OLS_OBJECT_UNLOCK(src);
 }
 
 

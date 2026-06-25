@@ -80,10 +80,10 @@ add_subdirectory(script_python)
 add_subdirectory(script_lua)
 
 # MCP Server for log analysis
-if(ENABLE_MCP_SERVER)
-    add_subdirectory(mcp_server)
-    message(STATUS "MCP Server enabled")
-endif()
+# if(ENABLE_MCP_SERVER)
+#     add_subdirectory(mcp_server)
+#     message(STATUS "MCP Server enabled")
+# endif()
 
 # Tests
 if(ENABLE_UNIT_TESTS)

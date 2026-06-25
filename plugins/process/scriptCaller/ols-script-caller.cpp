@@ -54,7 +54,12 @@ struct ScriptCallerProcess {
 	}
   }
 
-  inline ~ScriptCallerProcess() {}
+  inline ~ScriptCallerProcess() {
+	  if (script_) {
+		  ols_script_destroy(script_);
+		  script_ = nullptr;
+	  }
+  }
 
   ols_pad_t *requestNewPad(const char *name, const char *caps);
 
@@ -79,8 +84,7 @@ static OlsFlowReturn script_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,
 
 	ScriptCallerProcess *script_caller = reinterpret_cast<ScriptCallerProcess *>(parent->data);
 	script_caller->onDataBuff(buffer);
-
-	//blog(LOG_DEBUG, "script_chain_func %s",ols_txt->data );
+	/* buffer ownership is handled inside onDataBuff: pushed to downstream or unref'd on error */
 	return OLS_FLOW_OK;
 }
 
@@ -92,6 +96,24 @@ static OlsPadLinkReturn script_sink_link_func(ols_pad_t *pad,ols_object_t *paren
 static OlsPadLinkReturn script_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	blog(LOG_DEBUG, "script_link_func");
 	return OLS_PAD_LINK_OK;
+}
+
+static bool script_sink_event_func(ols_pad_t *pad, ols_object_t *parent, ols_event_t *event){
+	ScriptCallerProcess *script_caller = reinterpret_cast<ScriptCallerProcess *>(parent->data);
+	OlsEventType type = OLS_EVENT_TYPE(event);
+
+	blog(LOG_INFO, "script_sink_event_func: event type %d", type);
+
+	if (type == OLS_EVENT_EOS || type == OLS_EVENT_STREAM_START ||
+	    type == OLS_EVENT_STREAM_FLUSH) {
+		for (size_t i = 0; i < script_caller->process_->context.srcpads.num; ++i) {
+			ols_pad_t *srcpad = script_caller->process_->context.srcpads.array[i];
+			ols_pad_push_event(srcpad, ols_event_ref(event));
+		}
+	}
+
+	ols_event_unref(event);
+	return true;
 }
 
 ols_pad_t * ScriptCallerProcess::createSinkPad(const char *caps_str){
@@ -106,6 +128,7 @@ ols_pad_t * ScriptCallerProcess::createSinkPad(const char *caps_str){
 
 	ols_pad_set_link_function(sinkpad,script_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,script_sink_chain_func);
+	ols_pad_set_event_function(sinkpad,script_sink_event_func);
 
 	ols_pad_set_caps(sinkpad,caps);
 
@@ -145,53 +168,55 @@ ols_pad_t *ScriptCallerProcess::requestNewPad(const char *name, const char *caps
 void ScriptCallerProcess::onDataBuff(ols_buffer_t *buffer){
 
 	ols_meta_txt_t * ols_txt = (ols_meta_txt_t *) buffer->meta;
-	//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
-	if(str_strncmp((const char *)ols_txt->buff,"****",4) == 0){
-		//printf("data is %s \n",(const char *)ols_txt->buff);
-		goto error;
-	} else {
-		const char *p = (const char *)ols_txt->buff;
-		
-		size_t buff_len = ols_txt->len;
-        
-		size_t parse_len = 0;
+		//printf("data is %s len is %d \n",(const char *)ols_txt->buff,ols_txt->len);
+		if(str_strncmp((const char *)ols_txt->buff,"****",4) == 0){
+			//printf("data is %s \n",(const char *)ols_txt->buff);
+			goto error;
+		} else {
+			const char *p = (const char *)ols_txt->buff;
 
-		//05-22 11:17:45.265  3006 16061 V DSVFSALib:
-		if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
+			size_t buff_len = ols_txt->len;
 
-			if(script_ ){
+			size_t parse_len = 0;
 
-				ols_meta_result_t *meta_result = ols_scripting_prase(script_,ols_txt);
+			//05-22 11:17:45.265  3006 16061 V DSVFSALib:
+			if(isdigit(p[0]) &&  isdigit(p[1]) && p[2] == '-'){
 
-				//blog(LOG_DEBUG,"meta result getted  %p\n",meta_result);
-				if(meta_result){
-					buffer->result = meta_result;
-					
-					if(output_tag_.empty()){
-						dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
-					} else {
-						dstr_copy(&buffer->result->tag ,output_tag_.c_str());
-					}
-					
-					for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
-						ols_pad_t *pad = process_->context.srcpads.array[i];
-						ols_pad_push(pad, buffer );
-					}
+				if(script_ ){
+
+					ols_meta_result_t *meta_result = ols_scripting_prase(script_,ols_txt);
+
+					//blog(LOG_DEBUG,"meta result getted  %p\n",meta_result);
+					if(meta_result){
+							buffer->result = meta_result;
+
+							if(output_tag_.empty()){
+								dstr_copy_dstr(&buffer->result->tag , &ols_txt->tag);
+							} else {
+								dstr_copy(&buffer->result->tag ,output_tag_.c_str());
+							}
+
+							for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
+								ols_pad_t *pad = process_->context.srcpads.array[i];
+								ols_pad_push(pad, ols_buffer_ref(buffer));
+							}
+							ols_buffer_unref(buffer);
+							return;
+						}
+
+				} else {
+					goto error;
 				}
-
 			} else {
 				goto error;
 			}
-		} else {
-			goto error;
 		}
-	}
 
-	return;
+		goto error;
 
-error:
-
-	return;
+	error:
+		ols_buffer_unref(buffer);
+		return;
 }
 
 void ScriptCallerProcess::update(ols_data_t *settings)

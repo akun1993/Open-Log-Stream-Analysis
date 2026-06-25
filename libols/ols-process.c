@@ -206,10 +206,14 @@ void ols_process_destroy(struct ols_process *process) {
     return;
   }
 
-  // ols_context_data_remove_uuid(&process->context, &ols->data.processs);
-  // if (!process->context.private)
-  //   ols_context_data_remove_name(&process->context,
-  //   &ols->data.public_processs);
+  /* Remove from hash tables before deferring. Use HASH_FIND_UUID to detect
+   * double-destroy scenarios where ols_free_data may have already freed. */
+  struct ols_context_data *found_uuid = NULL;
+  struct ols_context_data **proc_head =
+      (struct ols_context_data **)&ols->data.processes;
+  HASH_FIND_UUID(*proc_head, process->context.uuid, found_uuid);
+  if (found_uuid == &process->context)
+    ols_context_data_remove_uuid(&process->context, &ols->data.processes);
 
   /* defer process destroy */
   os_task_queue_queue_task(ols->destruction_task_thread,

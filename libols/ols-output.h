@@ -98,6 +98,7 @@ struct ols_output {
   char *last_error_message;
 };
 
+EXPORT void ols_output_signal_stop(ols_output_t *output, int code);
 EXPORT void ols_register_output_s(const struct ols_output_info *info,
                                   size_t size);
 

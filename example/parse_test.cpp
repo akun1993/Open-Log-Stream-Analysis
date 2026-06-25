@@ -6,9 +6,11 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <atomic>
 #include <unordered_map>
 #include <util/platform.h>
 #include <util/bmem.h>
+#include <util/util.hpp>
 #include "ols-context.h"
 #include "ols-source.h"
 #include "ols-process.h"
@@ -16,6 +18,8 @@
 #include "ols-archive.h"
 #include <set>
 #include <unordered_map>
+#include <sys/stat.h>
+#include <unistd.h>
 
 int GetProgramDataPath(char *path, size_t size, const char *name) {
     return os_get_program_data_path(path, size, name);
@@ -304,6 +308,87 @@ static bool extract_until_match(const std::string &dir, const std::string &wildc
     return false;
 }
 
+static std::vector<PipelineNode> g_pipeline_nodes;
+static std::atomic<bool> g_pipeline_done{false};
+static std::atomic<int> g_output_count{0};
+static std::atomic<int> g_output_stopped{0};
+static std::vector<std::string> g_result_files;
+
+/** Scan dir for .xml/.html files with mtime >= start_time. */
+static std::vector<std::string> collect_result_files(const char *dir, time_t start_time) {
+    std::vector<std::string> results;
+    os_dir_t *d = os_opendir(dir);
+    if (!d) return results;
+
+    struct os_dirent *ent;
+    while ((ent = os_readdir(d)) != nullptr) {
+        if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
+        if (ent->directory) continue;
+
+        const char *name = ent->d_name;
+        size_t len = strlen(name);
+        bool is_result = (len > 4 && strcmp(name + len - 4, ".xml") == 0) || (len > 5 && strcmp(name + len - 5, ".html") == 0);
+        if (!is_result) continue;
+
+        std::string full = std::string(dir) + "/" + name;
+        struct stat st;
+        if (stat(full.c_str(), &st) == 0 && st.st_mtime >= start_time) {
+            results.push_back(full);
+        }
+    }
+    os_closedir(d);
+    return results;
+}
+
+/** Read entire stdin as a string. */
+static std::string read_stdin() {
+    std::string content;
+    char buf[4096];
+    while (fgets(buf, sizeof(buf), stdin)) {
+        content += buf;
+    }
+    return content;
+}
+
+static void destroy_pipeline() {
+    /* Deactivate sources first to stop data flow */
+    for (auto &node : g_pipeline_nodes) {
+        if (node.type == NODE_SOURCE && node.source && node.source->active) {
+            ols_source_set_active(node.source, false);
+        }
+    }
+
+    /* Release in reverse order: output -> process -> source */
+    for (auto it = g_pipeline_nodes.rbegin(); it != g_pipeline_nodes.rend(); ++it) {
+        switch (it->type) {
+            case NODE_OUTPUT:
+                if (it->output) ols_output_release(it->output);
+                break;
+            case NODE_PROCESS:
+                if (it->process) ols_process_release(it->process);
+                break;
+            case NODE_SOURCE:
+                if (it->source) ols_source_release(it->source);
+                break;
+            default:
+                break;
+        }
+    }
+    g_pipeline_nodes.clear();
+    blog(LOG_INFO, "Pipeline destroyed and resources released");
+}
+
+static void on_output_stop(void *data, calldata_t *cd) {
+    UNUSED_PARAMETER(data);
+    UNUSED_PARAMETER(cd);
+    g_output_stopped.fetch_add(1);
+    blog(LOG_INFO, "Output stop signal received (%d/%d)", g_output_stopped.load(), g_output_count.load());
+    if (g_output_stopped.load() >= g_output_count.load()) {
+        blog(LOG_INFO, "All outputs stopped, pipeline finished");
+        g_pipeline_done = true;
+    }
+}
+
 static void create_pipeline_from_json(const char *pipeline_json) {
     printf("Creating test pipeline from JSON...\n");
 
@@ -324,8 +409,8 @@ static void create_pipeline_from_json(const char *pipeline_json) {
         return;
     }
 
-    std::vector<PipelineNode> nodes;
-    nodes.reserve(json_array_size(nodes_json));
+    g_pipeline_nodes.clear();
+    g_pipeline_nodes.reserve(json_array_size(nodes_json));
 
     // 1. Pre-extract all source and compressed files in their directories, up to 3 levels, prioritizing file_name_wildcard
     std::unordered_map<std::string, std::string> archive_to_dir;
@@ -418,17 +503,18 @@ static void create_pipeline_from_json(const char *pipeline_json) {
                 break;
         }
 
+        if (settings) ols_data_release(settings);
+
         if (!create_success) {
             fprintf(stderr, "Failed to create node '%s' of type '%s'\n", name, type);
-            if (settings) ols_data_release(settings);
             continue;
         }
 
-        nodes.push_back(std::move(node));
+        g_pipeline_nodes.push_back(std::move(node));
     }
 
     std::unordered_map<std::string, ols_context_data *> context_map;
-    for (auto &node : nodes) {
+    for (auto &node : g_pipeline_nodes) {
         if (!node.name.empty() && node.context) context_map[node.name] = node.context;
     }
 
@@ -455,9 +541,20 @@ static void create_pipeline_from_json(const char *pipeline_json) {
 
     /* Activate sources after creating nodes and links so activation happens
      * only once pipeline topology is established. */
-    for (auto &node : nodes) {
+    for (auto &node : g_pipeline_nodes) {
         if (node.type == NODE_SOURCE && node.source && node.activate_requested) {
             ols_source_set_active(node.source, true);
+        }
+    }
+
+    /* Connect stop signal on outputs so we know when the pipeline finishes */
+    for (auto &node : g_pipeline_nodes) {
+        if (node.type == NODE_OUTPUT && node.output) {
+            g_output_count.fetch_add(1);
+            signal_handler_t *sh = ols_output_get_signal_handler(node.output);
+            if (sh) {
+                signal_handler_connect(sh, "stop", on_output_stop, nullptr);
+            }
         }
     }
 
@@ -476,8 +573,8 @@ void create_pipeline(const char *pipeline_json) {
     script_path = "script_python\\exampleGbParse.py";
     script_path_2 = script_path;
 #else
-    file_path = "/home/V01/uidq8743/TBoxLog_VIN123456_20241205_143824.zip";
-    inner_dir = "TBoxLog/log";
+    file_path = "/home/V01/uidq8743/log-老国标数据上报失败-E22-358-2-V3.12.3.zip";
+    // inner_dir = "TBoxLog/log";
     script_path = "script_python/exampleGbParse.py";
     script_path_2 = "script_python/script_others.py";
 #endif
@@ -491,9 +588,17 @@ void create_pipeline(const char *pipeline_json) {
 int main(int argc, char **argv) {
     /* Change working directory to the executable's directory */
     char *exe_dir = os_get_executable_path_ptr("");
+    std::string work_dir;
     if (exe_dir) {
-        if (os_chdir(exe_dir) == 0) printf("Changed working directory to %s\n", exe_dir);
+        if (os_chdir(exe_dir) == 0) {
+            blog(LOG_INFO, "Changed working directory to %s", exe_dir);
+            work_dir = exe_dir;
+        }
         bfree(exe_dir);
+    }
+    if (work_dir.empty()) {
+        char cwd[512];
+        if (getcwd(cwd, sizeof(cwd))) work_dir = cwd;
     }
 
     if (!ols_startup("en-US", NULL, NULL)) {
@@ -503,31 +608,73 @@ int main(int argc, char **argv) {
     struct ols_module_failure_info mfi;
 
     AddExtraModulePaths();
-    printf("---------------------------------\n");
     ols_load_all_modules2(&mfi);
-    printf("---------------------------------\n");
     ols_log_loaded_modules();
-    printf("---------------------------------\n");
     ols_post_load_modules();
 
-    printf("load script start\n");
     ols_scripting_load();
-    printf("load script end\n");
 
-    create_pipeline(NULL);
+    /* Record start time before pipeline runs */
+    time_t start_time = time(NULL);
 
-    int c;
-    printf("Enter characters, I shall repeat them.\n");
-    printf("Press Ctrl+D (Unix/Linux) or Ctrl+Z (Windows) to exit.\n");
-    while ((c = getchar()) != EOF) {
-        putchar(c);
+    const char *pipeline_json = nullptr;
+    BPtr<char> file_data;
+    std::string stdin_data;
+
+    if (argc > 1) {
+        /* Mode 1: JSON config from file argument */
+        if (strcmp(argv[1], "-") == 0) {
+            /* Read from stdin */
+            stdin_data = read_stdin();
+            if (!stdin_data.empty()) {
+                pipeline_json = stdin_data.c_str();
+                blog(LOG_INFO, "Loaded pipeline config from stdin (%zu bytes)", stdin_data.size());
+            } else {
+                fprintf(stderr, "Empty stdin input\n");
+            }
+        } else {
+            file_data = os_quick_read_utf8_file(argv[1]);
+            if (file_data) {
+                pipeline_json = file_data;
+                blog(LOG_INFO, "Loaded pipeline config from %s", argv[1]);
+            } else {
+                fprintf(stderr, "Failed to read pipeline config: %s\n", argv[1]);
+            }
+        }
     }
 
-    ols_scripting_unload();
+    create_pipeline(pipeline_json);
+
+    /* Wait for pipeline to finish (EOS triggers output stop signal) */
+    blog(LOG_INFO, "Pipeline running, waiting for completion...");
+    int wait_count = 0;
+    while (!g_pipeline_done) {
+        os_sleep_ms(100);
+        if (++wait_count >= 300) { /* 30 second timeout */
+            blog(LOG_WARNING, "Pipeline timed out, forcing cleanup...");
+            break;
+        }
+    }
+
+    /* Wait briefly for async xml->html tasks to complete */
+    os_sleep_ms(500);
+
+    /* Collect generated result files */
+    g_result_files = collect_result_files(work_dir.c_str(), start_time);
+
+    destroy_pipeline();
+    blog(LOG_INFO, "Pipeline completed.");
 
     ols_shutdown();
+    ols_scripting_unload();
 
-    printf("\nProgram exited.\n");
+    /* Output results as JSON to stdout for external programs */
+    printf("{\"status\":\"completed\",\"result_files\":[");
+    for (size_t i = 0; i < g_result_files.size(); i++) {
+        if (i > 0) printf(",");
+        printf("\"%s\"", json_escape(g_result_files[i]).c_str());
+    }
+    printf("]}\n");
 
     return 0;
 }

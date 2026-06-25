@@ -13,8 +13,8 @@
 //   limitations under the License.
 #include "time-parse.h"
 
-#ifdef _MSC_VER
 #include <stdlib.h>
+#ifdef _MSC_VER
 #define strtoll _strtoi64
 #endif
 

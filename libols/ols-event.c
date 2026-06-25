@@ -62,7 +62,6 @@ ols_event_t *ols_event_new_eos(){
     ols_event_t *ols_event = ols_event_new();
 
     if(ols_event) {
-        ols_event_init(ols_event);
         ols_event->ev_type = OLS_EVENT_EOS;
     }
 
@@ -74,7 +73,6 @@ ols_event_t *ols_event_new_stream_start(){
     ols_event_t *ols_event = ols_event_new();
 
     if(ols_event) {
-        ols_event_init(ols_event);
         ols_event->ev_type = OLS_EVENT_STREAM_START;
     }
 
@@ -85,10 +83,8 @@ ols_event_t *ols_event_new_stream_flush(){
     ols_event_t *ols_event = ols_event_new();
 
     if(ols_event) {
-        ols_event_init(ols_event);
         ols_event->ev_type = OLS_EVENT_STREAM_FLUSH;
     }
 
     return ols_event;
 }
-

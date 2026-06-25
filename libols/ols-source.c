@@ -206,9 +206,19 @@ void ols_source_destroy(struct ols_source *source) {
     return;
   }
 
-  ols_context_data_remove_uuid(&source->context, &ols->data.sources);
+  if (ols->data.valid) {
+    ols_context_data_remove_uuid(&source->context, &ols->data.sources);
 
-  ols_context_data_remove_name(&source->context, &ols->data.public_sources);
+    /* Only remove from name hash if the entry is still present.
+     * ols_free_data may have already removed it during shutdown. */
+    struct ols_context_data *found = NULL;
+    struct ols_context_data **head = &ols->data.public_sources;
+    HASH_FIND(hh, *head, source->context.name,
+              strlen(source->context.name), found);
+    if (found == &source->context)
+      ols_context_data_remove_name(&source->context,
+                                   &ols->data.public_sources);
+  }
 
   /* defer source destroy */
   os_task_queue_queue_task(ols->destruction_task_thread,
@@ -465,28 +475,25 @@ static void ols_base_src_loop(ols_pad_t *pad) {
     goto pause;
   }
 
-done:
-  ols_buffer_unref(buf);
+  /* buf ownership transferred to downstream on successful push */
   return;
 
 pause: {
+	  ols_buffer_unref(buf);
 
-  ols_buffer_unref(buf);
+	  // src->running = false;
+	  ols_pad_pause_task(pad);
+	  if (ret == OLS_FLOW_EOS) {
 
-  ols_event_t *event;
-  // src->running = false;
-  ols_pad_pause_task(pad);
-  if (ret == OLS_FLOW_EOS) {
-
-    event = ols_event_new_eos();
-    ols_pad_push_event(pad, event);
-    ols_event_unref(event);
-  }
-  goto done;
-}
+	    ols_event_t *event = ols_event_new_eos();
+	    ols_pad_push_event(pad, event);
+	  }
+	  return;
+	}
 null_buffer: {
   blog(LOG_ERROR, "Internal data flow error, element returned NULL buffer");
-  goto done;
+  ols_buffer_unref(buf);
+  return;
 }
 }
 

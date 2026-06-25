@@ -21,14 +21,11 @@
 #include <util/dstr.hpp>
 #include <util/pipe.h>
 
-
 using namespace std;
 
-#define warning(format, ...)                                                   \
-  blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
+#define warning(format, ...) blog(LOG_WARNING, "[%s] " format, ols_output_get_name(source), ##__VA_ARGS__)
 
-
-// XML Struct 
+// XML Struct
 //<protocol>
 //  <root>
 //		<system>
@@ -50,78 +47,90 @@ using namespace std;
 //</protocol>
 
 struct XmlDocToHtmlTaskItem {
-
-	tinyxml2::XMLDocument  *xmlDoc;
-	XmlDocToHtmlTaskItem():xmlDoc(nullptr){
-	}
-	~XmlDocToHtmlTaskItem(){
-		if(xmlDoc)
-			delete xmlDoc;
-	}
+    tinyxml2::XMLDocument *xmlDoc;
+    XmlDocToHtmlTaskItem() : xmlDoc(nullptr) {
+    }
+    ~XmlDocToHtmlTaskItem() {
+        if (xmlDoc) delete xmlDoc;
+    }
 };
 
 struct AppNode {
-	tinyxml2::XMLElement* app_root_ = nullptr;
-	tinyxml2::XMLElement* analysis_ = nullptr;
+    tinyxml2::XMLElement *app_root_ = nullptr;
+    tinyxml2::XMLElement *analysis_ = nullptr;
 };
 
 struct XmlOutput {
-   ols_output_t *output_ = nullptr;
-   tinyxml2::XMLDocument *xmldoc_ = nullptr;
-   tinyxml2::XMLElement *root_ = nullptr;
+    ols_output_t *output_ = nullptr;
+    tinyxml2::XMLDocument *xmldoc_ = nullptr;
+    tinyxml2::XMLElement *root_ = nullptr;
 
-   tinyxml2::XMLElement* system_ = nullptr;
+    tinyxml2::XMLElement *system_ = nullptr;
 
-   tinyxml2::XMLElement* applications_ = nullptr;
+    tinyxml2::XMLElement *applications_ = nullptr;
 
-   tinyxml2::XMLElement* apps_ = nullptr;
+    tinyxml2::XMLElement *apps_ = nullptr;
 
-   tinyxml2::XMLElement* summary_ = nullptr;
+    tinyxml2::XMLElement *summary_ = nullptr;
 
-   std::map<std::string,AppNode> app_tags_;
+    std::map<std::string, AppNode> app_tags_;
 
-   OlsEventType curr_event_ = OLS_EVENT_STREAM_START;
+    OlsEventType curr_event_ = OLS_EVENT_STREAM_START;
 
-   os_task_queue_t * xml_2_html_task_;
+    os_task_queue_t *xml_2_html_task_;
 
-   std::queue<XmlDocToHtmlTaskItem *> task_items_;
-   std::mutex task_mtx_;
+    std::queue<XmlDocToHtmlTaskItem *> task_items_;
+    std::mutex task_mtx_;
 
-   int sinkIdx_{0};
-   int  idx_ {0};
-   bool data_flag_{false};
+    int sinkIdx_{0};
+    int idx_{0};
+    bool data_flag_{false};
 
-	/* --------------------------- */
-	inline XmlOutput(ols_output_t *output, ols_data_t *settings)
-	: output_(output) {
-		update( settings);
+    std::string output_path_;
+    static std::string xslt_template_path_;
 
-		xml_2_html_task_ = os_task_queue_create();
+    /* --------------------------- */
+    inline XmlOutput(ols_output_t *output, ols_data_t *settings) : output_(output) {
+        update(settings);
 
-		initOutfile();
-	}
+        xml_2_html_task_ = os_task_queue_create();
 
-  inline ~XmlOutput() {
+        initOutfile();
+    }
 
-	os_task_queue_destroy(xml_2_html_task_);
-  }
+    inline ~XmlOutput() {
+        delete xmldoc_;
 
-  ols_pad_t *requestNewPad(const char *name, const char *caps);
+        {
+            std::lock_guard<std::mutex> lck(task_mtx_);
+            while (!task_items_.empty()) {
+                XmlDocToHtmlTaskItem *item = task_items_.front();
+                task_items_.pop();
+                delete item;
+            }
+        }
 
-  void update(ols_data_t *settings);
+        os_task_queue_destroy(xml_2_html_task_);
+    }
 
-  ols_pad_t *createSinkPad(const char *caps);
+    ols_pad_t *requestNewPad(const char *name, const char *caps);
 
-  void onDataBuff(ols_buffer_t *buffer);
+    void update(ols_data_t *settings);
 
-  void onEvent(ols_event_t *event);
+    ols_pad_t *createSinkPad(const char *caps);
 
-  void initOutfile();
+    void onDataBuff(ols_buffer_t *buffer);
 
-  void flushOutfile();
+    void onEvent(ols_event_t *event);
 
-  static void xmlToHtmlTaskFunc(void *param);
+    void initOutfile();
+
+    void flushOutfile();
+
+    static void xmlToHtmlTaskFunc(void *param);
 };
+
+std::string XmlOutput::xslt_template_path_;
 
 /* ------------------------------------------------------------------------- */
 
@@ -136,6 +145,7 @@ static OlsFlowReturn output_sink_chain_func(ols_pad_t *pad,ols_object_t *parent,
 
 	XmlOutput *xml_output = reinterpret_cast<XmlOutput *>(parent->data);
 	xml_output->onDataBuff(buffer);
+	ols_buffer_unref(buffer);
 
 	return OLS_FLOW_OK;
 }
@@ -151,6 +161,7 @@ static bool output_sink_event_func(ols_pad_t *pad, ols_object_t *parent,ols_even
 	XmlOutput *xml_output = reinterpret_cast<XmlOutput *>(parent->data);
 	xml_output->onEvent(event);
 
+	ols_event_unref(event);
 	return true;
 }
 
@@ -263,6 +274,8 @@ void XmlOutput::onEvent(ols_event_t *event){
 	curr_event_ = type;
 	if(type == OLS_EVENT_EOS){
 		flushOutfile();
+		os_task_queue_wait(xml_2_html_task_);
+		ols_output_signal_stop(output_, OLS_OUTPUT_SUCCESS);
 
 	} else if(OLS_EVENT_TYPE(event) == OLS_EVENT_STREAM_START){
 		initOutfile();
@@ -292,17 +305,23 @@ void XmlOutput::xmlToHtmlTaskFunc(void *param){
 
 	if(item){
 
-		std::string fileName("Tbox-analysis-report-");
+		std::string baseName;
+		if (!xmlOut->output_path_.empty()) {
+			baseName = xmlOut->output_path_;
+		} else {
+			baseName = "Tbox-analysis-report-";
+			baseName.append(std::to_string(++xmlOut->idx_));
+			baseName.append(1,'-');
+			baseName.append(std::to_string(time(NULL)));
+		}
 
-		fileName.append(std::to_string(++xmlOut->idx_));
-		fileName.append(1,'-');
-		fileName.append(std::to_string(time(NULL)));
-		
-		std::string xmlFile = fileName + ".xml";
+		std::string xmlFile = baseName + ".xml";
 		item->xmlDoc->SaveFile(xmlFile.c_str() );
 
 		DStr command ;
-		dstr_printf(command,"xsltproc -o %s.html template.xslt %s.xml",fileName.c_str(),fileName.c_str());
+			dstr_printf(command,"xsltproc -o %s.html %s %s.xml",
+				baseName.c_str(), xmlOut->xslt_template_path_.c_str(),
+				baseName.c_str());
 
 		os_process_pipe_t * pipe = os_process_pipe_create(command->array,"r");
 
@@ -315,9 +334,10 @@ void XmlOutput::xmlToHtmlTaskFunc(void *param){
 			}
 			os_process_pipe_destroy(pipe);
 		} else {
-			blog(LOG_INFO,"XmlOutput::xmlToHtmlTaskFunc create command pipe %s failed",command->array);
-		}
+				blog(LOG_INFO,"XmlOutput::xmlToHtmlTaskFunc create command pipe %s failed",command->array);
+			}
 
+			delete item;
 	}
 
 }
@@ -372,6 +392,8 @@ ols_pad_t *XmlOutput::requestNewPad(const char *name, const char *caps){
 
 
 void XmlOutput::initOutfile(){
+	
+	delete xmldoc_;
 
 	xmldoc_ = new tinyxml2::XMLDocument();
 
@@ -401,7 +423,19 @@ void XmlOutput::initOutfile(){
 }
 
 void XmlOutput::update(ols_data_t *settings){
-	UNUSED_PARAMETER(settings);
+	if (ols_data_get_string(settings, "output_path") != NULL) {
+		output_path_ = ols_data_get_string(settings, "output_path");
+		if (!output_path_.empty()) {
+			blog(LOG_INFO, "xml output path: %s", output_path_.c_str());
+		}
+	}
+
+	const char *xslt_path = ols_data_get_string(settings, "xslt_template_path");
+	if (xslt_path && xslt_path[0]) {
+		xslt_template_path_ = xslt_path;
+		blog(LOG_INFO, "xslt template path: %s", xslt_template_path_.c_str());
+	}
+	/* If no explicit path configured, keep the default resolved in ols_module_load */
 }
 
 #define ols_data_get_uint32 (uint32_t) ols_data_get_int
@@ -413,17 +447,33 @@ MODULE_EXPORT const char *ols_module_description(void){
 }
 
 static ols_properties_t *get_properties(void *data){
-	XmlOutput *s = reinterpret_cast<XmlOutput *>(data);
-	//string path;
+	UNUSED_PARAMETER(data);
 
 	ols_properties_t *props = ols_properties_create();
-	//ols_property_t *p;
+
+	ols_properties_add_path(props, "output_path",
+			ols_module_text("OutputFilePath"),
+			OLS_PATH_FILE_SAVE, "XML files (*.xml)", NULL);
+
+		ols_properties_add_path(props, "xslt_template_path",
+			ols_module_text("XsltTemplatePath"),
+			OLS_PATH_FILE, "XSLT files (*.xslt)", NULL);
 
 	return props;
 }
 
 
 bool ols_module_load(void){
+	/* Resolve default XSLT template path from module data directory */
+	char *mod_file = ols_find_module_file(ols_current_module(), "template.xslt");
+	if (mod_file) {
+		XmlOutput::xslt_template_path_ = mod_file;
+		bfree(mod_file);
+	} else {
+		XmlOutput::xslt_template_path_ = "template.xslt";
+	}
+	blog(LOG_INFO, "xslt template path: %s", XmlOutput::xslt_template_path_.c_str());
+
 	ols_output_info si = {};
 	si.id = "xml_output";
 	//si.type = OLS_PROCESS_TYPE_INPUT;

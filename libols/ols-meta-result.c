@@ -33,6 +33,7 @@ _ols_meta_result_free (ols_meta_result_t * meta_result)
     bfree(info);
   }
 
+  da_free(meta_result->info);
 
   bfree(meta_result);
 }

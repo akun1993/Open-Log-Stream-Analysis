@@ -305,12 +305,20 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 ma
         /* Match the pattern against the subject text. */
         pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(re, NULL);
 
-        for (;;) {
-            // const char *ext;
+        std::vector<std::string> subdirs;
 
+        for (;;) {
             ent = os_readdir(dir);
             if (!ent) break;
-            if (ent->directory) continue;
+
+            if (ent->directory) {
+                if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+                    std::string subdir = dest_dir;
+                    subdir.append(1, FILE_SEPARATOR).append(ent->d_name);
+                    subdirs.push_back(subdir);
+                }
+                continue;
+            }
 
             int rc = pcre2_match(re,                       /* the compiled pattern */
                                  (PCRE2_SPTR8)ent->d_name, /* the subject text */
@@ -320,15 +328,11 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 ma
                                  match_data,               /* block for storing the result */
                                  NULL);                    /* use default match context */
 
-            /* Print the match result. */
             if (rc == PCRE2_ERROR_NOMATCH) {
                 blog(LOG_DEBUG, "No match : %s\n", ent->d_name);
             } else if (rc < 0) {
                 blog(LOG_ERROR, "Matching error\n");
             } else {
-                PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-                // blog(LOG_DEBUG,"Found match: '%.*s'\n", (int)(ovector[1] - ovector[0]),ent->d_name + ovector[0]);
-
                 std::string file_path = dest_dir;
                 file_path.append(1, FILE_SEPARATOR).append(ent->d_name);
                 files.insert(file_path);
@@ -338,6 +342,11 @@ void TextSource::loadMatchFilesInDir(const std::string &dest_dir, PCRE2_SPTR8 ma
         pcre2_code_free(re);
 
         os_closedir(dir);
+
+        /* Recursively search subdirectories */
+        for (const auto &subdir : subdirs) {
+            loadMatchFilesInDir(subdir, match_pattern, files);
+        }
     }
 }
 
@@ -550,11 +559,13 @@ bool TextSource::fileSrcStart() {
     std::set<std::string> files;
 
     if (base_file_.empty()) {
-        goto no_filename;
+        blog(LOG_ERROR, "No file name specified for reading.");
+        return false;
     }
 
     if (os_stat(base_file_.c_str(), &stat_results) < 0) {
-        goto no_stat;
+        blog(LOG_ERROR, "Could not get info on \"%s\".", base_file_.c_str());
+        return false;
     }
 
     if (!S_ISDIR(stat_results.st_mode)) {
@@ -657,13 +668,6 @@ bool TextSource::fileSrcStart() {
     }
 
     return openNextValidFile();
-
-/* ERROR */
-no_filename: { blog(LOG_ERROR, ("No file name specified for reading.")); }
-    return false;
-
-no_stat: { blog(LOG_ERROR, ("Could not get info on \"%s\"."), base_file_.c_str()); }
-    return false;
 }
 
 /* unmap and close the file */

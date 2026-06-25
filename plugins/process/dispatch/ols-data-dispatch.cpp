@@ -82,13 +82,31 @@ static OlsFlowReturn dispatch_sink_chain_func(ols_pad_t *pad,ols_object_t *paren
 
 	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
 	dispatch->onDataBuff(buffer);
-	//blog(LOG_DEBUG, "dispatch_sink_chain_func %s",ols_txt->data );
+	ols_buffer_unref(buffer);
 	return OLS_FLOW_OK;
 }
 
 static OlsPadLinkReturn dispatch_sink_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
 	blog(LOG_DEBUG, "dispatch_sink_link_func");
 	return OLS_PAD_LINK_OK;
+}
+
+static bool dispatch_sink_event_func(ols_pad_t *pad, ols_object_t *parent, ols_event_t *event){
+	DataDispatch *dispatch = reinterpret_cast<DataDispatch *>(parent->data);
+	OlsEventType type = OLS_EVENT_TYPE(event);
+
+	blog(LOG_INFO, "dispatch_sink_event_func: event type %d", type);
+
+	if (type == OLS_EVENT_EOS || type == OLS_EVENT_STREAM_START ||
+	    type == OLS_EVENT_STREAM_FLUSH) {
+		for (size_t i = 0; i < dispatch->process_->context.srcpads.num; ++i) {
+			ols_pad_t *srcpad = dispatch->process_->context.srcpads.array[i];
+			ols_pad_push_event(srcpad, ols_event_ref(event));
+		}
+	}
+
+	ols_event_unref(event);
+	return true;
 }
 
 static OlsPadLinkReturn dispatch_src_link_func(ols_pad_t *pad,ols_object_t *parent,ols_pad_t *peer){
@@ -139,6 +157,7 @@ ols_pad_t * DataDispatch::createSinkPad(const char *caps){
 
 	ols_pad_set_link_function(sinkpad,dispatch_sink_link_func);
 	ols_pad_set_chain_function(sinkpad,dispatch_sink_chain_func);
+	ols_pad_set_event_function(sinkpad,dispatch_sink_event_func);
 
 	ols_process_add_pad(process_, sinkpad);
 	return sinkpad;
@@ -209,17 +228,19 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 
 			//send flush event first
 			ols_event_t *event_flush = ols_event_new_stream_flush();
-			for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
-				ols_pad_t *pad = process_->context.srcpads.array[i];
-				ols_pad_push_event(pad, event_flush);
-			}	
+				for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
+					ols_pad_t *pad = process_->context.srcpads.array[i];
+					ols_pad_push_event(pad, ols_event_ref(event_flush));
+				}
+				ols_event_unref(event_flush);
 
-			//begin of cold start 
-			ols_event_t *event_start = ols_event_new_stream_start();
-			for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
-				ols_pad_t *pad = process_->context.srcpads.array[i];
-				ols_pad_push_event(pad, event_start);
-			}				
+				//begin of cold start
+				ols_event_t *event_start = ols_event_new_stream_start();
+				for (size_t i = 0; i < process_->context.srcpads.num; ++i) {
+					ols_pad_t *pad = process_->context.srcpads.array[i];
+					ols_pad_push_event(pad, ols_event_ref(event_start));
+				}
+				ols_event_unref(event_start);
 		}
 
 	} else {
@@ -353,20 +374,18 @@ void DataDispatch::onDataBuff(ols_buffer_t *buffer){
 			dstr_ncopy(&ols_txt->tag,tag_beg,tag_len);
 
 			if(tag2Pad_.count(ols_txt->tag.array) > 0){
-				
+
 				std::list<ols_pad_t *> &list_pad = tag2Pad_[ols_txt->tag.array];
 				for (ols_pad_t * pad : list_pad) {
-					ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
-					ols_pad_push(pad, cp_buffer);
-					ols_buffer_unref(cp_buffer);
-				}
+						ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
+						ols_pad_push(pad, cp_buffer);
+					}
 			}
 
 			auto any_iter = tagAny_.begin();
 			while(any_iter != tagAny_.end()){
 				ols_buffer_t *cp_buffer = ols_buffer_copy(buffer);
 				ols_pad_push(*any_iter,cp_buffer );
-				ols_buffer_unref(cp_buffer);
 			}
     		//printf("tag is %s \n",tag);
 		} else {
