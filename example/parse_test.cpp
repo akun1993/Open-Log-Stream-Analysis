@@ -586,6 +586,13 @@ void create_pipeline(const char *pipeline_json) {
 }
 
 int main(int argc, char **argv) {
+    /* Set UTF-8 locale for subprocess filename handling */
+    const char *cur_lc = getenv("LC_ALL");
+    if (!cur_lc || !strstr(cur_lc, "UTF-8")) {
+        setenv("LC_ALL", "zh_CN.UTF-8", 1);
+        setenv("LANG", "zh_CN.UTF-8", 1);
+    }
+
     /* Change working directory to the executable's directory */
     char *exe_dir = os_get_executable_path_ptr("");
     std::string work_dir;
@@ -668,13 +675,30 @@ int main(int argc, char **argv) {
     ols_shutdown();
     ols_scripting_unload();
 
-    /* Output results as JSON to stdout for external programs */
-    printf("{\"status\":\"completed\",\"result_files\":[");
+    /* Build result JSON string */
+    std::string result_json = "{\"status\":\"completed\",\"result_files\":[";
     for (size_t i = 0; i < g_result_files.size(); i++) {
-        if (i > 0) printf(",");
-        printf("\"%s\"", json_escape(g_result_files[i]).c_str());
+        if (i > 0) result_json += ",";
+        result_json += "\"" + json_escape(g_result_files[i]) + "\"";
     }
-    printf("]}\n");
+    result_json += "]}";
+
+    /* If OLS_RESULT_FILE env is set, write result JSON to that file;
+     * otherwise print to stdout */
+    const char *result_file = getenv("OLS_RESULT_FILE");
+    if (result_file && result_file[0]) {
+        FILE *fp = fopen(result_file, "w");
+        if (fp) {
+            fputs(result_json.c_str(), fp);
+            fputc('\n', fp);
+            fclose(fp);
+        } else {
+            fprintf(stderr, "Failed to write result file: %s\n", result_file);
+            printf("%s\n", result_json.c_str());
+        }
+    } else {
+        printf("%s\n", result_json.c_str());
+    }
 
     return 0;
 }

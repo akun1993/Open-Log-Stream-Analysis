@@ -48,7 +48,7 @@ def parse_str(timeStamp, pid,tid,log_lv,tag_str , log_str):
         logTxt = olsString.OlsString(log_str)
         if "onGnssLocationCb_after shift" in log_str:
             logTxt.reSplit(' ')
-            return {"onGnssLocationCb_after" : "403F48CBF258BF26"}
+            return {"onGnssLocationCb_after" : logTxt.fetchStr(2)}
     elif "DSVTSPConnectSVC" in tag_str:
 
         logTxt = olsString.OlsString(log_str)
